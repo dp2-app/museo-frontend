@@ -5,7 +5,7 @@ const enlaces = [
   { to: "/piezas", label: "Piezas" },
   { to: "/colecciones", label: "Colecciones" },
   { to: "/importacion", label: "Importación" },
-  { to: "/ia", label: "Sugerencias IA" },
+  { to: "/ia", label: "Calidad de Datos" },
 ];
 
 export function Layout() {

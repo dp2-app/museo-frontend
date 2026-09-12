@@ -50,8 +50,14 @@ React + TypeScript + Vite + Tailwind CSS + React Router + TanStack Query + axios
   existente o creación de una nueva (filas dinámicas columna-Excel → campo-destino),
   previsualización por fila con clasificación, aprobación/rechazo explícito antes de
   tocar el catálogo.
-- **Sugerencias de IA**: cola de revisión con aceptar/rechazar (RN-009 — nunca se
-  aplica nada automáticamente).
+- **Asistente de Calidad de Datos** (`/ia`): pantalla única que combina RIA-01 y
+  RIA-02 en vez de tratarlas como botones sueltos — tarjetas KPI (% de catálogo
+  completo, piezas incompletas, duplicados por revisar, observaciones por analizar),
+  botón de ejecución en lote de RIA-01 (deshabilitado con explicación si Gemma 4 no
+  está configurado en el backend) y la cola de revisión con comparación legible de
+  posibles duplicados (nombre de ambas piezas, no un JSON crudo). Es la respuesta a
+  "2 soluciones innovadoras con IA" del enunciado: no una tercera funcionalidad, sino
+  una forma de presentar las dos ya comprometidas como una sola herramienta coherente.
 - Layout responsive verificado en viewport móvil (RNF-001: uso en depósito con
   tablet/celular).
 

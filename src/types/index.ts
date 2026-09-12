@@ -141,6 +141,16 @@ export type TipoSugerencia =
   | "RIA-04-descripcion-preliminar"
   | "RIA-05-consulta-catalogo";
 
+export interface ReporteCalidadDatos {
+  totalPiezas: number;
+  piezasCompletas: number;
+  piezasIncompletas: number;
+  porcentajeCompleto: number;
+  sugerenciasPendientes: { ria01: number; ria02: number };
+  piezasElegiblesParaRia01: number;
+  ria01Configurado: boolean;
+}
+
 export interface SugerenciaIA {
   id: string;
   tipo: TipoSugerencia;
