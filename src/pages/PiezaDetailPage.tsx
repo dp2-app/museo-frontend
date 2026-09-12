@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { api, extraerMensajeError } from "../lib/api";
+import { cloudinaryConfigurado, subirImagenACloudinary } from "../lib/cloudinary";
 import type {
   CodigoExterno,
   Fotografia,
@@ -81,16 +82,31 @@ export function PiezaDetailPage() {
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
-  // --- Fotografía (URL ya subida a Cloudinary) ---
-  const [urlFoto, setUrlFoto] = useState("");
-  const agregarFoto = useMutation({
-    mutationFn: async () => (await api.post<Fotografia>(`/piezas/${piezaId}/fotografias`, { url: urlFoto })).data,
+  // --- Fotografía ---
+  const [urlFoto, setUrlFoto] = useState(""); // solo usado en el modo manual de respaldo
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const registrarUrlFoto = useMutation({
+    mutationFn: async (url: string) => (await api.post<Fotografia>(`/piezas/${piezaId}/fotografias`, { url })).data,
     onSuccess: () => {
       setUrlFoto("");
       setError(null);
       invalidarPieza();
     },
     onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  const subirFoto = useMutation({
+    mutationFn: async (archivo: File) => {
+      const url = await subirImagenACloudinary(archivo);
+      return (await api.post<Fotografia>(`/piezas/${piezaId}/fotografias`, { url })).data;
+    },
+    onSuccess: () => {
+      setError(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      invalidarPieza();
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : extraerMensajeError(err)),
   });
 
   // --- Movimiento ---
@@ -251,22 +267,38 @@ export function PiezaDetailPage() {
           ))}
           {pieza.fotografias.length === 0 && <p className="text-sm text-stone-400">Sin fotografías registradas.</p>}
         </div>
-        <form
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault();
-            agregarFoto.mutate();
-          }}
-          className="flex gap-2 max-w-lg"
-        >
-          <input
-            required
-            placeholder="URL de Cloudinary ya subida"
-            value={urlFoto}
-            onChange={(e) => setUrlFoto(e.target.value)}
-            className="flex-1 rounded border border-stone-300 px-3 py-1.5 text-sm"
-          />
-          <button className="bg-stone-900 text-white rounded px-3 py-1.5 text-sm hover:bg-stone-800">Añadir</button>
-        </form>
+        {cloudinaryConfigurado() ? (
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const archivo = e.target.files?.[0];
+                if (archivo) subirFoto.mutate(archivo);
+              }}
+              className="text-sm"
+            />
+            {subirFoto.isPending && <span className="text-xs text-stone-500">Subiendo...</span>}
+          </div>
+        ) : (
+          <form
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              registrarUrlFoto.mutate(urlFoto);
+            }}
+            className="flex gap-2 max-w-lg"
+          >
+            <input
+              required
+              placeholder="URL ya subida a un servicio de imágenes"
+              value={urlFoto}
+              onChange={(e) => setUrlFoto(e.target.value)}
+              className="flex-1 rounded border border-stone-300 px-3 py-1.5 text-sm"
+            />
+            <button className="bg-stone-900 text-white rounded px-3 py-1.5 text-sm hover:bg-stone-800">Añadir</button>
+          </form>
+        )}
       </section>
 
       {/* Movimientos */}
