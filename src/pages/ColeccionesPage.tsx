@@ -31,8 +31,8 @@ export function ColeccionesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-stone-900">Colecciones</h2>
-        <p className="text-sm text-stone-500">RF-010: sin límite fijo de colecciones.</p>
+        <h2 className="font-display text-2xl font-semibold text-ink-800">Colecciones</h2>
+        <p className="text-sm text-ink-400">RF-010 · sin límite fijo de colecciones.</p>
       </div>
 
       <form onSubmit={onSubmit} className="flex gap-2 max-w-md">
@@ -40,32 +40,36 @@ export function ColeccionesPage() {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Nombre de la nueva colección"
-          className="flex-1 rounded border border-stone-300 px-3 py-2 text-sm"
+          className="glass-input"
         />
-        <button
-          type="submit"
-          disabled={crear.isPending}
-          className="bg-stone-900 text-white rounded px-4 py-2 text-sm font-medium hover:bg-stone-800 disabled:opacity-50"
-        >
+        <button type="submit" disabled={crear.isPending} className="btn-primary shrink-0">
           Crear
         </button>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-clay-700">{error}</p>}
 
       {isLoading ? (
-        <p className="text-sm text-stone-500">Cargando...</p>
+        <p className="text-sm text-ink-400">Cargando...</p>
       ) : (
-        <ul className="divide-y divide-stone-200 bg-white rounded-lg shadow-sm border border-stone-200">
-          {data?.items.map((c) => (
-            <li key={c.id} className="px-4 py-3">
-              <p className="font-medium text-stone-900">{c.nombre}</p>
-              {c.descripcion && <p className="text-sm text-stone-500">{c.descripcion}</p>}
-            </li>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data?.items.map((c, i) => (
+            <div key={c.id} className="glass-panel-sm p-4 flex items-start gap-3">
+              <div
+                className="h-9 w-9 shrink-0 rounded-xl flex items-center justify-center font-display text-sm font-semibold text-white"
+                style={{ background: `linear-gradient(160deg, #CC7F51, #7A3D1E)`, opacity: 0.95 }}
+              >
+                {(i % 9) + 1}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-ink-800 truncate">{c.nombre}</p>
+                {c.descripcion && <p className="text-sm text-ink-400 mt-0.5">{c.descripcion}</p>}
+              </div>
+            </div>
           ))}
           {data?.items.length === 0 && (
-            <li className="px-4 py-3 text-sm text-stone-500">Aún no hay colecciones registradas.</li>
+            <p className="text-sm text-ink-400 col-span-full">Aún no hay colecciones registradas.</p>
           )}
-        </ul>
+        </div>
       )}
     </div>
   );

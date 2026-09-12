@@ -55,90 +55,86 @@ export function CargaDetailPage() {
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
-  if (cargaQuery.isLoading) return <p className="text-sm text-stone-500">Cargando...</p>;
+  if (cargaQuery.isLoading) return <p className="text-sm text-ink-400">Cargando...</p>;
   const carga = cargaQuery.data;
   const filas = filasQuery.data;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/importacion" className="text-sm text-amber-700 hover:underline">
+        <Link to="/importacion" className="text-sm text-clay-700 hover:underline">
           ← Volver a importación
         </Link>
-        <h2 className="text-xl font-semibold text-stone-900 mt-1">{carga?.archivoNombre}</h2>
-        <p className="text-sm text-stone-500">Estado: {carga?.estado}</p>
+        <h2 className="font-display text-2xl font-semibold text-ink-800 mt-1">{carga?.archivoNombre}</h2>
+        <span className="chip mt-1">{carga?.estado}</span>
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</p>}
+      {error && <p className="text-sm text-clay-800 bg-clay-50/80 border border-clay-200 rounded-xl px-3 py-2">{error}</p>}
 
       {filas && (
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-ink-600">
           Resumen: {filas.resumen.nuevo} nuevas · {filas.resumen.actualizacion} actualizaciones ·{" "}
           {filas.resumen.duplicado} posibles duplicados · {filas.resumen.conflicto} conflictos
         </p>
       )}
 
       {carga?.estado === "en_revision" && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => aprobarCarga.mutate()}
-            disabled={aprobarCarga.isPending}
-            className="bg-green-700 text-white rounded px-4 py-1.5 text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-          >
+        <div className="flex gap-3">
+          <button onClick={() => aprobarCarga.mutate()} disabled={aprobarCarga.isPending} className="btn-primary">
             Aprobar carga completa (RF-027)
           </button>
-          <button
-            onClick={() => rechazarCarga.mutate()}
-            disabled={rechazarCarga.isPending}
-            className="bg-stone-200 text-stone-700 rounded px-4 py-1.5 text-sm font-medium hover:bg-stone-300"
-          >
+          <button onClick={() => rechazarCarga.mutate()} disabled={rechazarCarga.isPending} className="btn-glass">
             Rechazar carga
           </button>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-stone-100 text-stone-600 text-left">
-            <tr>
-              <th className="px-4 py-2">Fila</th>
-              <th className="px-4 py-2">Clasificación</th>
-              <th className="px-4 py-2">Datos originales</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            {filas?.items.map((fila) => (
-              <tr key={fila.id}>
-                <td className="px-4 py-2">{fila.numeroFila}</td>
-                <td className="px-4 py-2">{etiquetaClasificacion[fila.clasificacion]}</td>
-                <td className="px-4 py-2 font-mono text-xs text-stone-500 max-w-xs truncate">
-                  {JSON.stringify(fila.datosOriginales)}
-                </td>
-                <td className="px-4 py-2">{fila.estado}</td>
-                <td className="px-4 py-2 text-right space-x-2">
-                  {fila.estado === "pendiente" && carga?.estado === "en_revision" && (
-                    <>
-                      <button
-                        onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "aprobado" })}
-                        className="text-green-700 hover:underline"
-                      >
-                        Aprobar
-                      </button>
-                      <button
-                        onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "rechazado" })}
-                        className="text-red-600 hover:underline"
-                      >
-                        Rechazar
-                      </button>
-                    </>
-                  )}
-                </td>
+      <div className="glass-panel overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-ink-400 text-xs uppercase tracking-wide">
+              <tr>
+                <th className="px-5 py-3 font-medium">Fila</th>
+                <th className="px-5 py-3 font-medium">Clasificación</th>
+                <th className="px-5 py-3 font-medium">Datos originales</th>
+                <th className="px-5 py-3 font-medium">Estado</th>
+                <th className="px-5 py-3"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/50">
+              {filas?.items.map((fila) => (
+                <tr key={fila.id} className="hover:bg-white/40 transition">
+                  <td className="px-5 py-3 text-ink-600">{fila.numeroFila}</td>
+                  <td className="px-5 py-3">
+                    <span className="chip">{etiquetaClasificacion[fila.clasificacion]}</span>
+                  </td>
+                  <td className="px-5 py-3 font-mono text-xs text-ink-400 max-w-xs truncate">
+                    {JSON.stringify(fila.datosOriginales)}
+                  </td>
+                  <td className="px-5 py-3 text-ink-600">{fila.estado}</td>
+                  <td className="px-5 py-3 text-right space-x-3">
+                    {fila.estado === "pendiente" && carga?.estado === "en_revision" && (
+                      <>
+                        <button
+                          onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "aprobado" })}
+                          className="text-emerald-700 hover:underline text-sm"
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "rechazado" })}
+                          className="text-clay-700 hover:underline text-sm"
+                        >
+                          Rechazar
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

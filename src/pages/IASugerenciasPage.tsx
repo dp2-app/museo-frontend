@@ -14,10 +14,10 @@ const etiquetaTipo: Record<SugerenciaIA["tipo"], string> = {
 
 function TarjetaKpi({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; detalle?: string }) {
   return (
-    <div className="bg-white border border-stone-200 rounded-lg p-4">
-      <p className="text-xs text-stone-500">{etiqueta}</p>
-      <p className="text-2xl font-semibold text-stone-900">{valor}</p>
-      {detalle && <p className="text-xs text-stone-400 mt-1">{detalle}</p>}
+    <div className="kpi-card">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{etiqueta}</p>
+      <p className="font-display text-3xl font-semibold text-ink-800">{valor}</p>
+      {detalle && <p className="text-xs text-ink-400 mt-0.5">{detalle}</p>}
     </div>
   );
 }
@@ -31,7 +31,7 @@ function NombrePieza({ id }: { id: string }) {
     staleTime: 60_000,
   });
   return (
-    <Link to={`/piezas/${id}`} className="text-amber-700 hover:underline">
+    <Link to={`/piezas/${id}`} className="text-clay-700 hover:underline font-medium">
       {data?.denominacion || "(cargando...)"}
     </Link>
   );
@@ -87,8 +87,8 @@ export function IASugerenciasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-stone-900">Asistente de Calidad de Datos</h2>
-        <p className="text-sm text-stone-500">
+        <h2 className="font-display text-2xl font-semibold text-ink-800">Asistente de Calidad de Datos</h2>
+        <p className="text-sm text-ink-400 max-w-2xl">
           Un solo lugar para ver qué tan completo está el catálogo y ejecutar RIA-01/RIA-02 sobre él. RN-009: ninguna
           sugerencia se aplica sin que un usuario de catalogación la acepte explícitamente.
         </p>
@@ -97,8 +97,8 @@ export function IASugerenciasPage() {
       {reporte && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <TarjetaKpi etiqueta="Catálogo completo" valor={`${reporte.porcentajeCompleto}%`} detalle={`${reporte.piezasCompletas}/${reporte.totalPiezas} piezas`} />
-          <TarjetaKpi etiqueta="Piezas incompletas" valor={String(reporte.piezasIncompletas)} detalle="RF-035: falta código I, foto o ubicación" />
-          <TarjetaKpi etiqueta="Duplicados por revisar" valor={String(reporte.sugerenciasPendientes.ria02)} detalle="RIA-02, cola pendiente" />
+          <TarjetaKpi etiqueta="Piezas incompletas" valor={String(reporte.piezasIncompletas)} detalle="RF-035 · falta código I, foto o ubicación" />
+          <TarjetaKpi etiqueta="Duplicados por revisar" valor={String(reporte.sugerenciasPendientes.ria02)} detalle="RIA-02 · cola pendiente" />
           <TarjetaKpi
             etiqueta="Observaciones por analizar"
             valor={String(reporte.sugerenciasPendientes.ria01)}
@@ -107,79 +107,68 @@ export function IASugerenciasPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => detectarDuplicados.mutate()}
-          disabled={detectarDuplicados.isPending}
-          className="bg-stone-900 text-white rounded px-4 py-1.5 text-sm font-medium hover:bg-stone-800 disabled:opacity-50"
-        >
+      <div className="flex flex-wrap gap-3 items-start">
+        <button onClick={() => detectarDuplicados.mutate()} disabled={detectarDuplicados.isPending} className="btn-primary">
           {detectarDuplicados.isPending ? "Analizando..." : "Ejecutar detección de duplicados (RIA-02)"}
         </button>
         <div>
           <button
             onClick={() => extraerEnLote.mutate()}
             disabled={extraerEnLote.isPending || reporte?.ria01Configurado === false}
-            className="bg-stone-900 text-white rounded px-4 py-1.5 text-sm font-medium hover:bg-stone-800 disabled:opacity-50"
+            className="btn-primary"
           >
             {extraerEnLote.isPending ? "Analizando..." : "Extraer observaciones en lote (RIA-01)"}
           </button>
           {reporte?.ria01Configurado === false && (
-            <p className="text-xs text-stone-400 mt-1">
+            <p className="text-xs text-ink-400 mt-1.5">
               RIA-01 no está configurado (falta GEMMA_API_KEY/GEMMA_API_URL en el backend).
             </p>
           )}
         </div>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-clay-700">{error}</p>}
 
       {isLoading ? (
-        <p className="text-sm text-stone-500">Cargando cola de revisión...</p>
+        <p className="text-sm text-ink-400">Cargando cola de revisión...</p>
       ) : (
         <ul className="space-y-3">
           {sugerencias?.map((s) => (
-            <li key={s.id} className="bg-white border border-stone-200 rounded-lg p-4 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-stone-900">{etiquetaTipo[s.tipo]}</p>
+            <li key={s.id} className="glass-panel-sm p-4 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="chip mb-1.5">{etiquetaTipo[s.tipo]}</p>
                 {s.tipo === "RIA-02-duplicados-similitud" && s.piezaId && s.piezaRelacionadaId ? (
-                  <p className="text-sm text-stone-600 mt-1">
-                    <NombrePieza id={s.piezaId} /> ⟷ <NombrePieza id={s.piezaRelacionadaId} />
+                  <p className="text-sm text-ink-600">
+                    <NombrePieza id={s.piezaId} /> <span className="text-clay-400">⟷</span>{" "}
+                    <NombrePieza id={s.piezaRelacionadaId} />
                     {s.confianza !== null && (
-                      <span className="text-xs text-stone-400"> · similitud {(s.confianza * 100).toFixed(0)}%</span>
+                      <span className="text-xs text-ink-400"> · similitud {(s.confianza * 100).toFixed(0)}%</span>
                     )}
                   </p>
                 ) : (
                   <>
                     {s.piezaId && (
-                      <p className="text-sm text-stone-600 mt-1">
+                      <p className="text-sm text-ink-600">
                         Pieza: <NombrePieza id={s.piezaId} />
                       </p>
                     )}
-                    <p className="text-xs text-stone-500">Modelo: {s.modeloUsado}</p>
-                    <pre className="text-xs text-stone-600 bg-stone-50 rounded p-2 mt-2 max-w-xl overflow-x-auto">
+                    <p className="text-xs text-ink-400 mt-0.5">Modelo: {s.modeloUsado}</p>
+                    <pre className="text-xs text-ink-600 bg-white/50 rounded-xl p-2.5 mt-2 max-w-xl overflow-x-auto border border-white/60">
                       {JSON.stringify(s.payloadSugerido, null, 2)}
                     </pre>
                   </>
                 )}
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => resolver.mutate({ id: s.id, estado: "aceptado" })}
-                  className="text-green-700 hover:underline text-sm"
-                >
+              <div className="flex gap-3 shrink-0">
+                <button onClick={() => resolver.mutate({ id: s.id, estado: "aceptado" })} className="text-emerald-700 hover:underline text-sm font-medium">
                   Aceptar
                 </button>
-                <button
-                  onClick={() => resolver.mutate({ id: s.id, estado: "rechazado" })}
-                  className="text-red-600 hover:underline text-sm"
-                >
+                <button onClick={() => resolver.mutate({ id: s.id, estado: "rechazado" })} className="text-clay-700 hover:underline text-sm font-medium">
                   Rechazar
                 </button>
               </div>
             </li>
           ))}
-          {sugerencias?.length === 0 && (
-            <li className="text-sm text-stone-500">No hay sugerencias pendientes de revisión.</li>
-          )}
+          {sugerencias?.length === 0 && <li className="text-sm text-ink-400">No hay sugerencias pendientes de revisión.</li>}
         </ul>
       )}
     </div>

@@ -2,6 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-stone-50 text-stone-900;
+@layer base {
+  html {
+    font-family: "Manrope", system-ui, sans-serif;
+  }
+
+  body {
+    @apply text-ink-800;
+    background-color: #f3e4d0;
+    background-image:
+      radial-gradient(120% 120% at 8% -10%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 45%),
+      radial-gradient(100% 100% at 100% 0%, rgba(59, 81, 105, 0.10) 0%, rgba(59, 81, 105, 0) 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='none' stroke='%233F2011' stroke-opacity='0.05' stroke-width='1.2'%3E%3Cpath d='M42 4 L74 42 L42 80 L10 42 Z'/%3E%3Ccircle cx='42' cy='42' r='5'/%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(160deg, #fbf3ec 0%, #f3e4d0 55%, #e9d3b3 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 {
+    font-family: "Fraunces", ui-serif, Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Superficie de "vidrio" translúcida — el lenguaje visual base de toda la
+     interfaz (tarjetas, barra de navegación, modales). */
+  .glass-panel {
+    @apply relative bg-white/55 backdrop-blur-xl border border-white/60 rounded-3xl shadow-glass;
+  }
+
+  .glass-panel-sm {
+    @apply relative bg-white/60 backdrop-blur-lg border border-white/50 rounded-2xl shadow-glass-sm;
+  }
+
+  .glass-nav {
+    @apply bg-ink-900/70 backdrop-blur-2xl border-b border-white/10;
+  }
+
+  .glass-input {
+    @apply w-full rounded-xl border border-clay-200/70 bg-white/70 backdrop-blur-sm px-3.5 py-2 text-sm text-ink-800
+           placeholder:text-ink-400 shadow-inner
+           focus:outline-none focus:ring-2 focus:ring-clay-400/60 focus:border-clay-400 transition;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-clay-400 to-clay-600
+           px-5 py-2 text-sm font-semibold text-white shadow-glass-sm
+           hover:from-clay-300 hover:to-clay-500 active:scale-[0.97]
+           disabled:opacity-50 disabled:pointer-events-none transition;
+  }
+
+  .btn-glass {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-white/50 backdrop-blur-md
+           border border-white/60 px-4 py-2 text-sm font-medium text-ink-700 shadow-glass-sm
+           hover:bg-white/70 active:scale-[0.97]
+           disabled:opacity-50 disabled:pointer-events-none transition;
+  }
+
+  .btn-danger-text {
+    @apply text-sm font-medium text-clay-700 hover:text-clay-900 hover:underline transition;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-clay-100/80 px-2.5 py-0.5 text-xs font-medium text-clay-800 border border-clay-200/70;
+  }
+
+  .kpi-card {
+    @apply glass-panel-sm px-4 py-3.5 flex flex-col gap-0.5;
+  }
+
+  .section-title {
+    @apply font-display text-base font-semibold text-ink-800 tracking-tight;
+  }
 }

@@ -92,8 +92,22 @@ React + TypeScript + Vite + Tailwind CSS + React Router + TanStack Query + axios
 - Los mensajes de error al usuario pasan por `extraerMensajeError()` en `src/lib/api.ts`,
   que sabe interpretar tanto un `detail` string como una lista de errores de
   validación de FastAPI.
-- Tailwind con la paleta `stone`/`amber` ya establecida en las páginas existentes —
-  mantenerla para que la interfaz se sienta consistente.
+- **Sistema de diseño "glass" temático** (no uses `stone`/`amber` genéricos de
+  Tailwind, ya se reemplazaron): paleta `clay` (terracota, inspirada en cerámica),
+  `sand` e `ink` definida en `tailwind.config.js`, tipografía Fraunces (títulos,
+  clase `font-display`) + Manrope (cuerpo), y un lenguaje "Liquid Glass" con las
+  clases reutilizables de `src/index.css`:
+  - `.glass-panel` / `.glass-panel-sm` — superficies translúcidas con blur para
+    tarjetas y secciones.
+  - `.glass-nav` — la barra de navegación flotante en `Layout.tsx`.
+  - `.glass-input` — inputs/selects.
+  - `.btn-primary` (acción principal, degradado terracota) / `.btn-glass`
+    (acción secundaria) / `.btn-danger-text` (enlace de acción menor).
+  - `.chip` — etiquetas de estado; añade `!bg-emerald-100/80 !border-emerald-200
+    !text-emerald-800` para el estado "positivo" (completo/aprobado).
+  - `.kpi-card` — tarjetas de métricas (ver `IASugerenciasPage.tsx`).
+  Usa estas clases en vez de inventar combinaciones nuevas de `bg-white
+  border rounded` — es lo que mantiene la app coherente entre páginas.
 
 ## Cómo correr esto
 
