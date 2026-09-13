@@ -41,6 +41,17 @@ React + TypeScript + Vite + Tailwind CSS + React Router + TanStack Query + axios
 - **Piezas**: búsqueda combinada (código, colección, incompletas), alta, edición de
   ficha, identificadores (con indicador visual 🔒 cuando el código "I" está
   bloqueado), historial de movimientos, auditoría.
+- **Ficha de pieza rediseñada** (`PiezaDetailPage`) siguiendo el formato de registro
+  que el cliente mostró como referencia (surdoc.cl/registro/8-1): galería de fotos
+  fija a la izquierda y secciones tituladas "Identificación" / "Descripción" /
+  "Estado y ubicación" / "Observaciones" / "Auditoría" a la derecha, con filas
+  etiqueta-valor. Cada código externo se lista como su propia fila (tipo + valor +
+  🔒 si aplica + chip "no vigente" si `vigente=false`) en vez de una sola línea de
+  chips — así se ve explícito el soporte a múltiples códigos grabados en una misma
+  pieza que el cliente pidió en las reuniones (RF-002, ya soportado por el backend
+  vía `codigos_externos`, esto solo mejora cómo se presenta). **Aún sin probar
+  contra el backend real** (no había PostgreSQL disponible en la sesión donde se
+  hizo el cambio) — probarlo en el navegador antes de dar el PR por terminado.
 - **Colecciones**: listado y alta.
 - **Fotografías**: subida directa a Cloudinary desde el navegador (unsigned upload
   preset, sin exponer el API secret — ver `src/lib/cloudinary.ts`). Si
