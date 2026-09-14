@@ -49,9 +49,11 @@ React + TypeScript + Vite + Tailwind CSS + React Router + TanStack Query + axios
   🔒 si aplica + chip "no vigente" si `vigente=false`) en vez de una sola línea de
   chips — así se ve explícito el soporte a múltiples códigos grabados en una misma
   pieza que el cliente pidió en las reuniones (RF-002, ya soportado por el backend
-  vía `codigos_externos`, esto solo mejora cómo se presenta). **Aún sin probar
-  contra el backend real** (no había PostgreSQL disponible en la sesión donde se
-  hizo el cambio) — probarlo en el navegador antes de dar el PR por terminado.
+  vía `codigos_externos`, esto solo mejora cómo se presenta). Probado en el
+  navegador contra un backend real local (PostgreSQL en Docker): creación de
+  pieza, alta de dos códigos externos con distinto tipo (se ven como filas
+  separadas, ej. "Museo · 8-1" y "Numero de inventario · 1"), y resolución a
+  texto de colección/categoría/estado/ubicación.
 - **Colecciones**: listado y alta.
 - **Fotografías**: subida directa a Cloudinary desde el navegador (unsigned upload
   preset, sin exponer el API secret — ver `src/lib/cloudinary.ts`). Si
