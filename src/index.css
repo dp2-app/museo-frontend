@@ -2,69 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sistema de diseño oficial MATP/PUCP (FRONTEND_DESIGN_SPEC.md del prototipo
+   hermano sgdcm-frontend, §3, §9-11, §13). Reemplaza el lenguaje "Liquid
+   Glass" anterior por tarjetas sólidas, una sola sombra y los tokens
+   institucionales — ver museo-frontend/CLAUDE.md para el detalle. */
+
 @layer base {
   html {
-    font-family: "Manrope", system-ui, sans-serif;
+    font-family: "Montserrat", system-ui, sans-serif;
   }
 
   body {
-    @apply text-ink-800;
-    background-color: #f3e4d0;
-    background-image:
-      radial-gradient(120% 120% at 8% -10%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 45%),
-      radial-gradient(100% 100% at 100% 0%, rgba(59, 81, 105, 0.10) 0%, rgba(59, 81, 105, 0) 50%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='none' stroke='%233F2011' stroke-opacity='0.05' stroke-width='1.2'%3E%3Cpath d='M42 4 L74 42 L42 80 L10 42 Z'/%3E%3Ccircle cx='42' cy='42' r='5'/%3E%3C/g%3E%3C/svg%3E"),
-      linear-gradient(160deg, #fbf3ec 0%, #f3e4d0 55%, #e9d3b3 100%);
-    background-attachment: fixed;
+    @apply text-texto bg-fondo-suave;
+    /* Regla dura de móvil (spec §3): el cuerpo nunca baja de 16px, o iOS
+       Safari hace zoom automático al enfocar un input y rompe el layout. */
+    font-size: 16px;
+    line-height: 1.6;
     min-height: 100vh;
   }
 
+  @media (min-width: 768px) {
+    body {
+      font-size: 17px;
+    }
+  }
+
   h1, h2, h3 {
-    font-family: "Fraunces", ui-serif, Georgia, serif;
+    @apply text-azul font-display;
+  }
+
+  h1 { @apply text-[32px] md:text-[44px] font-extrabold leading-[1.1]; }
+  h2 { @apply text-[26px] md:text-[32px] font-extrabold; }
+  h3 { @apply text-[20px] md:text-[22px] font-semibold; }
+
+  /* Anillo de foco — spec §13: nunca se elimina, es el único criterio de
+     accesibilidad que no admite excepciones. */
+  :focus-visible {
+    outline: 3px solid theme("colors.foco");
+    outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* Superficie de "vidrio" translúcida — el lenguaje visual base de toda la
-     interfaz (tarjetas, barra de navegación, modales). */
+  /* Tarjeta/superficie estándar (spec §9 "Tarjetas"): fondo blanco, radio de
+     tarjeta, una sola sombra. Los nombres .glass-panel* se conservan porque
+     todo el código anterior a este rediseño ya los usa — solo cambia lo que
+     dibujan, no cómo se invocan. */
   .glass-panel {
-    @apply relative bg-white/55 backdrop-blur-xl border border-white/60 rounded-3xl shadow-glass;
+    @apply relative bg-white rounded-card shadow-sombra border border-linea;
   }
 
   .glass-panel-sm {
-    @apply relative bg-white/60 backdrop-blur-lg border border-white/50 rounded-2xl shadow-glass-sm;
+    @apply relative bg-white rounded-card shadow-sombra border border-linea;
   }
 
   .glass-nav {
-    @apply bg-ink-900/70 backdrop-blur-2xl border-b border-white/10;
+    @apply bg-azul;
   }
 
   .glass-input {
-    @apply w-full rounded-xl border border-clay-200/70 bg-white/70 backdrop-blur-sm px-3.5 py-2 text-sm text-ink-800
-           placeholder:text-ink-400 shadow-inner
-           focus:outline-none focus:ring-2 focus:ring-clay-400/60 focus:border-clay-400 transition;
+    @apply w-full rounded-btn border border-gris-1 bg-white px-3.5 py-2 text-sm text-texto
+           placeholder:text-gris-2
+           focus:outline-none focus:ring-[3px] focus:ring-foco focus:ring-offset-2 focus:border-azul transition;
   }
 
+  /* Botones (spec §9): Primario = fondo rojo; Secundario = borde azul; Texto = solo azul. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-clay-400 to-clay-600
-           px-5 py-2 text-sm font-semibold text-white shadow-glass-sm
-           hover:from-clay-300 hover:to-clay-500 active:scale-[0.97]
-           disabled:opacity-50 disabled:pointer-events-none transition;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn bg-rojo
+           px-5 py-2.5 min-h-[44px] sm:min-h-[40px] text-[15px] font-semibold text-white shadow-sombra
+           hover:bg-rojo-oscuro active:scale-[0.98]
+           disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed transition;
   }
 
   .btn-glass {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-white/50 backdrop-blur-md
-           border border-white/60 px-4 py-2 text-sm font-medium text-ink-700 shadow-glass-sm
-           hover:bg-white/70 active:scale-[0.97]
-           disabled:opacity-50 disabled:pointer-events-none transition;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn bg-transparent
+           border-2 border-azul px-4 py-2 min-h-[44px] sm:min-h-[40px] text-[15px] font-semibold text-azul
+           hover:bg-fondo-suave active:scale-[0.98]
+           disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed transition;
   }
 
   .btn-danger-text {
-    @apply text-sm font-medium text-clay-700 hover:text-clay-900 hover:underline transition;
+    @apply text-sm font-semibold text-azul hover:underline transition;
   }
 
+  /* Chip genérico (spec §9): fondo suave, texto azul, pill. Los estados de
+     ficha (HU-05) usan sus propios colores — ver componente <ChipEstadoFicha>. */
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-clay-100/80 px-2.5 py-0.5 text-xs font-medium text-clay-800 border border-clay-200/70;
+    @apply inline-flex items-center gap-1 rounded-pill bg-fondo-suave px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-azul border border-linea;
   }
 
   .kpi-card {
@@ -72,6 +96,11 @@
   }
 
   .section-title {
-    @apply font-display text-base font-semibold text-ink-800 tracking-tight;
+    @apply font-display text-base font-semibold text-azul tracking-tight;
+  }
+
+  /* Etiqueta de campo de formulario (spec §9: Montserrat SemiBold 14px). */
+  .form-label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-gris-2 mb-1;
   }
 }

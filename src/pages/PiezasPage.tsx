@@ -1,8 +1,69 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { IconoRetablo } from "../components/IconoRetablo";
 import { api, extraerMensajeError } from "../lib/api";
 import type { Coleccion, Pagina, Pieza } from "../types";
+
+function GestionarColecciones() {
+  const queryClient = useQueryClient();
+  const [abierto, setAbierto] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["colecciones"],
+    queryFn: async () => (await api.get<Pagina<Coleccion>>("/colecciones", { params: { pageSize: 100 } })).data,
+  });
+
+  const crear = useMutation({
+    mutationFn: async (nombreNuevo: string) => (await api.post("/colecciones", { nombre: nombreNuevo })).data,
+    onSuccess: () => {
+      setNombre("");
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["colecciones"] });
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  return (
+    <div className="glass-panel-sm">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-azul"
+      >
+        Gestionar colecciones (RF-010)
+        {abierto ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+      </button>
+      {abierto && (
+        <div className="px-4 pb-4 space-y-3 border-t border-linea pt-3">
+          <form
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              if (nombre.trim()) crear.mutate(nombre.trim());
+            }}
+            className="flex gap-2 max-w-md"
+          >
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre de la nueva colección" className="glass-input" />
+            <button type="submit" disabled={crear.isPending} className="btn-primary shrink-0">
+              Crear
+            </button>
+          </form>
+          {error && <p className="text-sm text-rojo">{error}</p>}
+          <div className="flex flex-wrap gap-2">
+            {data?.items.map((c) => (
+              <span key={c.id} className="chip">
+                {c.nombre}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function PiezasPage() {
   const queryClient = useQueryClient();
@@ -54,10 +115,15 @@ export function PiezasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-2xl font-semibold text-ink-800">Piezas</h2>
-        <p className="text-sm text-ink-400">RF-031/RF-032 · búsqueda por código, colección y filtros combinados.</p>
+      <div className="flex items-center gap-2.5">
+        <IconoRetablo size={28} className="text-azul" />
+        <div>
+          <h1>Colección</h1>
+          <p className="text-sm text-gris-2">RF-031/RF-032 · búsqueda por código, colección y filtros combinados.</p>
+        </div>
       </div>
+
+      <GestionarColecciones />
 
       <form onSubmit={onBuscar} className="glass-panel-sm flex flex-wrap gap-3 items-end p-4">
         <div>
@@ -133,7 +199,7 @@ export function PiezasPage() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <Link to={`/piezas/${p.id}`} className="btn-danger-text">
+                      <Link to={`/coleccion/${p.id}`} className="btn-danger-text">
                         Ver ficha →
                       </Link>
                     </td>

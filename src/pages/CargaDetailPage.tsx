@@ -101,9 +101,9 @@ export function CargaDetailPage() {
                 <th className="px-5 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/50">
+            <tbody className="divide-y divide-linea">
               {filas?.items.map((fila) => (
-                <tr key={fila.id} className="hover:bg-white/40 transition">
+                <tr key={fila.id} className="hover:bg-fondo-suave transition">
                   <td className="px-5 py-3 text-ink-600">{fila.numeroFila}</td>
                   <td className="px-5 py-3">
                     <span className="chip">{etiquetaClasificacion[fila.clasificacion]}</span>
