@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { Upload } from "lucide-react";
 import { api, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, PlantillaMapeo } from "../types";
 
@@ -62,12 +63,15 @@ export function ImportacionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-2xl font-semibold text-ink-800">Importación de Excel</h2>
-        <p className="text-sm text-ink-400 max-w-2xl">
-          RF-021 · ingesta → mapeo → normalización → matching → clasificación → previsualización → aprobación →
-          bitácora. Nada se escribe en el catálogo hasta que apruebas la carga.
-        </p>
+      <div className="flex items-center gap-2.5">
+        <Upload size={28} className="text-azul" aria-hidden="true" />
+        <div>
+          <h1>Importación</h1>
+          <p className="text-sm text-gris-2 max-w-2xl">
+            RF-021 · ingesta → mapeo → normalización → matching → clasificación → previsualización → aprobación →
+            bitácora. Nada se escribe en el catálogo hasta que apruebas la carga.
+          </p>
+        </div>
       </div>
 
       <NuevaPlantillaForm onCreada={() => queryClient.invalidateQueries({ queryKey: ["plantillas-mapeo"] })} />
@@ -113,9 +117,9 @@ export function ImportacionPage() {
                   <th className="px-5 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/50">
+              <tbody className="divide-y divide-linea">
                 {cargas?.map((c) => (
-                  <tr key={c.id} className="hover:bg-white/40 transition">
+                  <tr key={c.id} className="hover:bg-fondo-suave transition">
                     <td className="px-5 py-3 font-medium text-ink-800">{c.archivoNombre}</td>
                     <td className="px-5 py-3">
                       <span className="chip">{etiquetaEstado[c.estado]}</span>

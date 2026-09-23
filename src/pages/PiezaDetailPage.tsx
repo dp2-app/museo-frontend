@@ -1,26 +1,26 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
+import { Check, X as IconoX } from "lucide-react";
+import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
+import { useAuth } from "../contexts/AuthContext";
 import { api, extraerMensajeError } from "../lib/api";
 import { cloudinaryConfigurado, subirImagenACloudinary } from "../lib/cloudinary";
+import { ADMINISTRADOR, CATALOGADOR, GESTOR_COLECCIONES } from "../lib/secciones";
+import { aplanarUbicaciones } from "../lib/ubicaciones";
 import type {
+  AccionEstadoFicha,
   Coleccion,
   CodigoExterno,
   Fotografia,
   Movimiento,
   Pagina,
+  Pieza,
   PiezaDetalle,
   RegistroAuditoria,
   UbicacionFisica,
   ValorVocabulario,
 } from "../types";
-
-function aplanarUbicaciones(nodos: UbicacionFisica[], nivel = 0): { id: string; etiqueta: string }[] {
-  return nodos.flatMap((n) => [
-    { id: n.id, etiqueta: `${"— ".repeat(nivel)}${n.nombre}` },
-    ...aplanarUbicaciones(n.hijos ?? [], nivel + 1),
-  ]);
-}
 
 // Ficha inspirada en el formato de registro que el cliente mostró como referencia
 // (surdoc.cl): secciones tituladas con línea de acento y filas etiqueta/valor.
@@ -35,18 +35,21 @@ function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) 
 
 function Fila({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-3 text-sm py-1.5 border-b border-white/50 last:border-0">
-      <dt className="text-ink-400 font-medium">{etiqueta}</dt>
-      <dd className="col-span-2 text-ink-800">{children}</dd>
+    <div className="grid grid-cols-3 gap-3 text-sm py-1.5 border-b border-linea last:border-0">
+      <dt className="text-gris-2 font-medium">{etiqueta}</dt>
+      <dd className="col-span-2 text-texto">{children}</dd>
     </div>
   );
 }
 
 export function PiezaDetailPage() {
   const { piezaId } = useParams<{ piezaId: string }>();
+  const { rol } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [fotoActiva, setFotoActiva] = useState(0);
+  const [motivoRechazo, setMotivoRechazo] = useState("");
+  const [mostrarRechazo, setMostrarRechazo] = useState(false);
 
   const piezaQuery = useQuery({
     queryKey: ["pieza", piezaId],
@@ -92,6 +95,19 @@ export function PiezaDetailPage() {
     queryClient.invalidateQueries({ queryKey: ["pieza", piezaId] });
     queryClient.invalidateQueries({ queryKey: ["auditoria", piezaId] });
   };
+
+  // --- HU-05: flujo de aprobación de ficha ---
+  const cambiarEstadoFicha = useMutation({
+    mutationFn: async (datos: { accion: AccionEstadoFicha; motivoRechazo?: string }) =>
+      (await api.patch<Pieza>(`/piezas/${piezaId}/estado-ficha`, datos)).data,
+    onSuccess: () => {
+      setError(null);
+      setMostrarRechazo(false);
+      setMotivoRechazo("");
+      invalidarPieza();
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
 
   // --- Edición de campos básicos ---
   const [denominacion, setDenominacion] = useState("");
@@ -187,16 +203,94 @@ export function PiezaDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link to="/piezas" className="text-sm text-clay-700 hover:underline">
-          ← Volver a piezas
-        </Link>
-        <h2 className="font-display text-2xl font-semibold text-ink-800 mt-1">{pieza.denominacion || "(sin denominación)"}</h2>
-        {pieza.informacionCompleta ? (
-          <span className="chip mt-1 !bg-emerald-100/80 !border-emerald-200 !text-emerald-800">Información completa</span>
-        ) : (
-          <span className="chip mt-1">Información incompleta · RF-019</span>
-        )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link to="/coleccion" className="text-sm text-azul hover:underline">
+            ← Volver a Colección
+          </Link>
+          <h2 className="font-accent italic font-semibold text-2xl text-rojo mt-1">
+            {pieza.denominacion || "(sin denominación)"}
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            <ChipEstadoFicha estado={pieza.estadoFicha} />
+            {pieza.informacionCompleta ? (
+              <span className="chip !bg-verde/15 !border-verde/40 !text-verde">Información completa</span>
+            ) : (
+              <span className="chip">Información incompleta · RF-019</span>
+            )}
+          </div>
+          {pieza.estadoFicha === "rechazada" && pieza.motivoRechazo && (
+            <p className="text-sm text-rojo mt-1.5 max-w-md">Motivo de rechazo: {pieza.motivoRechazo}</p>
+          )}
+        </div>
+
+        {/* HU-05: botones visibles pero deshabilitados si el rol no permite la
+            acción o el estado actual no la admite — nunca ocultos (spec §5). */}
+        <div className="glass-panel-sm p-4 space-y-2 w-full sm:w-auto">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gris-2">Flujo de aprobación · HU-05</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => cambiarEstadoFicha.mutate({ accion: "enviar_revision" })}
+              disabled={
+                cambiarEstadoFicha.isPending ||
+                !(rol === ADMINISTRADOR || rol === CATALOGADOR) ||
+                !(pieza.estadoFicha === "borrador" || pieza.estadoFicha === "rechazada")
+              }
+              className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm"
+            >
+              Enviar a revisión
+            </button>
+            <button
+              type="button"
+              onClick={() => cambiarEstadoFicha.mutate({ accion: "aprobar" })}
+              disabled={
+                cambiarEstadoFicha.isPending ||
+                !(rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES) ||
+                pieza.estadoFicha !== "en_revision"
+              }
+              className="btn-primary !min-h-0 !py-1.5 !px-3 !text-sm"
+            >
+              <Check size={16} aria-hidden="true" /> Aprobar
+            </button>
+            <button
+              type="button"
+              onClick={() => setMostrarRechazo((v) => !v)}
+              disabled={
+                cambiarEstadoFicha.isPending ||
+                !(rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES) ||
+                pieza.estadoFicha !== "en_revision"
+              }
+              className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm !border-rojo !text-rojo"
+            >
+              <IconoX size={16} aria-hidden="true" /> Rechazar
+            </button>
+          </div>
+          {mostrarRechazo && (
+            <form
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault();
+                cambiarEstadoFicha.mutate({ accion: "rechazar", motivoRechazo });
+              }}
+              className="flex flex-col gap-2 pt-1"
+            >
+              <label className="form-label" htmlFor="motivo-rechazo">
+                Justificación del rechazo
+              </label>
+              <textarea
+                id="motivo-rechazo"
+                required
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+                className="glass-input text-sm"
+                rows={2}
+              />
+              <button type="submit" className="btn-primary !min-h-0 !py-1.5 self-end">
+                Confirmar rechazo
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-sm text-clay-800 bg-clay-50/80 border border-clay-200 rounded-xl px-3 py-2">{error}</p>}

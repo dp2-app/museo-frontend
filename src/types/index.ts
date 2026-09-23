@@ -60,6 +60,9 @@ export interface Fotografia {
   restringidoUso: boolean;
 }
 
+export type EstadoFicha = "borrador" | "en_revision" | "aprobada" | "rechazada";
+export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar";
+
 export interface Pieza {
   id: string;
   coleccionId: string | null;
@@ -79,6 +82,8 @@ export interface Pieza {
   propietario: string;
   epocaTexto: string | null;
   disponibilidad: string;
+  estadoFicha: EstadoFicha;
+  motivoRechazo: string | null;
   informacionCompleta: boolean;
 }
 
@@ -160,4 +165,66 @@ export interface SugerenciaIA {
   modeloUsado: string;
   confianza: number | null;
   estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
+}
+
+// --- HU-22: usuarios y roles ---
+
+export interface Rol {
+  id: string;
+  nombre: string;
+}
+
+export interface Usuario {
+  id: string;
+  nombre: string;
+  email: string;
+  activo: boolean;
+  rol: Rol;
+}
+
+export interface UsuarioInput {
+  nombre: string;
+  email: string;
+  password: string;
+  rolId: string;
+}
+
+export interface UsuarioUpdate {
+  nombre?: string;
+  rolId?: string;
+  activo?: boolean;
+  password?: string;
+}
+
+// --- HU-22: bitácora global ---
+
+export interface RegistroAuditoriaGlobal extends RegistroAuditoria {
+  id: string;
+  tabla: string;
+  registroId: string;
+}
+
+// --- HU-17: panel principal ---
+
+export interface AlertaPanel {
+  piezaId: string;
+  denominacion: string | null;
+  camposFaltantes: string[];
+}
+
+export interface ReportePanelPrincipal {
+  totalPiezas: number;
+  porcentajeCompleto: number;
+  piezasSinUbicacion: number;
+  piezasSinFoto: number;
+  piezasRequierenRestauracion: number;
+  distribucionPorColeccion: { coleccion: string; total: number }[];
+  alertas: AlertaPanel[];
+}
+
+// --- RF-034: piezas por ubicación ---
+
+export interface ReportePorUbicacion {
+  porUbicacion: { ubicacionId: string; ubicacion: string; total: number }[];
+  sinUbicacion: number;
 }

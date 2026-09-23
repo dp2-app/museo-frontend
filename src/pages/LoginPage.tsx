@@ -17,7 +17,7 @@ export function LoginPage() {
     setCargando(true);
     try {
       await login(email, password);
-      navigate("/piezas");
+      navigate("/");
     } catch (err) {
       setError(extraerMensajeError(err) || "Email o contraseña incorrectos");
     } finally {
@@ -26,27 +26,26 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-fondo-suave">
       <form onSubmit={onSubmit} className="glass-panel w-full max-w-sm p-8 space-y-5">
-        <div className="flex flex-col items-center text-center gap-2">
-          <svg viewBox="0 0 32 32" className="h-12 w-12" aria-hidden="true">
-            <rect width="32" height="32" rx="10" fill="#B8622F" />
-            <path d="M16 6 L26 16 L16 26 L6 16 Z" fill="none" stroke="#F6E4D4" strokeWidth="2" />
-            <circle cx="16" cy="16" r="3.2" fill="#F6E4D4" />
-          </svg>
+        <div className="flex flex-col items-center text-center gap-3">
+          <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-14" />
           <div>
-            <h1 className="font-display text-xl font-semibold text-ink-800">Museo "Luis Repetto Málaga"</h1>
-            <p className="text-sm text-ink-400">Sistema de gestión de colecciones</p>
+            <h1 className="text-lg leading-snug">Museo "Luis Repetto Málaga"</h1>
+            <p className="text-sm text-gris-2">Sistema de gestión de colecciones</p>
           </div>
         </div>
 
         {error && (
-          <p className="text-sm text-clay-800 bg-clay-50/80 border border-clay-200 rounded-xl px-3 py-2">{error}</p>
+          <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-btn px-3 py-2">{error}</p>
         )}
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium uppercase tracking-wide text-ink-400">Correo</label>
+          <label className="form-label" htmlFor="login-email">
+            Correo
+          </label>
           <input
+            id="login-email"
             type="email"
             required
             value={email}
@@ -55,8 +54,11 @@ export function LoginPage() {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs font-medium uppercase tracking-wide text-ink-400">Contraseña</label>
+          <label className="form-label" htmlFor="login-password">
+            Contraseña
+          </label>
           <input
+            id="login-password"
             type="password"
             required
             value={password}

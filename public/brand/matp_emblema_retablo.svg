@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Emblema de apoyo MATP "El retablo abierto". Recurso gráfico, no logotipo: siempre acompaña al lockup oficial. Una tinta: cambiar currentColor. -->
+  <g fill="none" stroke="currentColor" color="#EB3156" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="120" y="120" width="160" height="200" rx="6"/>
+    <path d="M110 120 L200 70 L290 120"/>
+    <path d="M120 130 L62 106 L62 306 L120 310"/>
+    <path d="M280 130 L338 106 L338 306 L280 310"/>
+  </g>
+  <g fill="currentColor" color="#EB3156">
+    <circle cx="160" cy="170" r="12"/><rect x="188" y="158" width="24" height="24"/><circle cx="240" cy="170" r="12"/>
+    <rect x="148" y="208" width="24" height="24"/><circle cx="200" cy="220" r="12"/><rect x="228" y="208" width="24" height="24"/>
+    <circle cx="160" cy="270" r="12"/><rect x="188" y="258" width="24" height="24"/><circle cx="240" cy="270" r="12"/>
+  </g>
+</svg>
