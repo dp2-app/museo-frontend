@@ -91,6 +91,7 @@ export function CargaDetailPage() {
 
   if (cargaQuery.isLoading) return <p className="text-sm text-ink-400">Cargando...</p>;
   const filas = filasQuery.data;
+  const filasConError = filas?.items.filter((fila) => fila.errores.length > 0).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -111,11 +112,11 @@ export function CargaDetailPage() {
         </p>
       )}
 
-      {carga && carga.filasRechazadas > 0 && (
+      {carga && filasConError > 0 && (
         <div className="glass-panel-sm p-4 space-y-3">
           <p className="text-sm text-texto">
-            {carga.filasRechazadas} fila(s) rechazada(s). Descarga el reporte, corrige el archivo original y vuelve a cargarlo:
-            se usará el mismo mapeo.
+            {filasConError} fila(s) con errores de validación. Descarga el reporte, corrige el archivo original y vuelve a
+            cargarlo: se usará el mismo mapeo.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -186,14 +187,14 @@ export function CargaDetailPage() {
                   <td className="px-5 py-3 text-ink-600">
                     {fila.estado}
                     {fila.errores.map((e) => (
-                      <p key={`${e.campo}-${e.motivo}`} className="text-xs text-rojo mt-1">
-                        {e.columna}: {e.mensaje}
-                        {e.valorOriginal !== null && ` (valor: "${e.valorOriginal}")`}
+                      <p key={`${e.campo}-${e.mensaje}`} className="text-xs text-rojo mt-1">
+                        {e.columna ?? e.campo}: {e.mensaje}
+                        {e.valorOriginal != null && ` (valor: "${e.valorOriginal}")`}
                       </p>
                     ))}
                     {fila.advertencias.map((a) => (
-                      <p key={`${a.campo}-${a.motivo}`} className="text-xs text-gris-2 mt-1">
-                        {a.columna}: {a.mensaje}
+                      <p key={`${a.campo}-${a.mensaje}`} className="text-xs text-gris-2 mt-1">
+                        {a.columna ?? a.campo}: {a.mensaje}
                       </p>
                     ))}
                   </td>

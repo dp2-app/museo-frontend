@@ -126,10 +126,9 @@ export interface CargaExcel {
 
 export interface IncidenciaFila {
   campo: string;
-  columna: string;
-  motivo: "obligatorio" | "formato_invalido" | "fuera_de_rango" | "ausente";
   mensaje: string;
-  valorOriginal: string | null;
+  columna?: string | null;
+  valorOriginal?: string | null;
 }
 
 export interface FilaImportacion {
