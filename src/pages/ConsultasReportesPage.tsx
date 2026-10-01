@@ -1,3 +1,4 @@
+import { useCamposFicha } from "../lib/camposFicha";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -56,6 +57,8 @@ async function buscarPiezas(filtros: Filtros, modo: Modo): Promise<Pieza[]> {
 // sobre el catálogo APROBADO (a diferencia de Colección, pantalla de
 // trabajo). Roles: Administrador, Gestor de colecciones, Consulta interna.
 export function ConsultasReportesPage() {
+  const catalogo = useCamposFicha();
+  const visibles = new Set(catalogo.data?.map(c => c.clave));
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
   const [modo, setModo] = useState<Modo>("AND");
   const [exportando, setExportando] = useState(false);
@@ -100,7 +103,7 @@ export function ConsultasReportesPage() {
     }
   }
 
-  const nombreColeccion = (id: string | null) => colecciones?.items.find((c) => c.id === id)?.nombre ?? "—";
+  const nombreColeccion = (id: string | null | undefined) => colecciones?.items.find((c) => c.id === id)?.nombre ?? "—";
 
   return (
     <div className="space-y-6">
@@ -116,13 +119,13 @@ export function ConsultasReportesPage() {
 
       <div className="glass-panel-sm p-4 space-y-4 print:hidden">
         <div className="flex flex-wrap gap-3 items-end">
-          <div>
+          {visibles.has("codigos_externos") && <div>
             <label className="form-label" htmlFor="f-codigo">
               Código de inventario
             </label>
             <input id="f-codigo" className="glass-input" value={filtros.codigo} onChange={(e) => actualizar("codigo", e.target.value)} />
-          </div>
-          <div>
+          </div>}
+          {visibles.has("coleccion_id") && <div>
             <label className="form-label" htmlFor="f-coleccion">
               Colección
             </label>
@@ -134,20 +137,20 @@ export function ConsultasReportesPage() {
                 </option>
               ))}
             </select>
-          </div>
-          <div>
+          </div>}
+          {visibles.has("autor") && <div>
             <label className="form-label" htmlFor="f-autor">
               Autor
             </label>
             <input id="f-autor" className="glass-input" value={filtros.autor} onChange={(e) => actualizar("autor", e.target.value)} />
-          </div>
-          <div>
+          </div>}
+          {visibles.has("materiales") && <div>
             <label className="form-label" htmlFor="f-material">
               Material/tipología
             </label>
             <input id="f-material" className="glass-input" value={filtros.material} onChange={(e) => actualizar("material", e.target.value)} />
-          </div>
-          <div>
+          </div>}
+          {visibles.has("categoria_id") && <div>
             <label className="form-label" htmlFor="f-categoria">
               Categoría
             </label>
@@ -159,8 +162,8 @@ export function ConsultasReportesPage() {
                 </option>
               ))}
             </select>
-          </div>
-          <div>
+          </div>}
+          {visibles.has("estado_conservacion_id") && <div>
             <label className="form-label" htmlFor="f-estado-conservacion">
               Estado de conservación
             </label>
@@ -177,7 +180,7 @@ export function ConsultasReportesPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-linea">
@@ -209,18 +212,18 @@ export function ConsultasReportesPage() {
           <table className="w-full text-sm">
             <thead className="text-left text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave">
               <tr>
-                <th className="px-5 py-3 font-semibold">Denominación</th>
-                <th className="px-5 py-3 font-semibold">Colección</th>
-                <th className="px-5 py-3 font-semibold">Autor</th>
+                {visibles.has("denominacion") && <th className="px-5 py-3 font-semibold">Denominación</th>}
+                {visibles.has("coleccion_id") && <th className="px-5 py-3 font-semibold">Colección</th>}
+                {visibles.has("autor") && <th className="px-5 py-3 font-semibold">Autor</th>}
                 <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-linea">
               {resultados.data?.map((p) => (
                 <tr key={p.id} className="hover:bg-fondo-suave transition">
-                  <td className="px-5 py-3 font-medium text-texto">{p.denominacion || "(sin denominación)"}</td>
-                  <td className="px-5 py-3 text-gris-2">{nombreColeccion(p.coleccionId)}</td>
-                  <td className="px-5 py-3 text-gris-2">{p.autor || "—"}</td>
+                  {visibles.has("denominacion") && <td className="px-5 py-3 font-medium text-texto">{p.denominacion || "(sin denominación)"}</td>}
+                  {visibles.has("coleccion_id") && <td className="px-5 py-3 text-gris-2">{nombreColeccion(p.coleccionId)}</td>}
+                  {visibles.has("autor") && <td className="px-5 py-3 text-gris-2">{p.autor || "—"}</td>}
                   <td className="px-5 py-3 text-right">
                     <Link to={`/coleccion/${p.id}`} className="btn-danger-text">
                       Ver ficha →
@@ -249,17 +252,17 @@ export function ConsultasReportesPage() {
         <table className="w-full text-sm mt-4 border-collapse">
           <thead>
             <tr>
-              <th className="text-left border-b border-azul py-1">Denominación</th>
-              <th className="text-left border-b border-azul py-1">Colección</th>
-              <th className="text-left border-b border-azul py-1">Autor</th>
+              {visibles.has("denominacion") && <th className="text-left border-b border-azul py-1">Denominación</th>}
+              {visibles.has("coleccion_id") && <th className="text-left border-b border-azul py-1">Colección</th>}
+              {visibles.has("autor") && <th className="text-left border-b border-azul py-1">Autor</th>}
             </tr>
           </thead>
           <tbody>
             {resultados.data?.map((p) => (
               <tr key={p.id}>
-                <td className="py-1">{p.denominacion || "—"}</td>
-                <td className="py-1">{nombreColeccion(p.coleccionId)}</td>
-                <td className="py-1">{p.autor || "—"}</td>
+                {visibles.has("denominacion") && <td className="py-1">{p.denominacion || "—"}</td>}
+                {visibles.has("coleccion_id") && <td className="py-1">{nombreColeccion(p.coleccionId)}</td>}
+                {visibles.has("autor") && <td className="py-1">{p.autor || "—"}</td>}
               </tr>
             ))}
           </tbody>

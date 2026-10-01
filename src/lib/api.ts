@@ -7,6 +7,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (config.params && typeof config.params === "object") {
+    config.params = Object.fromEntries(Object.entries(config.params).map(([key, value]) => [key.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`), value]));
+  }
   const token = localStorage.getItem(TOKEN_STORAGE_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

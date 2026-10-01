@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { jwtDecode } from "jwt-decode";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, TOKEN_STORAGE_KEY } from "../lib/api";
 
 interface JwtPayload {
@@ -30,6 +31,7 @@ function decodificarToken(token: string | null): JwtPayload | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
 
   const payload = useMemo(() => decodificarToken(token), [token]);
@@ -37,11 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(email: string, password: string) {
     const { data } = await api.post<{ access_token: string }>("/auth/login", { email, password });
     localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
+    queryClient.clear();
     setToken(data.access_token);
   }
 
   function logout() {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    queryClient.clear();
     setToken(null);
   }
 

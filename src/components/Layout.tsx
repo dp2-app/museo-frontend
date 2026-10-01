@@ -37,6 +37,7 @@ function NavEnlaces({ className, onNavigate }: { className?: string; onNavigate?
 }
 
 function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
+  const { rol, logout } = useAuth();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => vo
         onNavigate={onCerrar}
         className="flex flex-col gap-1 px-6 pb-8 text-[24px] font-semibold text-white [&_a]:text-white/90 [&_a.font-semibold]:text-white [&_a]:border-b-0 [&_a]:py-3"
       />
+      <div className="px-6 pb-8 text-white"><p className="mb-3 text-sm">{rol ? ROL_ETIQUETA[rol] ?? rol : ""}</p><button className="flex items-center gap-2" onClick={() => { onCerrar(); logout(); }}><LogOut size={18} aria-hidden="true" />Cerrar sesión</button></div>
     </dialog>
   );
 }

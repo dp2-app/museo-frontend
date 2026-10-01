@@ -1,3 +1,4 @@
+import { useCamposFicha } from "../lib/camposFicha";
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -5,17 +6,7 @@ import { Upload } from "lucide-react";
 import { api, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, PlantillaMapeo } from "../types";
 
-const CAMPOS_DESTINO_SUGERIDOS = [
-  "codigo_i",
-  "denominacion",
-  "descripcion",
-  "procedencia",
-  "autor",
-  "materiales",
-  "tecnica",
-  "medidas",
-  "observaciones",
-];
+
 
 export function ImportacionPage() {
   const queryClient = useQueryClient();
@@ -156,6 +147,8 @@ interface FilaMapeo {
 }
 
 function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
+  const catalogo = useCamposFicha();
+  const CAMPOS_DESTINO_SUGERIDOS = ["codigo_i", ...(catalogo.data ?? []).filter(c => !c.soloLectura).map(c => c.clave)];
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState("");
   const [fuenteOrigen, setFuenteOrigen] = useState("");

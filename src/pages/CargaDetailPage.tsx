@@ -110,6 +110,7 @@ export function CargaDetailPage() {
                   </td>
                   <td className="px-5 py-3 font-mono text-xs text-ink-400 max-w-xs truncate">
                     {JSON.stringify(fila.datosOriginales)}
+                    {Array.isArray(fila.datosNormalizados?._errores) && (fila.datosNormalizados._errores as { campo: string; mensaje: string }[]).map((e,i) => <p key={i} className="text-rojo whitespace-normal">{e.campo}: {e.mensaje}</p>)}
                   </td>
                   <td className="px-5 py-3 text-ink-600">{fila.estado}</td>
                   <td className="px-5 py-3 text-right space-x-3">

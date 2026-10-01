@@ -65,31 +65,38 @@ export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar";
 
 export interface Pieza {
   id: string;
-  coleccionId: string | null;
-  subcoleccionId: string | null;
-  categoriaId: string | null;
-  estadoConservacionId: string | null;
-  ubicacionActualId: string | null;
-  denominacion: string | null;
-  descripcion: string | null;
-  procedencia: string | null;
-  autor: string | null;
-  materiales: string | null;
-  tecnica: string | null;
-  medidas: string | null;
-  fechaIngreso: string | null;
-  observaciones: string | null;
-  propietario: string;
-  epocaTexto: string | null;
-  disponibilidad: string;
-  estadoFicha: EstadoFicha;
-  motivoRechazo: string | null;
+  coleccionId?: string | null;
+  subcoleccionId?: string | null;
+  categoriaId?: string | null;
+  estadoConservacionId?: string | null;
+  ubicacionActualId?: string | null;
+  denominacion?: string | null;
+  descripcion?: string | null;
+  procedencia?: string | null;
+  autor?: string | null;
+  materiales?: string | null;
+  tecnica?: string | null;
+  medidas?: string | null;
+  fechaIngreso?: string | null;
+  observaciones?: string | null;
+  propietario?: string;
+  epocaTexto?: string | null;
+  disponibilidad?: string;
+  estadoFicha?: EstadoFicha;
+  motivoRechazo?: string | null;
   informacionCompleta: boolean;
+  camposAdicionales?: Record<string, unknown>;
+  camposFaltantes?: string[];
+  formaAdquisicion?: string | null;
+  nombreRegistrador?: string | null;
+  tipoBien?: string | null;
+  regimenTenencia?: string | null;
 }
 
 export interface PiezaDetalle extends Pieza {
-  codigosExternos: CodigoExterno[];
-  fotografias: Fotografia[];
+  documentos?: { id: string; tipoDocumento: string | null; referencia: string | null }[];
+  codigosExternos?: CodigoExterno[];
+  fotografias?: Fotografia[];
 }
 
 export interface RegistroAuditoria {
@@ -228,3 +235,11 @@ export interface ReportePorUbicacion {
   porUbicacion: { ubicacionId: string; ubicacion: string; total: number }[];
   sinUbicacion: number;
 }
+
+
+export interface CampoFicha {
+ id: string; clave: string; etiqueta: string; tipo: "texto" | "numero" | "fecha" | "lista";
+ obligatorio: boolean; orden: number; grupo: string; vocabularioTipo: string | null;
+ activo: boolean; esBase: boolean; almacenamiento: "columna" | "relacion" | "adicional"; soloLectura: boolean;
+}
+export interface VisibilidadCampo { id: string; campoId: string; rolId: string; visible: boolean; }
