@@ -14,6 +14,39 @@ const etiquetaClasificacion: Record<FilaImportacion["clasificacion"], string> = 
 
 const TAMANO_PAGINA = 200;
 
+// RF-34: estas filas esperan una decisión (corregir o excluir) antes de aprobarse.
+const POR_RESOLVER: FilaImportacion["clasificacion"][] = ["duplicado", "conflicto"];
+
+function motivoNoAprobable(fila: FilaImportacion): string | undefined {
+  if (fila.errores.length > 0) return "Tiene errores: corríjala o exclúyala (RF-30)";
+  if (POR_RESOLVER.includes(fila.clasificacion))
+    return `Marcada como ${etiquetaClasificacion[fila.clasificacion].toLowerCase()}: corríjala o exclúyala (RF-34)`;
+  return undefined;
+}
+
+// RF-35: qué cambiaría en la pieza al aprobar.
+function CambiosPropuestos({ fila }: { fila: FilaImportacion }) {
+  if (fila.cambios.length === 0)
+    return <p className="text-xs text-gris-2">{fila.piezaCoincidenteId ? "Sin cambios en la ficha" : "—"}</p>;
+  return (
+    <dl className="text-xs space-y-0.5">
+      {fila.cambios.map((c) => (
+        <div key={c.campo} className="flex flex-wrap gap-x-1.5">
+          <dt className="text-gris-2">{c.etiqueta}:</dt>
+          <dd className="text-texto">
+            {c.actual !== null && (
+              <>
+                <span className="line-through text-gris-2">{c.actual}</span> →{" "}
+              </>
+            )}
+            <strong className="font-medium">{c.propuesto}</strong>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 const etiquetaEstadoCarga: Record<CargaExcel["estado"], string> = {
   en_revision: "En revisión",
   pendiente_aprobacion: "Pendiente de aprobación",
@@ -32,6 +65,7 @@ export function CargaDetailPage() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [soloConErrores, setSoloConErrores] = useState(false);
+  const [clasificacion, setClasificacion] = useState<FilaImportacion["clasificacion"] | null>(null);
 
   const cargaQuery = useQuery({
     queryKey: ["carga", cargaId],
@@ -39,11 +73,15 @@ export function CargaDetailPage() {
   });
 
   const filasQuery = useQuery({
-    queryKey: ["carga-filas", cargaId, soloConErrores],
+    queryKey: ["carga-filas", cargaId, soloConErrores, clasificacion],
     queryFn: async () =>
       (
         await api.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, {
-          params: { page_size: TAMANO_PAGINA, con_errores: soloConErrores || undefined },
+          params: {
+            page_size: TAMANO_PAGINA,
+            con_errores: soloConErrores || undefined,
+            clasificacion: clasificacion ?? undefined,
+          },
         })
       ).data,
   });
@@ -93,13 +131,24 @@ export function CargaDetailPage() {
       {error && <MensajeError>{error}</MensajeError>}
 
       {filas && (
-        <p className="text-sm text-texto">
-          Resumen: {filas.resumen.nuevo} nuevas · {filas.resumen.actualizacion} actualizaciones ·{" "}
-          {filas.resumen.duplicado} posibles duplicados · {filas.resumen.conflicto} conflictos
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por clasificación">
+          {([null, "nuevo", "actualizacion", "duplicado", "conflicto"] as const).map((c) => (
+            <button
+              key={c ?? "todas"}
+              type="button"
+              onClick={() => setClasificacion(c)}
+              aria-pressed={clasificacion === c}
+              className={`chip min-h-[36px] ${clasificacion === c ? "ring-2 ring-rojo" : "opacity-80 hover:opacity-100"}`}
+            >
+              {c === null
+                ? `Todas (${filas.resumen.nuevo + filas.resumen.actualizacion + filas.resumen.duplicado + filas.resumen.conflicto})`
+                : `${etiquetaClasificacion[c]} (${filas.resumen[c]})`}
+            </button>
+          ))}
           {filas.resumen.conErrores > 0 && (
-            <strong className="text-rojo-oscuro"> · {filas.resumen.conErrores} con errores por corregir</strong>
+            <strong className="text-sm text-rojo-oscuro">{filas.resumen.conErrores} con errores por corregir</strong>
           )}
-        </p>
+        </div>
       )}
 
       {filas && (
@@ -138,7 +187,7 @@ export function CargaDetailPage() {
               <tr>
                 <th className="px-5 py-3 font-medium">Fila</th>
                 <th className="px-5 py-3 font-medium">Clasificación</th>
-                <th className="px-5 py-3 font-medium">Datos originales</th>
+                <th className="px-5 py-3 font-medium">Cambios propuestos</th>
                 <th className="px-5 py-3 font-medium">Estado</th>
                 <th className="px-5 py-3"></th>
               </tr>
@@ -150,8 +199,12 @@ export function CargaDetailPage() {
                   <td className="px-5 py-3">
                     <span className="chip">{etiquetaClasificacion[fila.clasificacion]}</span>
                   </td>
-                  <td className="px-5 py-3 max-w-xs">
-                    <p className="font-mono text-xs text-gris-2 truncate">{JSON.stringify(fila.datosOriginales)}</p>
+                  <td className="px-5 py-3 max-w-md">
+                    <CambiosPropuestos fila={fila} />
+                    <details className="mt-1">
+                      <summary className="text-xs text-azul cursor-pointer">Ver fila original</summary>
+                      <p className="font-mono text-xs text-gris-2 break-all">{JSON.stringify(fila.datosOriginales)}</p>
+                    </details>
                     {fila.errores.length > 0 && (
                       <ul className="mt-1 text-xs text-rojo-oscuro list-disc pl-4">
                         {fila.errores.map((e) => (
@@ -168,8 +221,8 @@ export function CargaDetailPage() {
                       <>
                         <button
                           onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "aprobado" })}
-                          disabled={fila.errores.length > 0}
-                          title={fila.errores.length > 0 ? "Tiene errores: exclúyela (RF-30)" : undefined}
+                          disabled={motivoNoAprobable(fila) !== undefined}
+                          title={motivoNoAprobable(fila)}
                           className="text-azul hover:underline text-sm disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                         >
                           Aprobar
