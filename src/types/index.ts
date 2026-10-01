@@ -141,6 +141,14 @@ export interface ErrorCampo {
   motivo: string;
 }
 
+// RF-35: valor actual de la pieza vs. el que propone la fila.
+export interface CambioCampo {
+  campo: string;
+  etiqueta: string;
+  actual: string | null;
+  propuesto: string;
+}
+
 export interface FilaImportacion {
   id: string;
   numeroFila: number;
@@ -151,6 +159,7 @@ export interface FilaImportacion {
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
   motivoRechazo: string | null;
+  cambios: CambioCampo[]; // RF-35: lo que se aplicará al aprobar la carga
 }
 
 export interface FilaImportacionPagina {
