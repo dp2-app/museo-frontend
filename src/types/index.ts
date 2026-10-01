@@ -113,7 +113,7 @@ export interface CargaExcel {
   id: string;
   archivoNombre: string;
   plantillaMapeoId: string | null;
-  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada";
+  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada" | "cancelada";
   totalFilas: number;
   filasNuevas: number;
   filasActualizacion: number;
@@ -122,6 +122,9 @@ export interface CargaExcel {
   filasRechazadas: number;
   iniciadaEn: string;
   aprobadaEn: string | null;
+  hojaNombre: string | null;
+  motivoRechazo: string | null; // RF-39: al rechazar o cancelar el lote
+  rechazadaEn: string | null;
 }
 
 export interface IncidenciaFila {
@@ -140,8 +143,47 @@ export interface FilaImportacion {
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
   motivoRechazo: string | null;
+  piezaResultanteId: string | null;
+  identificadores: IdentificadorFila[]; // RF-32
+  candidatos: CandidatoFila[]; // RF-33
+  camposNoMapeados: Record<string, unknown>; // RF-37
   errores: IncidenciaFila[];
   advertencias: IncidenciaFila[];
+}
+
+export interface IdentificadorFila {
+  clave: string;
+  tipoId: string | null;
+  tipo: string | null;
+  valor: string;
+  normalizado: string;
+}
+
+export type ReglaCandidato =
+  | "identificador_exacto"
+  | "identificador_repetido_en_lote"
+  | "denominacion_repetida_en_lote"
+  | "denominacion_similar_existente";
+
+export interface CandidatoFila {
+  regla: ReglaCandidato;
+  explicacion: string;
+  piezaId?: string;
+  piezaDenominacion?: string | null;
+  filaNumero?: number;
+  puntaje?: number;
+}
+
+// RF-37: historial de procedencia de una pieza (GET /piezas/{id}/procedencia)
+export interface OrigenImportacion {
+  id: string;
+  cargaId: string | null;
+  archivoNombre: string | null;
+  hojaNombre: string | null;
+  numeroFila: number | null;
+  datosOriginales: Record<string, unknown>;
+  camposNoMapeados: Record<string, unknown>;
+  creadoEn: string;
 }
 
 export interface FilaImportacionPagina {

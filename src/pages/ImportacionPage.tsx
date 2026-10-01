@@ -59,6 +59,7 @@ export function ImportacionPage() {
     pendiente_aprobacion: "Pendiente de aprobación",
     aprobada: "Aprobada",
     rechazada: "Rechazada",
+    cancelada: "Cancelada",
   };
 
   return (
@@ -114,6 +115,8 @@ export function ImportacionPage() {
                   <th className="px-5 py-3 font-medium">Nuevas</th>
                   <th className="px-5 py-3 font-medium">Actualización</th>
                   <th className="px-5 py-3 font-medium">Duplicadas</th>
+                  <th className="px-5 py-3 font-medium">Rechazadas</th>
+                  <th className="px-5 py-3 font-medium">Motivo de rechazo</th>
                   <th className="px-5 py-3"></th>
                 </tr>
               </thead>
@@ -127,6 +130,8 @@ export function ImportacionPage() {
                     <td className="px-5 py-3 text-ink-600">{c.filasNuevas}</td>
                     <td className="px-5 py-3 text-ink-600">{c.filasActualizacion}</td>
                     <td className="px-5 py-3 text-ink-600">{c.filasDuplicadas}</td>
+                    <td className="px-5 py-3 text-ink-600">{c.filasRechazadas}</td>
+                    <td className="px-5 py-3 text-texto max-w-xs">{c.motivoRechazo ?? "—"}</td>
                     <td className="px-5 py-3 text-right">
                       <Link to={`/importacion/${c.id}`} className="btn-danger-text">
                         Revisar →
@@ -136,7 +141,7 @@ export function ImportacionPage() {
                 ))}
                 {cargas?.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-4 text-ink-400">
+                    <td colSpan={8} className="px-5 py-4 text-ink-400">
                       Aún no se ha subido ningún archivo.
                     </td>
                   </tr>

@@ -116,7 +116,11 @@ redirige a `/`. Esto es solo UX — la autorización real la valida el backend
   QR real** (librería `qrcode`, no un patrón simulado — apunta a la ficha de la
   pieza) con botón de impresión (`window.print()`), formulario de traslado e
   historial, todo contra los endpoints reales de `museo-backend`.
-- **Importación**: sin cambios funcionales, solo re-estilizada.
+- **Importación** (RF-32/33/37/39, backend #14 y #15): el detalle de carga muestra por fila los
+  identificadores reconocidos y los candidatos con la regla que los detectó; las filas
+  `conflicto` se resuelven eligiendo una pieza candidata o rechazando con motivo; rechazar o
+  cancelar una carga exige motivo (visible en la bitácora). La ficha de pieza muestra la
+  sección "Procedencia de los datos" (solo Administrador/Gestor/Catalogador).
 - **Consultas y reportes** (`ConsultasReportesPage`, nueva, HU-14 a HU-16):
   búsqueda multifacética solo sobre piezas `estadoFicha=aprobada`; AND lo
   resuelve el backend en una consulta; **OR se resuelve en el cliente** (una
