@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
+import { MensajeError } from "../components/MensajeError";
 import { api, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina } from "../types";
 
@@ -11,10 +12,26 @@ const etiquetaClasificacion: Record<FilaImportacion["clasificacion"], string> = 
   conflicto: "Conflicto",
 };
 
+const TAMANO_PAGINA = 200;
+
+const etiquetaEstadoCarga: Record<CargaExcel["estado"], string> = {
+  en_revision: "En revisión",
+  pendiente_aprobacion: "Pendiente de aprobación",
+  aprobada: "Aprobada",
+  rechazada: "Rechazada",
+};
+
+const etiquetaEstadoFila: Record<FilaImportacion["estado"], string> = {
+  pendiente: "Pendiente",
+  aprobado: "Aprobada",
+  rechazado: "Rechazada",
+};
+
 export function CargaDetailPage() {
   const { cargaId } = useParams<{ cargaId: string }>();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [soloConErrores, setSoloConErrores] = useState(false);
 
   const cargaQuery = useQuery({
     queryKey: ["carga", cargaId],
@@ -22,9 +39,13 @@ export function CargaDetailPage() {
   });
 
   const filasQuery = useQuery({
-    queryKey: ["carga-filas", cargaId],
+    queryKey: ["carga-filas", cargaId, soloConErrores],
     queryFn: async () =>
-      (await api.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, { params: { pageSize: 200 } })).data,
+      (
+        await api.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, {
+          params: { page_size: TAMANO_PAGINA, con_errores: soloConErrores || undefined },
+        })
+      ).data,
   });
 
   const invalidarTodo = () => {
@@ -55,24 +76,24 @@ export function CargaDetailPage() {
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
-  if (cargaQuery.isLoading) return <p className="text-sm text-ink-400">Cargando...</p>;
+  if (cargaQuery.isLoading) return <p className="text-sm text-gris-2">Cargando...</p>;
   const carga = cargaQuery.data;
   const filas = filasQuery.data;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/importacion" className="text-sm text-clay-700 hover:underline">
+        <Link to="/importacion" className="text-sm text-rojo-oscuro hover:underline">
           ← Volver a importación
         </Link>
-        <h2 className="font-display text-2xl font-semibold text-ink-800 mt-1">{carga?.archivoNombre}</h2>
-        <span className="chip mt-1">{carga?.estado}</span>
+        <h1 className="mt-1">{carga?.archivoNombre}</h1>
+        {carga && <span className="chip mt-1">{etiquetaEstadoCarga[carga.estado]}</span>}
       </div>
 
-      {error && <p className="text-sm text-clay-800 bg-clay-50/80 border border-clay-200 rounded-xl px-3 py-2">{error}</p>}
+      {error && <MensajeError>{error}</MensajeError>}
 
       {filas && (
-        <p className="text-sm text-ink-600">
+        <p className="text-sm text-texto">
           Resumen: {filas.resumen.nuevo} nuevas · {filas.resumen.actualizacion} actualizaciones ·{" "}
           {filas.resumen.duplicado} posibles duplicados · {filas.resumen.conflicto} conflictos
           {filas.resumen.conErrores > 0 && (
@@ -81,10 +102,28 @@ export function CargaDetailPage() {
         </p>
       )}
 
+      {filas && (
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-texto min-h-[44px]">
+            <input
+              type="checkbox"
+              checked={soloConErrores}
+              onChange={(e) => setSoloConErrores(e.target.checked)}
+              className="accent-rojo h-5 w-5"
+            />
+            Solo filas con errores
+          </label>
+          <p className="text-sm text-gris-2">
+            Mostrando {filas.items.length} de {filas.total} filas
+            {filas.total > filas.items.length && " (las primeras en orden de fila)"}.
+          </p>
+        </div>
+      )}
+
       {carga?.estado === "en_revision" && (
         <div className="flex gap-3">
           <button onClick={() => aprobarCarga.mutate()} disabled={aprobarCarga.isPending} className="btn-primary">
-            Aprobar carga completa (RF-027)
+            Aprobar carga completa
           </button>
           <button onClick={() => rechazarCarga.mutate()} disabled={rechazarCarga.isPending} className="btn-glass">
             Rechazar carga
@@ -95,7 +134,7 @@ export function CargaDetailPage() {
       <div className="glass-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-ink-400 text-xs uppercase tracking-wide">
+            <thead className="text-left text-gris-2 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-5 py-3 font-medium">Fila</th>
                 <th className="px-5 py-3 font-medium">Clasificación</th>
@@ -107,12 +146,12 @@ export function CargaDetailPage() {
             <tbody className="divide-y divide-linea">
               {filas?.items.map((fila) => (
                 <tr key={fila.id} className="hover:bg-fondo-suave transition">
-                  <td className="px-5 py-3 text-ink-600">{fila.numeroFila}</td>
+                  <td className="px-5 py-3 text-texto">{fila.numeroFila}</td>
                   <td className="px-5 py-3">
                     <span className="chip">{etiquetaClasificacion[fila.clasificacion]}</span>
                   </td>
                   <td className="px-5 py-3 max-w-xs">
-                    <p className="font-mono text-xs text-ink-400 truncate">{JSON.stringify(fila.datosOriginales)}</p>
+                    <p className="font-mono text-xs text-gris-2 truncate">{JSON.stringify(fila.datosOriginales)}</p>
                     {fila.errores.length > 0 && (
                       <ul className="mt-1 text-xs text-rojo-oscuro list-disc pl-4">
                         {fila.errores.map((e) => (
@@ -123,7 +162,7 @@ export function CargaDetailPage() {
                       </ul>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-ink-600">{fila.estado}</td>
+                  <td className="px-5 py-3 text-texto">{etiquetaEstadoFila[fila.estado]}</td>
                   <td className="px-5 py-3 text-right space-x-3">
                     {fila.estado === "pendiente" && carga?.estado === "en_revision" && (
                       <>
@@ -131,13 +170,13 @@ export function CargaDetailPage() {
                           onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "aprobado" })}
                           disabled={fila.errores.length > 0}
                           title={fila.errores.length > 0 ? "Tiene errores: exclúyela (RF-30)" : undefined}
-                          className="text-emerald-700 hover:underline text-sm disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
+                          className="text-azul hover:underline text-sm disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                         >
                           Aprobar
                         </button>
                         <button
                           onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "rechazado" })}
-                          className="text-clay-700 hover:underline text-sm"
+                          className="text-rojo-oscuro hover:underline text-sm"
                         >
                           Rechazar
                         </button>

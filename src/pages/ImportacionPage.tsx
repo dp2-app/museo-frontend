@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Upload } from "lucide-react";
+import { MensajeError } from "../components/MensajeError";
 import { api, extraerMensajeError } from "../lib/api";
 import type { CampoDestino, CargaExcel, DeteccionColumnas, PlantillaMapeo } from "../types";
 
@@ -74,8 +75,7 @@ export function ImportacionPage() {
         <div>
           <h1>Importación</h1>
           <p className="text-sm text-gris-2 max-w-2xl">
-            RF-021 · ingesta → mapeo → normalización → matching → clasificación → previsualización → aprobación →
-            bitácora. Nada se escribe en el catálogo hasta que apruebas la carga.
+            Sube un Excel, revisa cómo se interpretará cada fila y aprueba la carga. Nada se escribe en el catálogo hasta que la apruebes.
           </p>
         </div>
       </div>
@@ -83,17 +83,22 @@ export function ImportacionPage() {
       <NuevaPlantillaForm onCreada={() => queryClient.invalidateQueries({ queryKey: ["plantillas-mapeo"] })} />
 
       <form onSubmit={onSubmit} className="glass-panel-sm flex flex-wrap gap-3 items-center p-4">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          required
-          onChange={(e) => setArchivoElegido(e.target.files?.[0] ?? null)}
-          className="text-sm text-ink-600"
-        />
         <div>
-          <label className="form-label">Plantilla de mapeo (opcional)</label>
+          <label htmlFor="archivo-excel" className="form-label">Archivo Excel</label>
+          <input
+            id="archivo-excel"
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            required
+            onChange={(e) => setArchivoElegido(e.target.files?.[0] ?? null)}
+            className="text-sm text-texto"
+          />
+        </div>
+        <div>
+          <label htmlFor="plantilla-mapeo" className="form-label">Plantilla de mapeo (opcional)</label>
           <select
+            id="plantilla-mapeo"
             value={plantillaSeleccionada}
             onChange={(e) => setPlantillaSeleccionada(e.target.value)}
             className="glass-input min-w-[14rem]"
@@ -112,10 +117,10 @@ export function ImportacionPage() {
         {(faltantes.length > 0 || sobrantes.length > 0) && (
           <div className="basis-full text-sm space-y-1" role="status">
             {faltantes.length > 0 && (
-              <p className="text-rojo-oscuro">
+              <MensajeError>
                 Este archivo no trae {faltantes.length === 1 ? "la columna" : "las columnas"}{" "}
                 <strong>{faltantes.join(", ")}</strong> de la plantilla: esos campos quedarán vacíos.
-              </p>
+              </MensajeError>
             )}
             {sobrantes.length > 0 && (
               <p className="text-gris-2">
@@ -126,18 +131,18 @@ export function ImportacionPage() {
           </div>
         )}
       </form>
-      {error && <p className="text-sm text-rojo-oscuro">{error}</p>}
+      {error && <MensajeError>{error}</MensajeError>}
       {compatibilidad.isError && (
-        <p className="text-sm text-rojo-oscuro">{extraerMensajeError(compatibilidad.error)}</p>
+        <MensajeError>{extraerMensajeError(compatibilidad.error)}</MensajeError>
       )}
 
       {isLoading ? (
-        <p className="text-sm text-ink-400">Cargando bitácora...</p>
+        <p className="text-sm text-gris-2">Cargando bitácora...</p>
       ) : (
         <div className="glass-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-ink-400 text-xs uppercase tracking-wide">
+              <thead className="text-left text-gris-2 text-xs uppercase tracking-wide">
                 <tr>
                   <th className="px-5 py-3 font-medium">Archivo</th>
                   <th className="px-5 py-3 font-medium">Estado</th>
@@ -150,13 +155,13 @@ export function ImportacionPage() {
               <tbody className="divide-y divide-linea">
                 {cargas?.map((c) => (
                   <tr key={c.id} className="hover:bg-fondo-suave transition">
-                    <td className="px-5 py-3 font-medium text-ink-800">{c.archivoNombre}</td>
+                    <td className="px-5 py-3 font-medium text-texto">{c.archivoNombre}</td>
                     <td className="px-5 py-3">
                       <span className="chip">{etiquetaEstado[c.estado]}</span>
                     </td>
-                    <td className="px-5 py-3 text-ink-600">{c.filasNuevas}</td>
-                    <td className="px-5 py-3 text-ink-600">{c.filasActualizacion}</td>
-                    <td className="px-5 py-3 text-ink-600">{c.filasDuplicadas}</td>
+                    <td className="px-5 py-3 text-texto">{c.filasNuevas}</td>
+                    <td className="px-5 py-3 text-texto">{c.filasActualizacion}</td>
+                    <td className="px-5 py-3 text-texto">{c.filasDuplicadas}</td>
                     <td className="px-5 py-3 text-right">
                       <Link to={`/importacion/${c.id}`} className="btn-danger-text">
                         Revisar →
@@ -166,7 +171,7 @@ export function ImportacionPage() {
                 ))}
                 {cargas?.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-4 text-ink-400">
+                    <td colSpan={6} className="px-5 py-4 text-gris-2">
                       Aún no se ha subido ningún archivo.
                     </td>
                   </tr>
@@ -267,12 +272,13 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
 
       <div className="flex gap-3 flex-wrap">
         <div>
-          <label className="form-label">Nombre</label>
-          <input required value={nombre} onChange={(e) => setNombre(e.target.value)} className="glass-input" />
+          <label htmlFor="plantilla-nombre" className="form-label">Nombre</label>
+          <input id="plantilla-nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} className="glass-input" />
         </div>
         <div>
-          <label className="form-label">Fuente de origen</label>
+          <label htmlFor="plantilla-fuente" className="form-label">Fuente de origen</label>
           <input
+            id="plantilla-fuente"
             required
             placeholder="p. ej. excel_deposito_2"
             value={fuenteOrigen}
@@ -281,8 +287,9 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
           />
         </div>
         <div>
-          <label className="form-label">1. Excel de muestra</label>
+          <label htmlFor="excel-muestra" className="form-label">1. Excel de muestra</label>
           <input
+            id="excel-muestra"
             ref={muestraRef}
             type="file"
             accept=".xlsx,.xls"
@@ -290,7 +297,7 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
               const archivo = e.target.files?.[0];
               if (archivo) detectar.mutate(archivo);
             }}
-            className="text-sm text-ink-600"
+            className="text-sm text-texto"
           />
         </div>
       </div>
@@ -312,7 +319,7 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
               <tbody className="divide-y divide-linea">
                 {columnas.map((col) => (
                   <tr key={col.nombre}>
-                    <td className="py-2 pr-4 font-mono text-xs text-ink-800">{col.nombre}</td>
+                    <td className="py-2 pr-4 font-mono text-xs text-texto">{col.nombre}</td>
                     <td className="py-2 pr-4 text-gris-2 max-w-xs truncate">{col.ejemplos.join(" · ") || "(vacía)"}</td>
                     <td className="py-2">
                       <select
@@ -337,19 +344,19 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
           </div>
 
           {obligatoriosSinColumna.length > 0 && (
-            <p className="text-sm text-rojo-oscuro" role="status">
+            <MensajeError>
               Falta asignar una columna a: <strong>{obligatoriosSinColumna.map((c) => c.etiqueta).join(", ")}</strong>.
-            </p>
+            </MensajeError>
           )}
           {repetidos.length > 0 && (
-            <p className="text-sm text-rojo-oscuro" role="status">
+            <MensajeError>
               Hay más de una columna asignada a: <strong>{repetidos.map(etiqueta).join(", ")}</strong>.
-            </p>
+            </MensajeError>
           )}
         </div>
       )}
 
-      {error && <p className="text-sm text-rojo-oscuro">{error}</p>}
+      {error && <MensajeError>{error}</MensajeError>}
       <button type="submit" disabled={crear.isPending || !listo} className="btn-primary">
         3. Guardar plantilla
       </button>
