@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Check, X as IconoX } from "lucide-react";
+import { Check, Star, X as IconoX } from "lucide-react";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { useAuth } from "../contexts/AuthContext";
 import { api, extraerMensajeError } from "../lib/api";
@@ -163,6 +163,28 @@ export function PiezaDetailPage() {
     onError: (err) => setError(err instanceof Error ? err.message : extraerMensajeError(err)),
   });
 
+  // --- RF-10: orden de fotos y foto principal (la primera del orden) ---
+  const puedeEditarFotos = rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES || rol === CATALOGADOR;
+  const alCambiarOrden = (fotosOrdenadas: Fotografia[], fotoId: string) => {
+    setFotoActiva(Math.max(0, fotosOrdenadas.findIndex((f) => f.id === fotoId)));
+    setError(null);
+    invalidarPieza();
+  };
+
+  const moverFoto = useMutation({
+    mutationFn: async ({ ids }: { ids: string[]; fotoId: string }) =>
+      (await api.put<Fotografia[]>(`/piezas/${piezaId}/fotografias/orden`, { fotografiaIds: ids })).data,
+    onSuccess: (fotosOrdenadas, { fotoId }) => alCambiarOrden(fotosOrdenadas, fotoId),
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  const hacerPrincipal = useMutation({
+    mutationFn: async (fotoId: string) =>
+      (await api.put<Fotografia[]>(`/piezas/${piezaId}/fotografias/${fotoId}/principal`)).data,
+    onSuccess: (fotosOrdenadas, fotoId) => alCambiarOrden(fotosOrdenadas, fotoId),
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
   // --- Movimiento ---
   const [ubicacionNueva, setUbicacionNueva] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -200,6 +222,13 @@ export function PiezaDetailPage() {
   const nombreColeccion = coleccionesQuery.data?.items.find((c) => c.id === pieza.coleccionId)?.nombre ?? "—";
   const nombreUbicacion = ubicacionesPlanas.find((u) => u.id === pieza.ubicacionActualId)?.etiqueta.trimStart() ?? "—";
   const fotos = pieza.fotografias;
+  const ordenandoFotos = moverFoto.isPending || hacerPrincipal.isPending;
+  const moverFotoActiva = (destino: number) => {
+    const ids = fotos.map((f) => f.id);
+    const [id] = ids.splice(fotoActiva, 1);
+    ids.splice(destino, 0, id);
+    moverFoto.mutate({ ids, fotoId: id });
+  };
 
   return (
     <div className="space-y-6">
@@ -302,6 +331,11 @@ export function PiezaDetailPage() {
             <>
               <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/60 shadow-glass-sm bg-white/40">
                 <img src={fotos[fotoActiva]?.url} alt="" className="w-full h-full object-cover" />
+                {fotoActiva === 0 && (
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-ink-700 shadow-glass-sm">
+                    <Star className="w-3 h-3 fill-current" /> Principal
+                  </span>
+                )}
                 {fotos.length > 1 && (
                   <>
                     <button
@@ -323,6 +357,36 @@ export function PiezaDetailPage() {
                   </>
                 )}
               </div>
+              {puedeEditarFotos && fotos.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={fotoActiva === 0 || ordenandoFotos}
+                    onClick={() => hacerPrincipal.mutate(fotos[fotoActiva].id)}
+                    className="btn-glass !px-3 !text-xs inline-flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Star className="w-3 h-3" /> Hacer principal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={fotoActiva === 0 || ordenandoFotos}
+                    onClick={() => moverFotoActiva(fotoActiva - 1)}
+                    className="btn-glass !px-3 !text-xs disabled:opacity-50"
+                    aria-label="Mover foto antes"
+                  >
+                    ← Antes
+                  </button>
+                  <button
+                    type="button"
+                    disabled={fotoActiva === fotos.length - 1 || ordenandoFotos}
+                    onClick={() => moverFotoActiva(fotoActiva + 1)}
+                    className="btn-glass !px-3 !text-xs disabled:opacity-50"
+                    aria-label="Mover foto después"
+                  >
+                    Después →
+                  </button>
+                </div>
+              )}
               {fotos.length > 1 && (
                 <div className="flex flex-wrap gap-2">
                   {fotos.map((f, i) => (
