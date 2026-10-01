@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Download, Upload } from "lucide-react";
 import { api, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina } from "../types";
 
@@ -14,12 +15,15 @@ const etiquetaClasificacion: Record<FilaImportacion["clasificacion"], string> = 
 export function CargaDetailPage() {
   const { cargaId } = useParams<{ cargaId: string }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const inputCorregido = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cargaQuery = useQuery({
     queryKey: ["carga", cargaId],
     queryFn: async () => (await api.get<CargaExcel>(`/importacion/cargas/${cargaId}`)).data,
   });
+  const carga = cargaQuery.data;
 
   const filasQuery = useQuery({
     queryKey: ["carga-filas", cargaId],
@@ -40,6 +44,36 @@ export function CargaDetailPage() {
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
+  const descargarReporte = useMutation({
+    mutationFn: async () =>
+      (await api.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" })).data as Blob,
+    onSuccess: (blob) => {
+      setError(null);
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = `errores_${cargaId}.xlsx`;
+      enlace.click();
+      URL.revokeObjectURL(url);
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  const recargarCorregido = useMutation({
+    mutationFn: async (archivo: File) => {
+      const form = new FormData();
+      form.append("archivo", archivo);
+      if (carga?.plantillaMapeoId) form.append("plantilla_mapeo_id", carga.plantillaMapeoId);
+      return (await api.post<CargaExcel>("/importacion/cargas", form)).data;
+    },
+    onSuccess: (nueva) => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["cargas"] });
+      navigate(`/importacion/${nueva.id}`);
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
   const aprobarCarga = useMutation({
     mutationFn: async () => (await api.post(`/importacion/cargas/${cargaId}/aprobar`)).data,
     onSuccess: () => {
@@ -56,8 +90,8 @@ export function CargaDetailPage() {
   });
 
   if (cargaQuery.isLoading) return <p className="text-sm text-ink-400">Cargando...</p>;
-  const carga = cargaQuery.data;
   const filas = filasQuery.data;
+  const filasConError = filas?.items.filter((fila) => fila.errores.length > 0).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -76,6 +110,45 @@ export function CargaDetailPage() {
           Resumen: {filas.resumen.nuevo} nuevas · {filas.resumen.actualizacion} actualizaciones ·{" "}
           {filas.resumen.duplicado} posibles duplicados · {filas.resumen.conflicto} conflictos
         </p>
+      )}
+
+      {carga && filasConError > 0 && (
+        <div className="glass-panel-sm p-4 space-y-3">
+          <p className="text-sm text-texto">
+            {filasConError} fila(s) con errores de validación. Descarga el reporte, corrige el archivo original y vuelve a
+            cargarlo: se usará el mismo mapeo.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => descargarReporte.mutate()}
+              disabled={descargarReporte.isPending}
+              className="btn-glass"
+            >
+              <Download size={16} aria-hidden="true" /> Descargar reporte de errores
+            </button>
+            <button
+              type="button"
+              onClick={() => inputCorregido.current?.click()}
+              disabled={recargarCorregido.isPending}
+              className="btn-primary"
+            >
+              <Upload size={16} aria-hidden="true" /> Cargar archivo corregido
+            </button>
+            <input
+              ref={inputCorregido}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              aria-label="Archivo corregido"
+              onChange={(e) => {
+                const archivo = e.target.files?.[0];
+                if (archivo) recargarCorregido.mutate(archivo);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {carga?.estado === "en_revision" && (
@@ -111,7 +184,20 @@ export function CargaDetailPage() {
                   <td className="px-5 py-3 font-mono text-xs text-ink-400 max-w-xs truncate">
                     {JSON.stringify(fila.datosOriginales)}
                   </td>
-                  <td className="px-5 py-3 text-ink-600">{fila.estado}</td>
+                  <td className="px-5 py-3 text-ink-600">
+                    {fila.estado}
+                    {fila.errores.map((e) => (
+                      <p key={`${e.campo}-${e.mensaje}`} className="text-xs text-rojo mt-1">
+                        {e.columna ?? e.campo}: {e.mensaje}
+                        {e.valorOriginal != null && ` (valor: "${e.valorOriginal}")`}
+                      </p>
+                    ))}
+                    {fila.advertencias.map((a) => (
+                      <p key={`${a.campo}-${a.mensaje}`} className="text-xs text-gris-2 mt-1">
+                        {a.columna ?? a.campo}: {a.mensaje}
+                      </p>
+                    ))}
+                  </td>
                   <td className="px-5 py-3 text-right space-x-3">
                     {fila.estado === "pendiente" && carga?.estado === "en_revision" && (
                       <>
