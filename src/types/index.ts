@@ -122,11 +122,31 @@ export interface CargaExcel {
   aprobadaEn: string | null;
 }
 
+export interface CampoDestino {
+  campo: string;
+  etiqueta: string;
+  tipo: "texto" | "fecha" | "identificador";
+  obligatorio: boolean;
+}
+
+export interface DeteccionColumnas {
+  columnas: { nombre: string; ejemplos: string[] }[];
+  totalFilas: number;
+  faltantes?: string[] | null;
+  sobrantes?: string[] | null;
+}
+
+export interface ErrorCampo {
+  campo: string;
+  motivo: string;
+}
+
 export interface FilaImportacion {
   id: string;
   numeroFila: number;
   datosOriginales: Record<string, unknown>;
   datosNormalizados: Record<string, unknown> | null;
+  errores: ErrorCampo[];
   clasificacion: "nuevo" | "actualizacion" | "duplicado" | "conflicto";
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
@@ -136,7 +156,7 @@ export interface FilaImportacion {
 export interface FilaImportacionPagina {
   items: FilaImportacion[];
   total: number;
-  resumen: { nuevo: number; actualizacion: number; duplicado: number; conflicto: number };
+  resumen: { nuevo: number; actualizacion: number; duplicado: number; conflicto: number; conErrores: number };
 }
 
 export type TipoSugerencia =

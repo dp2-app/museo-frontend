@@ -75,6 +75,9 @@ export function CargaDetailPage() {
         <p className="text-sm text-ink-600">
           Resumen: {filas.resumen.nuevo} nuevas · {filas.resumen.actualizacion} actualizaciones ·{" "}
           {filas.resumen.duplicado} posibles duplicados · {filas.resumen.conflicto} conflictos
+          {filas.resumen.conErrores > 0 && (
+            <strong className="text-rojo-oscuro"> · {filas.resumen.conErrores} con errores por corregir</strong>
+          )}
         </p>
       )}
 
@@ -108,8 +111,17 @@ export function CargaDetailPage() {
                   <td className="px-5 py-3">
                     <span className="chip">{etiquetaClasificacion[fila.clasificacion]}</span>
                   </td>
-                  <td className="px-5 py-3 font-mono text-xs text-ink-400 max-w-xs truncate">
-                    {JSON.stringify(fila.datosOriginales)}
+                  <td className="px-5 py-3 max-w-xs">
+                    <p className="font-mono text-xs text-ink-400 truncate">{JSON.stringify(fila.datosOriginales)}</p>
+                    {fila.errores.length > 0 && (
+                      <ul className="mt-1 text-xs text-rojo-oscuro list-disc pl-4">
+                        {fila.errores.map((e) => (
+                          <li key={e.campo}>
+                            <strong>{e.campo}</strong>: {e.motivo}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-ink-600">{fila.estado}</td>
                   <td className="px-5 py-3 text-right space-x-3">
@@ -117,7 +129,9 @@ export function CargaDetailPage() {
                       <>
                         <button
                           onClick={() => revisarFila.mutate({ filaId: fila.id, estado: "aprobado" })}
-                          className="text-emerald-700 hover:underline text-sm"
+                          disabled={fila.errores.length > 0}
+                          title={fila.errores.length > 0 ? "Tiene errores: exclúyela (RF-30)" : undefined}
+                          className="text-emerald-700 hover:underline text-sm disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                         >
                           Aprobar
                         </button>
