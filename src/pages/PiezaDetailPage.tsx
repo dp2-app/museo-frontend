@@ -14,6 +14,7 @@ import type {
   CodigoExterno,
   Fotografia,
   Movimiento,
+  OrigenImportacion,
   Pagina,
   Pieza,
   PiezaDetalle,
@@ -89,6 +90,14 @@ export function PiezaDetailPage() {
   const auditoriaQuery = useQuery({
     queryKey: ["auditoria", piezaId],
     queryFn: async () => (await api.get<RegistroAuditoria[]>(`/piezas/${piezaId}/auditoria`)).data,
+  });
+
+  // RF-37: historial de procedencia (solo roles de importación; otros roles reciben 403 y no lo piden).
+  const veProcedencia = rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES || rol === CATALOGADOR;
+  const procedenciaQuery = useQuery({
+    queryKey: ["procedencia", piezaId],
+    queryFn: async () => (await api.get<OrigenImportacion[]>(`/piezas/${piezaId}/procedencia`)).data,
+    enabled: veProcedencia,
   });
 
   const invalidarPieza = () => {
@@ -508,6 +517,61 @@ export function PiezaDetailPage() {
               </p>
             )}
           </Seccion>
+
+          {veProcedencia && (
+            <Seccion titulo="Procedencia de los datos · RF-037">
+              <p className="text-xs text-gris-2">
+                Cada importación aprobada agrega un origen; ninguno reemplaza a los anteriores. Los campos sin mapear
+                son columnas del archivo que no tienen destino en la ficha.
+              </p>
+              <ul className="space-y-3">
+                {procedenciaQuery.data?.map((o) => {
+                  const sinMapear = Object.entries(o.camposNoMapeados ?? {});
+                  return (
+                    <li key={o.id} className="border border-linea rounded-btn p-3 text-sm space-y-1.5">
+                      <p className="font-semibold text-texto">
+                        {o.archivoNombre ?? "Origen previo (sin detalle de archivo)"}
+                        {o.hojaNombre && <span className="font-normal text-gris-2"> · hoja {o.hojaNombre}</span>}
+                        {o.numeroFila && <span className="font-normal text-gris-2"> · fila {o.numeroFila}</span>}
+                      </p>
+                      <p className="text-xs text-gris-2">
+                        {new Date(o.creadoEn).toLocaleString("es-PE", { hour12: true })}
+                        {o.cargaId && (
+                          <>
+                            {" · "}
+                            <Link to={`/importacion/${o.cargaId}`} className="text-azul underline">
+                              Ver carga
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                      {sinMapear.length > 0 ? (
+                        <dl className="text-xs space-y-0.5">
+                          {sinMapear.map(([columna, valor]) => (
+                            <div key={columna} className="grid grid-cols-3 gap-2">
+                              <dt className="text-gris-2 font-medium">{columna}</dt>
+                              <dd className="col-span-2 text-texto">{String(valor)}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : (
+                        <p className="text-xs text-gris-2">Todas las columnas tenían destino en la ficha.</p>
+                      )}
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-azul">Columnas originales del archivo</summary>
+                        <pre className="mt-1 bg-fondo-suave border border-linea rounded-btn p-2 overflow-x-auto">
+                          {JSON.stringify(o.datosOriginales, null, 2)}
+                        </pre>
+                      </details>
+                    </li>
+                  );
+                })}
+                {procedenciaQuery.data?.length === 0 && (
+                  <li className="text-sm text-gris-2">Esta pieza no proviene de una importación.</li>
+                )}
+              </ul>
+            </Seccion>
+          )}
 
           <Seccion titulo="Auditoría · RF-040">
             <ul className="text-xs text-ink-500 space-y-1">
