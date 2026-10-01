@@ -116,7 +116,16 @@ redirige a `/`. Esto es solo UX — la autorización real la valida el backend
   QR real** (librería `qrcode`, no un patrón simulado — apunta a la ficha de la
   pieza) con botón de impresión (`window.print()`), formulario de traslado e
   historial, todo contra los endpoints reales de `museo-backend`.
-- **Importación**: sin cambios funcionales, solo re-estilizada.
+- **Importación**: re-estilizada, más (RF-29, issue #10) **plantilla de mapeo guiada**:
+  se elige un Excel de muestra, `POST /importacion/columnas` devuelve sus columnas con
+  ejemplos y cada una se asigna a un campo de `GET /importacion/campos-destino` (incluye
+  un `codigo_<tipo>` por tipo de identificador configurado); el botón Guardar se
+  bloquea mientras falte un campo obligatorio o haya un destino repetido. Al subir con
+  una plantilla se avisa qué columnas faltan o sobran. En la revisión de carga cada fila
+  muestra sus `errores` por campo (RF-30, issue #11) y no se puede aprobar mientras los
+  tenga. Requiere los PRs de `museo-backend` #26 y #27. Revisión de carga: filtro «Solo filas con errores» (necesario con el inventario real: 604 de 4.380 filas). Pendiente: corregir una fila desde
+  la UI (el backend ya lo permite con `PATCH` + `datosNormalizados`; hoy solo se puede excluir)
+  y la prueba de usabilidad con una persona no técnica.
 - **Consultas y reportes** (`ConsultasReportesPage`, nueva, HU-14 a HU-16):
   búsqueda multifacética solo sobre piezas `estadoFicha=aprobada`; AND lo
   resuelve el backend en una consulta; **OR se resuelve en el cliente** (una
@@ -167,7 +176,7 @@ redirige a `/`. Esto es solo UX — la autorización real la valida el backend
   Playwright para E2E; no hay ningún test escrito en este repo todavía — el
   rediseño se verificó manualmente en el navegador contra el backend real,
   capturas en la conversación de la sesión que lo hizo).
-- **Sin CI/CD ni despliegue en Vercel configurado.**
+- **Despliegue**: el frontend ya se publica en Vercel (`museo-frontend.vercel.app`, producción al fusionar a `main`, preview por rama protegido con el login de Vercel) y apunta al backend de Render. `vercel.json` reescribe todas las rutas a `index.html` (sin eso, abrir `/importacion` directo daba 404). Render (plan gratuito) tarda ~2 min en despertar tras inactividad. Sin CI de pruebas todavía.
 
 ## Convenciones de código
 

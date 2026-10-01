@@ -32,6 +32,7 @@ api.interceptors.response.use(
 export function extraerMensajeError(error: unknown): string {
   const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
   if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "mensaje" in detail) return String(detail.mensaje);
   if (Array.isArray(detail)) {
     return detail
       .map((d) => (typeof d === "string" ? d : d.mensaje ?? d.msg ?? JSON.stringify(d)))
