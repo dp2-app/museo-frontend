@@ -1,3 +1,7 @@
+import { FormularioFicha } from "../components/FormularioFicha";
+import { useAuth } from "../contexts/AuthContext";
+import { ADMINISTRADOR, CATALOGADOR, GESTOR_COLECCIONES } from "../lib/secciones";
+import { useCamposFicha } from "../lib/camposFicha";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -51,7 +55,7 @@ function GestionarColecciones() {
               Crear
             </button>
           </form>
-          {error && <p className="text-sm text-rojo">{error}</p>}
+          {error && <p role="alert" className="text-rojo">{error}</p>}
           <div className="flex flex-wrap gap-2">
             {data?.items.map((c) => (
               <span key={c.id} className="chip">
@@ -66,7 +70,10 @@ function GestionarColecciones() {
 }
 
 export function PiezasPage() {
-  const queryClient = useQueryClient();
+  const { rol } = useAuth();
+  const catalogo = useCamposFicha();
+  const visibles = new Set(catalogo.data?.map(c => c.clave));
+  const puedeEditar = [ADMINISTRADOR, CATALOGADOR, GESTOR_COLECCIONES].includes(rol ?? "");
   const [codigo, setCodigo] = useState("");
   const [coleccionId, setColeccionId] = useState("");
   const [soloIncompletas, setSoloIncompletas] = useState(false);
@@ -82,35 +89,18 @@ export function PiezasPage() {
       (
         await api.get<Pagina<Pieza>>("/piezas", {
           params: {
-            pageSize: 50,
+            page_size: 50,
             codigo: codigo || undefined,
-            coleccionId: coleccionId || undefined,
-            soloIncompletas: soloIncompletas || undefined,
+            coleccion_id: coleccionId || undefined,
+            solo_incompletas: soloIncompletas || undefined,
           },
         })
       ).data,
   });
 
-  const [nuevaDenominacion, setNuevaDenominacion] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const crear = useMutation({
-    mutationFn: async (denominacion: string) => (await api.post<Pieza>("/piezas", { denominacion })).data,
-    onSuccess: () => {
-      setNuevaDenominacion("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["piezas"] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
   function onBuscar(e: FormEvent) {
     e.preventDefault();
     refetch();
-  }
-
-  function onCrear(e: FormEvent) {
-    e.preventDefault();
-    if (nuevaDenominacion.trim()) crear.mutate(nuevaDenominacion.trim());
   }
 
   return (
@@ -123,14 +113,14 @@ export function PiezasPage() {
         </div>
       </div>
 
-      <GestionarColecciones />
+      {(rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES) && <GestionarColecciones />}
 
       <form onSubmit={onBuscar} className="glass-panel-sm flex flex-wrap gap-3 items-end p-4">
-        <div>
+        {visibles.has("codigos_externos") && <div>
           <label className="block text-xs font-medium uppercase tracking-wide text-ink-400 mb-1">Código</label>
           <input value={codigo} onChange={(e) => setCodigo(e.target.value)} className="glass-input" />
-        </div>
-        <div>
+        </div>}
+        {visibles.has("coleccion_id") && <div>
           <label className="block text-xs font-medium uppercase tracking-wide text-ink-400 mb-1">Colección</label>
           <select
             value={coleccionId}
@@ -144,7 +134,7 @@ export function PiezasPage() {
               </option>
             ))}
           </select>
-        </div>
+        </div>}
         <label className="flex items-center gap-1.5 text-sm text-ink-600 pb-2">
           <input
             type="checkbox"
@@ -159,18 +149,8 @@ export function PiezasPage() {
         </button>
       </form>
 
-      <form onSubmit={onCrear} className="flex gap-2 max-w-lg">
-        <input
-          value={nuevaDenominacion}
-          onChange={(e) => setNuevaDenominacion(e.target.value)}
-          placeholder="Denominación de la nueva pieza (RF-006)"
-          className="glass-input"
-        />
-        <button type="submit" disabled={crear.isPending} className="btn-primary shrink-0">
-          Registrar
-        </button>
-      </form>
-      {error && <p className="text-sm text-clay-700">{error}</p>}
+      {puedeEditar && <FormularioFicha />}
+
 
       {isLoading ? (
         <p className="text-sm text-ink-400">Buscando...</p>
@@ -180,8 +160,8 @@ export function PiezasPage() {
             <table className="w-full text-sm">
               <thead className="text-left text-ink-400 text-xs uppercase tracking-wide">
                 <tr>
-                  <th className="px-5 py-3 font-medium">Denominación</th>
-                  <th className="px-5 py-3 font-medium">Disponibilidad</th>
+                  {visibles.has("denominacion") && <th className="px-5 py-3 font-medium">Denominación</th>}
+                  {visibles.has("disponibilidad") && <th className="px-5 py-3 font-medium">Disponibilidad</th>}
                   <th className="px-5 py-3 font-medium">Info. completa</th>
                   <th className="px-5 py-3"></th>
                 </tr>
@@ -189,8 +169,8 @@ export function PiezasPage() {
               <tbody className="divide-y divide-white/50">
                 {data?.items.map((p) => (
                   <tr key={p.id} className="hover:bg-white/40 transition">
-                    <td className="px-5 py-3 font-medium text-ink-800">{p.denominacion || "(sin denominación)"}</td>
-                    <td className="px-5 py-3 text-ink-600">{p.disponibilidad}</td>
+                    {visibles.has("denominacion") && <td className="px-5 py-3 font-medium text-ink-800">{p.denominacion || "(sin denominación)"}</td>}
+                    {visibles.has("disponibilidad") && <td className="px-5 py-3 text-ink-600">{p.disponibilidad}</td>}
                     <td className="px-5 py-3">
                       {p.informacionCompleta ? (
                         <span className="chip !bg-emerald-100/80 !border-emerald-200 !text-emerald-800">Completa</span>
