@@ -4,7 +4,7 @@
 > para que **cualquier integrante del equipo**, al pedirle ayuda a su Claude en este
 > proyecto, tenga el mismo contexto sin tener que reexplicarlo. **Actualízalo** cuando
 > termines algo de la sección "Pendiente" o cuando tomes una decisión de diseño nueva —
-> es más barato mantenerlo al día que dejar que quede desactualizado.
+> es más barato mantenerlo al día que dejar que quede desactualizado..
 
 ## Qué es esto
 
