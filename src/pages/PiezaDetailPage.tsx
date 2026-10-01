@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { Check, X as IconoX } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Archive, Check, X as IconoX } from "lucide-react";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { useAuth } from "../contexts/AuthContext";
 import { api, extraerMensajeError } from "../lib/api";
@@ -46,6 +46,7 @@ export function PiezaDetailPage() {
   const { piezaId } = useParams<{ piezaId: string }>();
   const { rol } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [fotoActiva, setFotoActiva] = useState(0);
   const [motivoRechazo, setMotivoRechazo] = useState("");
@@ -62,18 +63,18 @@ export function PiezaDetailPage() {
   });
 
   const tiposIdentificadorQuery = useQuery({
-    queryKey: ["vocabularios", "tipo_identificador"],
-    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/tipo_identificador")).data,
+    queryKey: ["vocabularios", "tipo_identificador", "todos"],
+    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/tipo_identificador", { params: { incluirInactivos: true } })).data,
   });
 
   const categoriasQuery = useQuery({
-    queryKey: ["vocabularios", "categoria"],
-    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/categoria")).data,
+    queryKey: ["vocabularios", "categoria", "todos"],
+    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/categoria", { params: { incluirInactivos: true } })).data,
   });
 
   const estadosConservacionQuery = useQuery({
-    queryKey: ["vocabularios", "estado_conservacion"],
-    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/estado_conservacion")).data,
+    queryKey: ["vocabularios", "estado_conservacion", "todos"],
+    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/estado_conservacion", { params: { incluirInactivos: true } })).data,
   });
 
   const coleccionesQuery = useQuery({
@@ -107,6 +108,20 @@ export function PiezaDetailPage() {
       invalidarPieza();
     },
     onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  const [confirmandoBaja, setConfirmandoBaja] = useState(false);
+  const darDeBaja = useMutation({
+    mutationFn: async () => api.delete(`/piezas/${piezaId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["piezas"] });
+      queryClient.invalidateQueries({ queryKey: ["piezas-eliminadas"] });
+      navigate("/coleccion");
+    },
+    onError: (err) => {
+      setConfirmandoBaja(false);
+      setError(extraerMensajeError(err));
+    },
   });
 
   // --- Edición de campos básicos ---
@@ -198,7 +213,9 @@ export function PiezaDetailPage() {
   const etiquetaVocab = (lista: ValorVocabulario[] | undefined, id: string | null) =>
     lista?.find((v) => v.id === id)?.valor ?? "—";
   const nombreColeccion = coleccionesQuery.data?.items.find((c) => c.id === pieza.coleccionId)?.nombre ?? "—";
-  const nombreUbicacion = ubicacionesPlanas.find((u) => u.id === pieza.ubicacionActualId)?.etiqueta.trimStart() ?? "—";
+  const nombreDeUbicacion = (id: string | null) =>
+    ubicacionesPlanas.find((u) => u.id === id)?.etiqueta.trimStart() ?? "—";
+  const nombreUbicacion = nombreDeUbicacion(pieza.ubicacionActualId);
   const fotos = pieza.fotografias;
 
   return (
@@ -290,6 +307,38 @@ export function PiezaDetailPage() {
               </button>
             </form>
           )}
+          <div className="pt-2 border-t border-linea space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gris-2">Baja lógica · RF-013</p>
+            {confirmandoBaja ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-texto">¿Dar de baja esta pieza?</span>
+                <button
+                  type="button"
+                  onClick={() => darDeBaja.mutate()}
+                  disabled={darDeBaja.isPending}
+                  className="btn-primary !min-h-0 !py-1.5 !px-3 !text-sm"
+                >
+                  Confirmar baja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoBaja(false)}
+                  className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmandoBaja(true)}
+                disabled={rol !== ADMINISTRADOR}
+                className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm !border-rojo !text-rojo"
+              >
+                <Archive size={16} aria-hidden="true" /> Dar de baja
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -411,7 +460,7 @@ export function PiezaDetailPage() {
                 <label className="block text-xs font-medium uppercase tracking-wide text-ink-400 mb-1">Tipo</label>
                 <select required value={tipoIdentificador} onChange={(e) => setTipoIdentificador(e.target.value)} className="glass-input">
                   <option value="">Seleccionar...</option>
-                  {tiposIdentificadorQuery.data?.map((t) => (
+                  {tiposIdentificadorQuery.data?.filter((t) => t.activo).map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.valor}
                     </option>
@@ -463,7 +512,8 @@ export function PiezaDetailPage() {
               <ul className="text-sm space-y-1.5 mb-3">
                 {movimientosQuery.data?.map((m) => (
                   <li key={m.id} className="text-ink-600">
-                    <span className="text-clay-500">→</span> {m.motivo || "(sin motivo indicado)"}
+                    <span className="text-clay-500">→</span> {nombreDeUbicacion(m.ubicacionAnteriorId)} → {nombreDeUbicacion(m.ubicacionNuevaId)}
+                    <span className="text-ink-400"> · {new Date(m.fecha).toLocaleString()} · {m.motivo || "(sin motivo indicado)"}</span>
                   </li>
                 ))}
                 {movimientosQuery.data?.length === 0 && <li className="text-ink-400">Sin movimientos registrados.</li>}

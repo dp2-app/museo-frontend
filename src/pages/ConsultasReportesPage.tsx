@@ -65,12 +65,14 @@ export function ConsultasReportesPage() {
     queryFn: async () => (await api.get<Pagina<Coleccion>>("/colecciones", { params: { pageSize: 100 } })).data,
   });
   const { data: categorias } = useQuery({
-    queryKey: ["vocabularios", "categoria"],
-    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/categoria")).data,
+    queryKey: ["vocabularios", "categoria", "todos"],
+    queryFn: async () =>
+      (await api.get<ValorVocabulario[]>("/vocabularios/categoria", { params: { incluirInactivos: true } })).data,
   });
   const { data: estadosConservacion } = useQuery({
-    queryKey: ["vocabularios", "estado_conservacion"],
-    queryFn: async () => (await api.get<ValorVocabulario[]>("/vocabularios/estado_conservacion")).data,
+    queryKey: ["vocabularios", "estado_conservacion", "todos"],
+    queryFn: async () =>
+      (await api.get<ValorVocabulario[]>("/vocabularios/estado_conservacion", { params: { incluirInactivos: true } })).data,
   });
 
   const resultados = useQuery({
@@ -155,7 +157,7 @@ export function ConsultasReportesPage() {
               <option value="">Todas</option>
               {categorias?.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.valor}
+                  {c.valor}{c.activo ? "" : " (inactivo)"}
                 </option>
               ))}
             </select>
@@ -173,7 +175,7 @@ export function ConsultasReportesPage() {
               <option value="">Todos</option>
               {estadosConservacion?.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.valor}
+                  {e.valor}{e.activo ? "" : " (inactivo)"}
                 </option>
               ))}
             </select>
