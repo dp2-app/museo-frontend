@@ -40,6 +40,7 @@ export interface Movimiento {
   ubicacionAnteriorId: string | null;
   ubicacionNuevaId: string;
   responsableId: string;
+  fecha: string;
   motivo: string | null;
 }
 
@@ -96,7 +97,7 @@ export interface RegistroAuditoria {
   campo: string;
   valorAnterior: string | null;
   valorNuevo: string | null;
-  accion: "insert" | "update" | "soft_delete";
+  accion: "insert" | "update" | "soft_delete" | "restore";
   usuarioId: string | null;
   fecha?: string;
 }
@@ -111,6 +112,7 @@ export interface PlantillaMapeo {
 export interface CargaExcel {
   id: string;
   archivoNombre: string;
+  plantillaMapeoId: string | null;
   estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada";
   totalFilas: number;
   filasNuevas: number;
@@ -122,6 +124,13 @@ export interface CargaExcel {
   aprobadaEn: string | null;
 }
 
+export interface IncidenciaFila {
+  campo: string;
+  mensaje: string;
+  columna?: string | null;
+  valorOriginal?: string | null;
+}
+
 export interface FilaImportacion {
   id: string;
   numeroFila: number;
@@ -131,6 +140,8 @@ export interface FilaImportacion {
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
   motivoRechazo: string | null;
+  errores: IncidenciaFila[];
+  advertencias: IncidenciaFila[];
 }
 
 export interface FilaImportacionPagina {

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { IconoRetablo } from "../components/IconoRetablo";
+import { useAuth } from "../contexts/AuthContext";
 import { api, extraerMensajeError } from "../lib/api";
 import type { Coleccion, Pagina, Pieza } from "../types";
 
@@ -65,7 +66,84 @@ function GestionarColecciones() {
   );
 }
 
+function PiezasDadasDeBaja() {
+  const queryClient = useQueryClient();
+  const [abierto, setAbierto] = useState(false);
+  const [restaurando, setRestaurando] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["piezas-eliminadas"],
+    queryFn: async () => (await api.get<Pieza[]>("/piezas/eliminadas")).data,
+    enabled: abierto,
+  });
+
+  const restaurar = useMutation({
+    mutationFn: async (id: string) => (await api.post<Pieza>(`/piezas/${id}/restaurar`, { motivo: motivo.trim() })).data,
+    onSuccess: () => {
+      setRestaurando(null);
+      setMotivo("");
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["piezas-eliminadas"] });
+      queryClient.invalidateQueries({ queryKey: ["piezas"] });
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  return (
+    <div className="glass-panel-sm">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-azul"
+      >
+        Piezas dadas de baja (RF-013)
+        {abierto ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+      </button>
+      {abierto && (
+        <div className="px-4 pb-4 space-y-3 border-t border-linea pt-3">
+          {error && <p className="text-sm text-rojo">{error}</p>}
+          <ul className="space-y-2 text-sm">
+            {data?.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-ink-800">{p.denominacion || "(sin denominación)"}</span>
+                {restaurando === p.id ? (
+                  <form
+                    className="flex gap-2"
+                    onSubmit={(e: FormEvent) => {
+                      e.preventDefault();
+                      if (motivo.trim()) restaurar.mutate(p.id);
+                    }}
+                  >
+                    <input
+                      value={motivo}
+                      onChange={(e) => setMotivo(e.target.value)}
+                      placeholder="Motivo de la restauración"
+                      className="glass-input"
+                      required
+                    />
+                    <button type="submit" disabled={restaurar.isPending} className="btn-primary shrink-0">
+                      Confirmar
+                    </button>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setRestaurando(p.id)} className="btn-danger-text">
+                    Restaurar
+                  </button>
+                )}
+              </li>
+            ))}
+            {data?.length === 0 && <li className="text-ink-400">No hay piezas dadas de baja.</li>}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PiezasPage() {
+  const { rol } = useAuth();
   const queryClient = useQueryClient();
   const [codigo, setCodigo] = useState("");
   const [coleccionId, setColeccionId] = useState("");
@@ -124,6 +202,7 @@ export function PiezasPage() {
       </div>
 
       <GestionarColecciones />
+      {rol === "Administrador" && <PiezasDadasDeBaja />}
 
       <form onSubmit={onBuscar} className="glass-panel-sm flex flex-wrap gap-3 items-end p-4">
         <div>

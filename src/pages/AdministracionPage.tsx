@@ -156,13 +156,27 @@ function SeccionCatalogos() {
 
   const valoresQuery = useQuery({
     queryKey: ["vocabularios", tipoActivo],
-    queryFn: async () => (await api.get<ValorVocabulario[]>(`/vocabularios/${tipoActivo}`)).data,
+    queryFn: async () =>
+      (await api.get<ValorVocabulario[]>(`/vocabularios/${tipoActivo}`, { params: { incluirInactivos: true } })).data,
   });
 
   const agregar = useMutation({
     mutationFn: async () => (await api.post(`/vocabularios/${tipoActivo}`, { valor: nuevoValor })).data,
     onSuccess: () => {
       setNuevoValor("");
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["vocabularios", tipoActivo] });
+    },
+    onError: (err) => setError(extraerMensajeError(err)),
+  });
+
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [valorEditado, setValorEditado] = useState("");
+  const actualizar = useMutation({
+    mutationFn: async (datos: { id: string; cambios: { valor?: string; activo?: boolean } }) =>
+      (await api.patch<ValorVocabulario>(`/vocabularios/${tipoActivo}/${datos.id}`, datos.cambios)).data,
+    onSuccess: () => {
+      setEditandoId(null);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["vocabularios", tipoActivo] });
     },
@@ -209,10 +223,52 @@ function SeccionCatalogos() {
       <ul className="glass-panel divide-y divide-linea">
         {valoresQuery.data?.map((v) => (
           <li key={v.id} className="px-5 py-2.5 flex items-center justify-between">
-            <span className="text-sm text-texto">{v.valor}</span>
-            <button onClick={() => eliminar.mutate(v.id)} className="text-sm font-semibold text-rojo hover:underline">
-              Eliminar
-            </button>
+            {editandoId === v.id ? (
+              <form
+                className="flex gap-2"
+                onSubmit={(e: FormEvent) => {
+                  e.preventDefault();
+                  if (valorEditado.trim()) actualizar.mutate({ id: v.id, cambios: { valor: valorEditado.trim() } });
+                }}
+              >
+                <input
+                  value={valorEditado}
+                  onChange={(e) => setValorEditado(e.target.value)}
+                  className="glass-input"
+                  aria-label="Nuevo valor del término"
+                />
+                <button type="submit" className="btn-primary shrink-0">
+                  Guardar
+                </button>
+                <button type="button" onClick={() => setEditandoId(null)} className="btn-glass shrink-0">
+                  Cancelar
+                </button>
+              </form>
+            ) : (
+              <span className={`text-sm ${v.activo ? "text-texto" : "text-gris-2 line-through"}`}>
+                {v.valor} {!v.activo && <span className="chip ml-2 no-underline">Inactivo</span>}
+              </span>
+            )}
+            <div className="flex gap-4 shrink-0">
+              <button
+                onClick={() => {
+                  setEditandoId(v.id);
+                  setValorEditado(v.valor);
+                }}
+                className="btn-danger-text"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => actualizar.mutate({ id: v.id, cambios: { activo: !v.activo } })}
+                className="btn-danger-text"
+              >
+                {v.activo ? "Desactivar" : "Activar"}
+              </button>
+              <button onClick={() => eliminar.mutate(v.id)} className="text-sm font-semibold text-rojo hover:underline">
+                Eliminar
+              </button>
+            </div>
           </li>
         ))}
         {valoresQuery.data?.length === 0 && <li className="px-5 py-3 text-sm text-gris-2">Sin valores registrados.</li>}
