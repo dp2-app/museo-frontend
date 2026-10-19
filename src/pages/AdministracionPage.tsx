@@ -5,7 +5,8 @@ import { api, extraerMensajeError } from "../lib/api";
 import { ROL_ETIQUETA } from "../lib/secciones";
 import type { Pagina, RegistroAuditoriaGlobal, Rol, Usuario, ValorVocabulario } from "../types";
 
-type Pestana = "usuarios" | "catalogos" | "bitacora";
+import { ConfiguracionCampos } from "../components/ConfiguracionCampos";
+type Pestana = "usuarios" | "catalogos" | "bitacora" | "campos" | "visibilidad";
 
 const VOCABULARIOS_ADMINISTRABLES = [
   { tipo: "categoria", etiqueta: "Categoría" },
@@ -311,11 +312,13 @@ export function AdministracionPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-linea">
+      <div className="flex flex-wrap gap-1 border-b border-linea">
         {(
           [
             ["usuarios", "Usuarios y roles"],
             ["catalogos", "Catálogos maestros"],
+            ["campos", "Campos de ficha"],
+            ["visibilidad", "Visibilidad por rol"],
             ["bitacora", "Bitácora de auditoría"],
           ] as const
         ).map(([clave, etiqueta]) => (
@@ -333,6 +336,8 @@ export function AdministracionPage() {
 
       {pestana === "usuarios" && <SeccionUsuarios />}
       {pestana === "catalogos" && <SeccionCatalogos />}
+      {pestana === "campos" && <ConfiguracionCampos />}
+      {pestana === "visibilidad" && <ConfiguracionCampos visibilidad />}
       {pestana === "bitacora" && <SeccionBitacora />}
     </div>
   );

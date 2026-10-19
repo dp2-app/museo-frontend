@@ -51,3 +51,8 @@ src/
   sube el binario directamente todavía — es un punto de extensión pendiente.
 - `AuthContext` decodifica el JWT en el cliente solo para leer `rol` y expiración;
   la autorización real siempre se valida en el backend.
+
+
+## Sprint 7: campos de ficha y visibilidad
+
+Administración incluye Campos de ficha y Visibilidad por rol. Alta y edición consumen /campos-ficha; ficha, búsquedas e impresión respetan el catálogo recibido. El backend verifica los permisos y omite los datos restringidos. Se limpia la caché al cambiar de sesión. Requiere la migración 0003 del backend. Validar con npm run build y npm run lint; las pruebas funcionales deben usar datos sintéticos y una base exclusiva.
