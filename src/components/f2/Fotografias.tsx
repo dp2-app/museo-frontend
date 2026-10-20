@@ -66,14 +66,16 @@ export function Fotografias({ piezaId, fotos, alCambiar }: { piezaId: string; fo
       )}
 
       {ordenadas.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="list" aria-label="Miniaturas">
+        <ul className="flex flex-wrap gap-2" aria-label="Miniaturas">
           {ordenadas.map((f, i) => (
-            <button key={f.id} type="button" role="listitem" onClick={() => setActivaId(f.id)} aria-label={`Ver fotografía ${i + 1}`}
-              aria-current={f.id === activa?.id} className={`w-14 h-14 rounded-xl overflow-hidden border-2 ${f.id === activa?.id ? "border-azul" : "border-linea opacity-80"}`}>
-              <img src={f.url} alt="" className="w-full h-full object-cover" />
-            </button>
+            <li key={f.id}>
+              <button type="button" onClick={() => setActivaId(f.id)} aria-label={`Ver fotografía ${i + 1}`}
+                aria-current={f.id === activa?.id} className={`w-14 h-14 rounded-xl overflow-hidden border-2 ${f.id === activa?.id ? "border-azul" : "border-linea opacity-80"}`}>
+                <img src={f.url} alt="" className="w-full h-full object-cover" />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {gestionar && activa && (

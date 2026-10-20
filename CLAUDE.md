@@ -153,11 +153,11 @@ Esto es solo UX: la autorización real la valida el backend (401/403) en cada en
   explícito si no está configurado).
 - **HU-22 (SSO PUCP/Google Workspace)**: no implementado — fuera del stack
   cerrado (JWT propio); anotado igual en `museo-backend/CLAUDE.md`.
-- **Sin pruebas automatizadas de frontend** (el Plan de Adquisiciones prevé
-  Playwright para E2E; no hay ningún test escrito en este repo todavía — el
-  rediseño se verificó manualmente en el navegador contra el backend real,
-  capturas en la conversación de la sesión que lo hizo).
-- **Sin CI/CD ni despliegue en Vercel configurado.**
+- **Pruebas**: hay pruebas unitarias y de componentes (Vitest) y de punta a punta (Playwright) para F2; los demás
+  flujos todavía no tienen (agregar las suyas y sumar sus archivos a `coverage.include` en `vite.config.ts`).
+  Utilidades compartidas en `src/test/` (`simularApi`, `renderizar`, datos con la forma del contrato v3).
+- **CI/CD**: `.github/workflows/build.yml` (lint, tipos, pruebas, build y E2E contra el backend real) y Vercel. Falta
+  el secreto `BACKEND_REPO_TOKEN` para que el trabajo E2E corra, y marcar los checks como obligatorios en `main`.
 
 ## Convenciones de código
 
