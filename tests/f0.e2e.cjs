@@ -41,6 +41,28 @@ async function estado(texto) { await page.getByRole('status').filter({hasText:te
   });
   assert.equal(compatibilidad.viejo,'Error legado');assert.equal(compatibilidad.nuevo.nombre,'Nombre requerido');assert.equal(compatibilidad.validacion.email,'Correo inválido');ok('Extractor compatible con errores v3, detail legado y validación Pydantic');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'La cabecera no debe desbordar en escritorio');
+  // Filtros sobre el catálogo real y estado vacío, sin alterar la configuración.
+  const buscar=page.getByRole('searchbox',{name:'Buscar campos',exact:true});
+  await buscar.fill(procedencia.clave);
+  assert.equal(await page.getByRole('button',{name:'Editar '+procedencia.etiqueta,exact:true}).count(),1);
+  await buscar.fill('sin_resultados_f0_que_no_existe');
+  await page.getByText('No se encontraron campos',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Limpiar filtros',exact:true}).click();assert.equal(await buscar.inputValue(),'');
+  const filtro=page.getByRole('combobox',{name:'Filtrar campos por estado',exact:true});
+  for(const [estado,activo] of [['activos',true],['inactivos',false]]) {
+   await filtro.selectOption(estado);
+   assert.equal(await page.locator('.f0-table tbody tr:not(.f0-group)').count(),campos.filter(c=>c.activo===activo).length);
+  }
+  await filtro.selectOption('activos');await page.evaluate(()=>window.scrollTo(0,0));await shot('00-catalogo-redisenado');await filtro.selectOption('todos');
+  ok('Buscar campos, filtrar activos/inactivos y limpiar un estado sin resultados');
+  await page.setViewportSize({width:390,height:844});
+  await page.getByLabel('Sección de administración',{exact:true}).selectOption('institucion');
+  await page.getByRole('heading',{name:'Datos de la institución',exact:true}).waitFor();
+  await page.getByLabel('Sección de administración',{exact:true}).selectOption('campos');
+  await page.getByRole('button',{name:'Crear campo adicional',exact:true}).waitFor();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+  await shot('09-campos-movil');await page.setViewportSize({width:1366,height:900});
+  ok('Navegación de Administración accesible en móvil y catálogo sin desborde de página');
   const clave='f0_visual_'+Date.now();
   await page.getByRole('button',{name:'Crear campo adicional',exact:true}).click();
   await page.getByLabel('Clave',{exact:true}).fill(clave);await page.getByLabel('Etiqueta',{exact:true}).fill('Marca del taller F0');

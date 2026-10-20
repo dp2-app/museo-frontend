@@ -2,6 +2,8 @@
   "comprobaciones": [
     "Login v3, permisos y retorno a Administración",
     "Extractor compatible con errores v3, detail legado y validación Pydantic",
+    "Buscar campos, filtrar activos/inactivos y limpiar un estado sin resultados",
+    "Navegación de Administración accesible en móvil y catálogo sin desborde de página",
     "Crear campo adicional real en el catálogo",
     "Error real 409 del servidor junto al campo",
     "Creación de lista multivalor y controles de referencia, número y fecha",

@@ -11,6 +11,18 @@ Implementación en `alfredo/f0-frontend`. Contrato: [backend #42](https://github
 - La compilación y lint iniciales también pasaron, con las mismas dos advertencias. Backend local probado: commit F0 `72c1147` (contenido del PR #42); la actualización de la referencia remota de main encontró fallos de red durante esta sesión. No se certifica aquí una actualización del entorno desplegado.
 - Ver [resultado.json](./evidencias/resultado.json), [Playwright](./playwright.txt), [build](./build.txt) y [lint](./lint.txt).
 
+## Mejora visual de Administración · 19/10/2026
+
+Navegación lateral en escritorio y selector de sección en móvil/tablet; cabecera más compacta. El catálogo ocupa una sola superficie con grupos, búsqueda por etiqueta/clave/grupo, filtro de activos/inactivos, contador y estado sin resultados. Conserva todos los campos por defecto. Las acciones de fila tienen menos peso visual, con nombres accesibles; se mantienen los tokens MATP/PUCP, el foco visible y las áreas táctiles de 44 px.
+
+Institución separa el formulario de la vista previa de identidad; listas y formulario de ficha usan superficies y separadores consistentes. La tabla tiene desplazamiento propio y contención de pintura para impedir que expanda la página en móvil. Sin dependencias nuevas ni cambios de contrato.
+
+**18 comprobaciones aprobadas** contra el backend real local: las 16 anteriores y dos nuevas para búsqueda/filtros/estado vacío y navegación móvil con catálogo sin desborde. Build aprobado y lint sin errores nuevos. Los problemas preexistentes de otros flujos siguen documentados más abajo.
+
+![Catálogo rediseñado con filtro de activos](./evidencias/00-catalogo-redisenado.png)
+
+![Catálogo y navegación en móvil](./evidencias/09-campos-movil.png)
+
 ## Comprobaciones funcionales
 
 1. Login v3 (`accessToken`), rol/permisos desde `/auth/sesion` y retorno a Administración.

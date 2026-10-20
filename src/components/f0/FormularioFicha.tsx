@@ -73,10 +73,10 @@ export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuar
     finally { setGuardando(false); }
   }
   if (catalogo.isPending || catalogo.isError) return <EstadoConsulta cargando={catalogo.isPending} error={catalogo.error} reintentar={() => { void catalogo.refetch(); }} />;
-  return <form className="glass-panel p-4 sm:p-6 space-y-6" onSubmit={(e) => { void enviar(e); }} noValidate aria-label="Formulario de ficha">
+  return <form className="f0-surface space-y-6" onSubmit={(e) => { void enviar(e); }} noValidate aria-label="Formulario de ficha">
     <p>Los campos y las listas provienen de la configuración vigente. El asterisco indica un campo obligatorio.</p>
     <ErrorOperacion error={error} />
-    {grupos.map((grupo) => <fieldset key={grupo} className="space-y-4"><legend className="mb-3 font-semibold text-azul">{grupo}</legend><div className="grid gap-4 md:grid-cols-2">{campos.filter((c) => c.grupo === grupo).map((c) => <Control key={c.id} campo={c} valor={c.almacenamiento === "lista" ? datos.listas[c.clave] : datos.campos[c.clave]} coleccionId={datos.campos.coleccion_id} cambiar={(v) => cambiar(c, v)} error={errores[c.clave] ?? erroresExternos[c.clave]} />)}</div></fieldset>)}
+    {grupos.map((grupo) => <fieldset key={grupo} className="space-y-4 border-t border-linea pt-6"><legend className="mb-3 font-semibold text-azul">{grupo}</legend><div className="grid gap-4 md:grid-cols-2">{campos.filter((c) => c.grupo === grupo).map((c) => <Control key={c.id} campo={c} valor={c.almacenamiento === "lista" ? datos.listas[c.clave] : datos.campos[c.clave]} coleccionId={datos.campos.coleccion_id} cambiar={(v) => cambiar(c, v)} error={errores[c.clave] ?? erroresExternos[c.clave]} />)}</div></fieldset>)}
     {aviso && <p role="status">{aviso}</p>}<button className="btn-primary" disabled={guardando || catalogo.isFetching}>{guardando ? "Guardando…" : onGuardar ? "Guardar ficha" : "Comprobar obligatorios"}</button>
   </form>;
 }

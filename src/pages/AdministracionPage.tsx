@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
+import { Settings, SlidersHorizontal, List, Landmark, Eye, Users, History } from "lucide-react";
 import { api, extraerMensajeError } from "../lib/api";
 import { ROL_ETIQUETA } from "../lib/secciones";
 import type { Pagina, RegistroAuditoriaGlobal, Rol, Usuario } from "../types";
@@ -12,6 +12,15 @@ import { VistaPreviaFicha } from "../components/f0/FormularioFicha";
 import { usePermisos } from "../hooks/usePermisos";
 
 type Pestana = "usuarios" | "catalogos" | "bitacora" | "campos" | "institucion" | "vista-previa";
+
+const seccionesAdministracion = [
+  ["campos", "Campos de ficha", SlidersHorizontal],
+  ["catalogos", "Listas de valores", List],
+  ["institucion", "Institución", Landmark],
+  ["vista-previa", "Vista previa", Eye],
+  ["usuarios", "Usuarios y roles", Users],
+  ["bitacora", "Bitácora de auditoría", History],
+] as const;
 
 function SeccionUsuarios() {
   const queryClient = useQueryClient();
@@ -169,47 +178,38 @@ export function AdministracionPage() {
   const [pestana, setPestana] = useState<Pestana>("campos");
 
   const { puede } = usePermisos();
+  const deshabilitada = (clave: Pestana) => (clave === "campos" && !puede("config.campos")) || (clave === "catalogos" && !puede("config.listas")) || (clave === "institucion" && !puede("config.institucion"));
   return (
     <div className="f0-admin space-y-6">
-      <div className="flex items-center gap-2.5">
-        <Settings size={28} className="text-azul" aria-hidden="true" />
+      <div className="flex items-center gap-4">
+        <span className="hidden sm:flex h-14 w-14 items-center justify-center rounded-card bg-white border border-linea"><Settings size={24} className="text-azul" aria-hidden="true" /></span>
         <div>
           <h1>Administración</h1>
           <p className="text-sm text-gris-2">Configura la ficha, las listas y los datos de la institución.</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1 border-b border-linea" aria-label="Secciones de administración">
-        {(
-          [
-            ["usuarios", "Usuarios y roles"],
-            ["campos", "Campos de ficha"],
-            ["catalogos", "Listas de valores"],
-            ["institucion", "Institución"],
-            ["vista-previa", "Vista previa"],
-            ["bitacora", "Bitácora de auditoría"],
-          ] as const
-        ).map(([clave, etiqueta]) => (
+      <div className="f0-workspace"><div className="lg:hidden"><label htmlFor="f0-seccion" className="block text-sm font-semibold text-azul mb-2">Sección de administración</label><select id="f0-seccion" className="glass-input" value={pestana} onChange={(e) => setPestana(e.target.value as Pestana)}>{seccionesAdministracion.map(([clave, etiqueta]) => <option key={clave} value={clave} disabled={deshabilitada(clave)}>{etiqueta}</option>)}</select></div><nav className="f0-sidebar" aria-label="Secciones de administración"><p className="f0-nav-label">Configuración</p>
+        {seccionesAdministracion.map(([clave, etiqueta, Icono]) => (
           <button
             key={clave}
             aria-pressed={pestana === clave}
-            disabled={(clave === "campos" && !puede("config.campos")) || (clave === "catalogos" && !puede("config.listas")) || (clave === "institucion" && !puede("config.institucion"))}
+            disabled={deshabilitada(clave)}
             onClick={() => setPestana(clave)}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition ${
-              pestana === clave ? "border-rojo text-azul" : "border-transparent text-texto hover:text-azul"
-            }`}
+            className={`f0-nav-item ${pestana === clave ? "f0-nav-active" : ""}`}
           >
-            {etiqueta}
+            <Icono size={20} aria-hidden="true" />{etiqueta}
           </button>
         ))}
-      </div>
-
+      </nav>
+      <div className="min-w-0">
       {pestana === "usuarios" && <SeccionUsuarios />}
       {pestana === "catalogos" && <ListasValores />}
       {pestana === "campos" && <CamposFicha />}
       {pestana === "institucion" && <Institucion />}
       {pestana === "vista-previa" && <VistaPreviaFicha />}
       {pestana === "bitacora" && <SeccionBitacora />}
+      </div></div>
     </div>
   );
 }

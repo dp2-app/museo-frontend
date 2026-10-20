@@ -33,15 +33,15 @@ function EditorInstitucion({ parametros }: { parametros: Parametro[] }) {
     },
   });
   const logo = /^https?:\/\//i.test(form.logo_url) && logoFallido !== form.logo_url ? form.logo_url : "";
-  return <form className="glass-panel p-4 sm:p-6 space-y-5" onSubmit={(e: FormEvent) => { e.preventDefault(); if (puede) { setAviso(""); guardar.mutate(); } }} aria-label="Datos de la institución">
-    <h2 className="section-title">Datos de la institución</h2><p>Los cambios se reflejan en los siguientes reportes y exportaciones.</p>
+  return <form className="f0-institution" onSubmit={(e: FormEvent) => { e.preventDefault(); if (puede) { setAviso(""); guardar.mutate(); } }} aria-label="Datos de la institución">
+    <div className="sm:col-span-2"><h2 className="section-title">Datos de la institución</h2><p className="mt-1 text-texto/70">Identidad del museo en reportes y exportaciones.</p></div><div className="f0-surface space-y-5">
     {fallos.map((error, i) => <ErrorOperacion key={i} error={error} />)}
     <ErrorOperacion error={guardar.error} />
     {definiciones.map(({ clave, etiqueta }) => <div key={clave}><Etiqueta htmlFor={`institucion-${clave}`}>{etiqueta}{clave === "nombre" && " *"}</Etiqueta><input id={`institucion-${clave}`} className="glass-input" required={clave === "nombre"} type={clave === "logo_url" ? "url" : "text"} value={form[clave]} onChange={(e) => setForm({ ...form, [clave]: e.target.value })} aria-invalid={Boolean(errores[`institucion.${clave}`])} aria-describedby={`institucion-${clave}-error`} /><ErrorCampo id={`institucion-${clave}-error`} mensaje={errores[`institucion.${clave}`]} /></div>)}
-    <div className="rounded-card border border-linea bg-fondo-suave p-4"><h3 className="section-title mb-3">Vista previa del logo</h3>
+    {aviso && <p role="status">{aviso}</p>}<div className="pt-4 border-t border-linea"><button className="btn-primary" disabled={!puede || guardar.isPending}>{guardar.isPending ? "Guardando…" : "Guardar institución"}</button></div>
+    </div><aside className="f0-surface self-start"><p className="f0-nav-label !px-0 !pt-0">Identidad institucional</p><h3 className="section-title mb-4">Vista previa del logo</h3><div className="f0-logo-preview">
       {logo ? <img src={logo} alt="Logo de la institución" className="max-h-40 max-w-full object-contain" referrerPolicy="no-referrer" onError={() => setLogoFallido(form.logo_url)} /> : <p className="flex items-center gap-2"><ImageOff size={24} aria-hidden="true" />{form.logo_url ? "No se puede mostrar el logo. Comprueba que la URL sea pública y corresponda a una imagen." : "Sin logo configurado. Puedes agregar una URL cuando esté disponible."}</p>}
-    </div>
-    {aviso && <p role="status">{aviso}</p>}<button className="btn-primary" disabled={!puede || guardar.isPending}>{guardar.isPending ? "Guardando…" : "Guardar institución"}</button>
+    </div><p className="mt-6 font-semibold text-azul break-words">{form.nombre || "Nombre de la institución"}</p>{form.direccion && <p className="mt-1 text-sm text-texto/70 break-words">{form.direccion}</p>}</aside>
   </form>;
 }
 

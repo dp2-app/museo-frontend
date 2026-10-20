@@ -79,20 +79,20 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-20 bg-white border-b border-linea shadow-sombra">
-        <div className="max-w-contenido mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap 2xl:flex-nowrap items-center justify-between gap-4">
+      <header className="sticky top-0 z-20 bg-white border-b border-linea">
+        <div className="max-w-contenido mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
           {/* Escritorio: lockup completo. Móvil: solo isotipo + rol activo (spec §6). */}
           <img
             src="/brand/matp_lockup_positivo.svg"
             alt='Museo de Artes y Tradiciones Populares "Luis Repetto Málaga"'
-            className="h-10 hidden md:block"
+            className="h-10 xl:h-12 hidden md:block shrink-0"
           />
           <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-9 md:hidden" />
 
-          <NavEnlaces className="hidden lg:flex order-last w-full justify-between 2xl:order-none 2xl:w-auto items-center gap-4 text-[15px] font-semibold" />
+          <NavEnlaces className="hidden lg:flex order-last w-full justify-between xl:order-none xl:w-auto items-center gap-3 text-sm font-semibold" />
 
           <div className="flex items-center gap-3">
-            <span className="hidden md:inline text-xs font-semibold uppercase tracking-wide text-gris-2">
+            <span className="hidden md:inline xl:hidden text-xs font-semibold uppercase tracking-wide text-gris-2">
               {rol ? ROL_ETIQUETA[rol] ?? rol : ""}
             </span>
 
