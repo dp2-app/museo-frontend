@@ -3,19 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
 import { api, extraerMensajeError } from "../lib/api";
 import { ROL_ETIQUETA } from "../lib/secciones";
-import type { Pagina, RegistroAuditoriaGlobal, Rol, Usuario, ValorVocabulario } from "../types";
+import type { Pagina, RegistroAuditoriaGlobal, Rol, Usuario } from "../types";
 
-type Pestana = "usuarios" | "catalogos" | "bitacora";
+import { CamposFicha } from "../components/f0/CamposFicha";
+import { ListasValores } from "../components/f0/ListasValores";
+import { Institucion } from "../components/f0/Institucion";
+import { VistaPreviaFicha } from "../components/f0/FormularioFicha";
+import { usePermisos } from "../hooks/usePermisos";
 
-const VOCABULARIOS_ADMINISTRABLES = [
-  { tipo: "categoria", etiqueta: "Categoría" },
-  { tipo: "estado_conservacion", etiqueta: "Estado de conservación" },
-  { tipo: "tipo_identificador", etiqueta: "Tipo de identificador" },
-  { tipo: "material", etiqueta: "Material" },
-  { tipo: "tecnica", etiqueta: "Técnica" },
-  { tipo: "procedencia", etiqueta: "Procedencia" },
-  { tipo: "autor", etiqueta: "Autor" },
-] as const;
+type Pestana = "usuarios" | "catalogos" | "bitacora" | "campos" | "institucion" | "vista-previa";
 
 function SeccionUsuarios() {
   const queryClient = useQueryClient();
@@ -148,135 +144,6 @@ function SeccionUsuarios() {
   );
 }
 
-function SeccionCatalogos() {
-  const queryClient = useQueryClient();
-  const [tipoActivo, setTipoActivo] = useState<(typeof VOCABULARIOS_ADMINISTRABLES)[number]["tipo"]>("categoria");
-  const [nuevoValor, setNuevoValor] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const valoresQuery = useQuery({
-    queryKey: ["vocabularios", tipoActivo],
-    queryFn: async () =>
-      (await api.get<ValorVocabulario[]>(`/vocabularios/${tipoActivo}`, { params: { incluirInactivos: true } })).data,
-  });
-
-  const agregar = useMutation({
-    mutationFn: async () => (await api.post(`/vocabularios/${tipoActivo}`, { valor: nuevoValor })).data,
-    onSuccess: () => {
-      setNuevoValor("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["vocabularios", tipoActivo] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [valorEditado, setValorEditado] = useState("");
-  const actualizar = useMutation({
-    mutationFn: async (datos: { id: string; cambios: { valor?: string; activo?: boolean } }) =>
-      (await api.patch<ValorVocabulario>(`/vocabularios/${tipoActivo}/${datos.id}`, datos.cambios)).data,
-    onSuccess: () => {
-      setEditandoId(null);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["vocabularios", tipoActivo] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  const eliminar = useMutation({
-    mutationFn: async (id: string) => api.delete(`/vocabularios/${tipoActivo}/${id}`),
-    onSuccess: () => {
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["vocabularios", tipoActivo] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {VOCABULARIOS_ADMINISTRABLES.map((v) => (
-          <button
-            key={v.tipo}
-            onClick={() => setTipoActivo(v.tipo)}
-            className={`chip ${tipoActivo === v.tipo ? "!bg-azul !text-white !border-azul" : ""}`}
-          >
-            {v.etiqueta}
-          </button>
-        ))}
-      </div>
-
-      <form
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          if (nuevoValor.trim()) agregar.mutate();
-        }}
-        className="flex gap-2 max-w-md"
-      >
-        <input value={nuevoValor} onChange={(e) => setNuevoValor(e.target.value)} className="glass-input" placeholder="Nuevo término..." />
-        <button type="submit" className="btn-primary shrink-0">
-          Añadir
-        </button>
-      </form>
-      {error && <p className="text-sm text-rojo">{error}</p>}
-
-      <ul className="glass-panel divide-y divide-linea">
-        {valoresQuery.data?.map((v) => (
-          <li key={v.id} className="px-5 py-2.5 flex items-center justify-between">
-            {editandoId === v.id ? (
-              <form
-                className="flex gap-2"
-                onSubmit={(e: FormEvent) => {
-                  e.preventDefault();
-                  if (valorEditado.trim()) actualizar.mutate({ id: v.id, cambios: { valor: valorEditado.trim() } });
-                }}
-              >
-                <input
-                  value={valorEditado}
-                  onChange={(e) => setValorEditado(e.target.value)}
-                  className="glass-input"
-                  aria-label="Nuevo valor del término"
-                />
-                <button type="submit" className="btn-primary shrink-0">
-                  Guardar
-                </button>
-                <button type="button" onClick={() => setEditandoId(null)} className="btn-glass shrink-0">
-                  Cancelar
-                </button>
-              </form>
-            ) : (
-              <span className={`text-sm ${v.activo ? "text-texto" : "text-gris-2 line-through"}`}>
-                {v.valor} {!v.activo && <span className="chip ml-2 no-underline">Inactivo</span>}
-              </span>
-            )}
-            <div className="flex gap-4 shrink-0">
-              <button
-                onClick={() => {
-                  setEditandoId(v.id);
-                  setValorEditado(v.valor);
-                }}
-                className="btn-danger-text"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => actualizar.mutate({ id: v.id, cambios: { activo: !v.activo } })}
-                className="btn-danger-text"
-              >
-                {v.activo ? "Desactivar" : "Activar"}
-              </button>
-              <button onClick={() => eliminar.mutate(v.id)} className="text-sm font-semibold text-rojo hover:underline">
-                Eliminar
-              </button>
-            </div>
-          </li>
-        ))}
-        {valoresQuery.data?.length === 0 && <li className="px-5 py-3 text-sm text-gris-2">Sin valores registrados.</li>}
-      </ul>
-    </div>
-  );
-}
-
 function SeccionBitacora() {
   const { data } = useQuery({
     queryKey: ["auditoria"],
@@ -299,31 +166,37 @@ function SeccionBitacora() {
 // Administración (HU-06, HU-22): usuarios y roles, catálogos maestros y
 // bitácora de auditoría. Único rol: Administrador (spec §6).
 export function AdministracionPage() {
-  const [pestana, setPestana] = useState<Pestana>("usuarios");
+  const [pestana, setPestana] = useState<Pestana>("campos");
 
+  const { puede } = usePermisos();
   return (
-    <div className="space-y-6">
+    <div className="f0-admin space-y-6">
       <div className="flex items-center gap-2.5">
         <Settings size={28} className="text-azul" aria-hidden="true" />
         <div>
           <h1>Administración</h1>
-          <p className="text-sm text-gris-2">HU-06, HU-22 · usuarios, catálogos maestros y bitácora.</p>
+          <p className="text-sm text-gris-2">Configura la ficha, las listas y los datos de la institución.</p>
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-linea">
+      <div className="flex flex-wrap gap-1 border-b border-linea" aria-label="Secciones de administración">
         {(
           [
             ["usuarios", "Usuarios y roles"],
-            ["catalogos", "Catálogos maestros"],
+            ["campos", "Campos de ficha"],
+            ["catalogos", "Listas de valores"],
+            ["institucion", "Institución"],
+            ["vista-previa", "Vista previa"],
             ["bitacora", "Bitácora de auditoría"],
           ] as const
         ).map(([clave, etiqueta]) => (
           <button
             key={clave}
+            aria-pressed={pestana === clave}
+            disabled={(clave === "campos" && !puede("config.campos")) || (clave === "catalogos" && !puede("config.listas")) || (clave === "institucion" && !puede("config.institucion"))}
             onClick={() => setPestana(clave)}
             className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition ${
-              pestana === clave ? "border-rojo text-azul" : "border-transparent text-gris-2 hover:text-azul"
+              pestana === clave ? "border-rojo text-azul" : "border-transparent text-texto hover:text-azul"
             }`}
           >
             {etiqueta}
@@ -332,7 +205,10 @@ export function AdministracionPage() {
       </div>
 
       {pestana === "usuarios" && <SeccionUsuarios />}
-      {pestana === "catalogos" && <SeccionCatalogos />}
+      {pestana === "catalogos" && <ListasValores />}
+      {pestana === "campos" && <CamposFicha />}
+      {pestana === "institucion" && <Institucion />}
+      {pestana === "vista-previa" && <VistaPreviaFicha />}
       {pestana === "bitacora" && <SeccionBitacora />}
     </div>
   );

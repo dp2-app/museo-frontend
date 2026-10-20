@@ -104,3 +104,10 @@
     @apply block text-xs font-semibold uppercase tracking-wide text-gris-2 mb-1;
   }
 }
+
+
+/* F0: el token rojo oscuro permite contraste AA del texto blanco de los botones. */
+@layer components {
+  .f0-admin .btn-primary { @apply bg-rojo-oscuro; }
+  .f0-admin .glass-input { @apply text-base; }
+}
