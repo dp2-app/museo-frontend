@@ -1,0 +1,80 @@
+{
+  "comprobaciones": [
+    "Login v3, permisos y retorno a Administración",
+    "Extractor compatible con errores v3, detail legado y validación Pydantic",
+    "Buscar campos, filtrar activos/inactivos y limpiar un estado sin resultados",
+    "Navegación de Administración accesible en móvil y catálogo sin desborde de página",
+    "Crear campo adicional real en el catálogo",
+    "Error real 409 del servidor junto al campo",
+    "Creación de lista multivalor y controles de referencia, número y fecha",
+    "Obligatoriedad vigente en vista previa sin guardar piezas",
+    "Campo base no desactivable en UI ni por API",
+    "Contrato F2 conserva listas y excluye campos de solo lectura al guardar",
+    "CamposFaltantes muestra código y foto calculados por el servidor",
+    "Valor en uso: rechazo real de borrado y desactivación por UI",
+    "Equivalencia del Excel guardada contra API real",
+    "Error institucional del backend identificado junto al nombre",
+    "Logo con protocolo inválido rechazado por el servidor junto al campo",
+    "Nombre/logo reales, vista previa y efecto inmediato en reportes",
+    "Responsive móvil y tablet sin desborde horizontal",
+    "Permiso negativo: catalogador sin acceso a configuración por API y ruta"
+  ],
+  "regresion": [
+    {
+      "pagina": "Colección",
+      "contratoLegado": true,
+      "respuestas": [],
+      "errores": [
+        {
+          "url": "http://127.0.0.1:5173/coleccion",
+          "mensaje": "Cannot read properties of undefined (reading 'map')"
+        }
+      ]
+    },
+    {
+      "pagina": "Importación",
+      "contratoLegado": true,
+      "respuestas": [
+        {
+          "url": "/importacion/cargas",
+          "status": 404
+        },
+        {
+          "url": "/importacion/plantillas",
+          "status": 404
+        }
+      ],
+      "errores": []
+    },
+    {
+      "pagina": "Consultas y reportes",
+      "contratoLegado": true,
+      "respuestas": [
+        {
+          "url": "/vocabularios/categoria?incluirInactivos=true",
+          "status": 404
+        },
+        {
+          "url": "/vocabularios/estado_conservacion?incluirInactivos=true",
+          "status": 404
+        }
+      ],
+      "errores": [
+        {
+          "url": "http://127.0.0.1:5173/consultas-y-reportes",
+          "mensaje": "Cannot read properties of undefined (reading 'map')"
+        }
+      ]
+    }
+  ],
+  "errores": [
+    {
+      "url": "http://127.0.0.1:5173/coleccion",
+      "mensaje": "Cannot read properties of undefined (reading 'map')"
+    },
+    {
+      "url": "http://127.0.0.1:5173/consultas-y-reportes",
+      "mensaje": "Cannot read properties of undefined (reading 'map')"
+    }
+  ]
+}

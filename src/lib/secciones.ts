@@ -1,7 +1,6 @@
-// Mapa de navegación (spec de diseño §6, matriz sección×rol) usando los
-// nombres de rol REALES del backend (app/core/roles.py) — nunca los nombres
-// "amigables" del spec (Curador, Conservador...) como clave de autorización.
-// Esos nombres amigables solo se usan como texto de UI (ver ROL_ETIQUETA).
+// Mapa de navegación (spec de diseño §6). Cada sección se muestra si el usuario tiene AL MENOS UNO de sus
+// permisos (F9, RF-52): la autorización nunca depende del nombre del rol. Los nombres amigables del spec
+// (Curador, Conservador...) solo se usan como texto de UI (ver ROL_ETIQUETA).
 
 import type { ComponentType } from "react";
 import {
@@ -15,84 +14,47 @@ import {
 } from "lucide-react";
 import { IconoRetablo } from "../components/IconoRetablo";
 
-export const ADMINISTRADOR = "Administrador";
-export const GESTOR_COLECCIONES = "Gestor de colecciones";
-export const CATALOGADOR = "Catalogador/practicante";
-export const CONSERVACION = "Conservación";
-export const CONSULTA_INTERNA = "Consulta interna";
-export const CONSULTA_EXTERNA = "Consulta externa";
-
-/** Nombres amigables del spec de diseño (§0, §5) para mostrar en la UI —
- * la Matriz de Requerimientos usa los nombres técnicos de arriba (ver
- * docs/historias-usuario.md del prototipo: "La Matriz... lo llama..."). */
+/** Nombres amigables del spec de diseño (§0, §5) para mostrar en la UI. */
 export const ROL_ETIQUETA: Record<string, string> = {
-  [ADMINISTRADOR]: "Administrador",
-  [GESTOR_COLECCIONES]: "Curador",
-  [CATALOGADOR]: "Catalogador",
-  [CONSERVACION]: "Conservador",
-  [CONSULTA_INTERNA]: "Consulta",
-  [CONSULTA_EXTERNA]: "Consulta externa",
+  Administrador: "Administrador",
+  "Gestor de colecciones": "Curador",
+  "Catalogador/practicante": "Catalogador",
+  Conservación: "Conservador",
+  "Consulta interna": "Consulta",
+  "Consulta externa": "Consulta externa",
 };
 
 export interface Seccion {
   ruta: string;
   nombre: string;
   Icono: ComponentType<LucideProps> | typeof IconoRetablo;
-  roles: string[];
+  /** Basta uno. Lista vacía: cualquier usuario con sesión. */
+  permisos: string[];
 }
 
+/** Permisos que dan acceso a cada pantalla de Administración (ver AdministracionPage). */
+export const PERMISOS_ADMINISTRACION = [
+  "config.campos.ver", "config.listas", "config.institucion.ver",
+  "usuarios.ver", "roles.ver", "auditoria.ver",
+];
+
 export const SECCIONES: Seccion[] = [
-  {
-    ruta: "/",
-    nombre: "Panel principal",
-    Icono: LayoutDashboard,
-    roles: [ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR, CONSERVACION, CONSULTA_INTERNA],
-  },
-  {
-    ruta: "/coleccion",
-    nombre: "Colección",
-    Icono: IconoRetablo,
-    roles: [ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR, CONSULTA_INTERNA],
-  },
+  { ruta: "/", nombre: "Panel principal", Icono: LayoutDashboard, permisos: [] },
+  { ruta: "/coleccion", nombre: "Colección", Icono: IconoRetablo, permisos: ["piezas.ver"] },
   {
     ruta: "/ubicacion-y-movimientos",
     nombre: "Ubicación y movimientos",
     Icono: Warehouse,
-    roles: [ADMINISTRADOR, CONSERVACION],
+    permisos: ["movimientos.registrar", "estados.cambiar", "ubicaciones.gestionar"],
   },
-  {
-    ruta: "/importacion",
-    nombre: "Importación",
-    Icono: Upload,
-    roles: [ADMINISTRADOR, CATALOGADOR],
-  },
-  {
-    ruta: "/consultas-y-reportes",
-    nombre: "Consultas y reportes",
-    Icono: Search,
-    roles: [ADMINISTRADOR, GESTOR_COLECCIONES, CONSULTA_INTERNA],
-  },
-  {
-    ruta: "/asistente-ia",
-    nombre: "Asistente IA",
-    Icono: Bot,
-    roles: [ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR],
-  },
-  {
-    ruta: "/administracion",
-    nombre: "Administración",
-    Icono: Settings,
-    roles: [ADMINISTRADOR],
-  },
+  { ruta: "/importacion", nombre: "Importación", Icono: Upload, permisos: ["importacion.ver", "importacion.cargar"] },
+  { ruta: "/consultas-y-reportes", nombre: "Consultas y reportes", Icono: Search, permisos: ["reportes.ver"] },
+  { ruta: "/asistente-ia", nombre: "Asistente IA", Icono: Bot, permisos: ["ia.usar"] },
+  { ruta: "/administracion", nombre: "Administración", Icono: Settings, permisos: PERMISOS_ADMINISTRACION },
 ];
 
-export function seccionesPara(rol: string | null): Seccion[] {
-  if (!rol) return [];
-  return SECCIONES.filter((s) => s.roles.includes(rol));
-}
+type PuedeAlguno = (...permisos: string[]) => boolean;
 
-export function rutaPermitida(ruta: string, rol: string | null): boolean {
-  const seccion = SECCIONES.find((s) => s.ruta === ruta);
-  if (!seccion) return true; // rutas hijas (p. ej. /coleccion/:id) se validan por su padre
-  return rol !== null && seccion.roles.includes(rol);
+export function seccionesPara(puedeAlguno: PuedeAlguno): Seccion[] {
+  return SECCIONES.filter((s) => puedeAlguno(...s.permisos));
 }

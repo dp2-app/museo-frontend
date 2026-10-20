@@ -1,0 +1,14 @@
+
+> museo-frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 2044 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.90 kB │ gzip:   0.50 kB
+dist/assets/index-DsyY2d0E.css   30.06 kB │ gzip:   5.98 kB
+dist/assets/index-DTpSDO4F.js   489.10 kB │ gzip: 148.40 kB
+
+✓ built in 4.57s

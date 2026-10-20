@@ -1,4 +1,4 @@
-# Contexto del proyecto — museo-frontend
+﻿# Contexto del proyecto — museo-frontend
 
 > Este archivo lo lee automáticamente Claude Code al abrir este repo. Está pensado
 > para que **cualquier integrante del equipo**, al pedirle ayuda a su Claude en este
@@ -23,7 +23,7 @@ negocio (RN-*) que esta interfaz debe respetar.
 
 Este frontend usaba antes una paleta propia "Liquid Glass" (terracota/clay,
 Fraunces+Manrope). Se reemplazó por completo por el sistema de diseño oficial
-MATP/PUCP que el equipo definió en `sgdcm-frontend/FRONTEND_DESIGN_SPEC.md`
+MATP/PUCP que el equipo definió en `prototipo-frontend/FRONTEND_DESIGN_SPEC.md`
 (colores institucionales azul/rojo, Montserrat+Source Serif 4, logo oficial,
 íconos Lucide) y se reestructuró la navegación a las **7 páginas** de esa
 especificación — ver "Las 7 páginas" más abajo. La diferencia clave con el
@@ -35,7 +35,7 @@ sección "Hecho y verificado", commits de HU-05/HU-06/HU-17/HU-21/HU-22).
 
 ## Leer antes de tocar código
 
-1. `../sgdcm-frontend/FRONTEND_DESIGN_SPEC.md` — fuente única de verdad de diseño
+1. `../prototipo-frontend/FRONTEND_DESIGN_SPEC.md` — fuente única de verdad de diseño
    (colores, tipografía, iconografía, RBAC, las 7 páginas, componentes). Cualquier
    color/radio/sombra fuera de `tailwind.config.js`/`src/index.css` es un error.
 2. `../museo-backend/docs/openapi.yaml` — contrato REST completo. `src/types/index.ts`
@@ -59,29 +59,24 @@ documentada en `museo-backend/CLAUDE.md`):
   porque el QR debe ser escaneable de verdad (apunta a la ficha de la pieza en
   este mismo sistema), no solo visualmente parecido a uno.
 
-## Las 7 páginas (spec §6, §8) y sus roles
+## Las 7 páginas (spec §6, §8) y sus permisos
 
-| Ruta | Página | Roles (nombres reales del backend, ver `src/lib/secciones.ts`) |
+| Ruta | Página | Se muestra con al menos uno de estos permisos (`src/lib/secciones.ts`) |
 |---|---|---|
-| `/` | Panel principal | todos |
-| `/coleccion` | Colección | Administrador, Gestor de colecciones, Catalogador/practicante, Consulta interna |
-| `/ubicacion-y-movimientos` | Ubicación y movimientos | Administrador, Conservación |
-| `/importacion` | Importación | Administrador, Catalogador/practicante |
-| `/consultas-y-reportes` | Consultas y reportes | Administrador, Gestor de colecciones, Consulta interna |
-| `/asistente-ia` | Asistente IA | Administrador, Gestor de colecciones, Catalogador/practicante |
-| `/administracion` | Administración | Administrador |
+| `/` | Panel principal | cualquier usuario con sesión |
+| `/coleccion` | Colección | `piezas.ver` |
+| `/ubicacion-y-movimientos` | Ubicación y movimientos | `movimientos.registrar`, `estados.cambiar`, `ubicaciones.gestionar` |
+| `/importacion` | Importación | `importacion.ver`, `importacion.cargar` |
+| `/consultas-y-reportes` | Consultas y reportes | `reportes.ver` |
+| `/asistente-ia` | Asistente IA | `ia.usar` |
+| `/administracion` | Administración | cualquiera de los `*.ver` de configuración, usuarios, roles y auditoría |
 
-`ROL_ETIQUETA` en `secciones.ts` traduce esos nombres técnicos (los que ya usa
-`app/core/roles.py` en el backend) a los nombres "amigables" del spec (Curador,
-Conservador, Consulta) **solo para mostrar en la UI** — la autorización real
-siempre compara contra el nombre técnico. Rutas legadas `/piezas`, `/colecciones`
-e `/ia` redirigen a sus equivalentes nuevas (`/coleccion`, `/coleccion`,
-`/asistente-ia`) para no romper enlaces existentes.
+**La autorización es por permiso, nunca por nombre de rol (F9, RNF-08).** `usePermisos()` lee `GET /auth/sesion` (`puede`, `puedeAlguno`); no se decodifica el JWT.
+`ROL_ETIQUETA` solo traduce el nombre del rol para mostrarlo. El permiso real de cada acción está en `Base-de-conocimiento` y en `museo-backend/docs/matriz-permisos.md`.
+Cada sección de Administración se muestra con su permiso «ver» y sus acciones de edición dependen de su permiso «editar». La pantalla de roles asigna un nivel por funcionalidad (sin acceso / solo ver / ver y editar) y, en la misma pantalla, los campos de la ficha que el rol ve. Más detalle en `docs/f9/README.md`.
 
-`RequireRole` (spec §5): un ítem de nav no permitido no se renderiza
-(`seccionesPara(rol)` en `NavEnlaces`); visitar una ruta directamente sin permiso
-redirige a `/`. Esto es solo UX — la autorización real la valida el backend
-(401/403) en cada endpoint.
+`RequirePermiso` (spec §5): un ítem de nav no permitido no se renderiza (`seccionesPara(puedeAlguno)`); visitar una ruta directamente sin permiso redirige a `/`.
+Esto es solo UX: la autorización real la valida el backend (401/403) en cada endpoint. Rutas legadas `/piezas`, `/colecciones` e `/ia` redirigen a sus equivalentes.
 
 ## Estado actual
 
@@ -104,13 +99,8 @@ redirige a `/`. Esto es solo UX — la autorización real la valida el backend
   `GET /reportes/panel-principal` (total, % completo, sin ubicación, requieren
   restauración), barras de distribución por colección, alertas con enlace a la
   ficha.
-- **Colección** (`PiezasPage`/`PiezaDetailPage`): todo lo que ya funcionaba
-  (búsqueda, alta, identificadores con 🔒, fotografías, movimientos, auditoría)
-  más el widget "Gestionar colecciones" (RF-010, plegable) y el **flujo de
-  aprobación de ficha real** (HU-05): botones Enviar a revisión/Aprobar/Rechazar
-  visibles-pero-deshabilitados según rol y estado actual, `PATCH
-  /piezas/{id}/estado-ficha`, chip de estado con los colores del spec §7, motivo
-  de rechazo obligatorio.
+- **Colección** (`PiezasPage`/`NuevaPiezaPage`/`PiezaDetailPage`): pasada al contrato v3 en F2 (ver
+  la sección «F2 · ficha de la pieza sobre v3» al final).
 - **Ubicación y movimientos** (`UbicacionMovimientosPage`, nueva, HU-07/HU-08):
   selector de pieza, breadcrumb jerárquico real (`lib/ubicaciones.ts`), **código
   QR real** (librería `qrcode`, no un patrón simulado — apunta a la ficha de la
@@ -211,3 +201,40 @@ Por la Estrategia de Gestión del proyecto: trabajo por rama, integración vía 
 request revisado por **un integrante distinto del autor**. Si agregas una pantalla
 nueva o cambias una existente de forma visible, pruébala en el navegador contra el
 backend real antes de dar el PR por terminado — no basta con que compile.
+
+
+## F0 · frontend v3 autorizado (19/10/2026)
+
+El líder autorizó específicamente las pantallas F0 según el pedido del dueño; las notas globales de evaluación las cambia el líder. Alcance: Administración con campos, listas/equivalencias, institución y vista previa. `src/components/f0/` contiene esas secciones y los componentes reutilizables `FormularioFicha` y `CamposFaltantes` para F2. No se construye la matriz de visibilidad (F9).
+
+- Campos y listas se leen del contrato v3: `/campos-ficha`, `/config/campos-ficha`, `/listas/{clave}/valores`. No introducir vocabularios fijos ni datos MSW.
+- `api.ts` admite errores v3 y legados y normaliza el nombre del token v3 exclusivamente para el login legado. `usePermisos()` lee `/auth/sesion`; el JWT no es fuente de permisos. AuthContext permanece intacto.
+- `useConsultaF0()` separa la caché por cuenta/sesión. No reutilizar catálogos visibles de otra cuenta.
+- `FormularioFicha` entrega `{campos, listas}` sin campos de solo lectura/inactivos; el consumidor F2 aporta el guardado y la versión de PATCH. Sin callback es vista previa y nunca escribe piezas. Solo ayuda visual para obligatorios; toda validación real está en el backend.
+- `CamposFaltantes` muestra el resultado del backend, incluidas las claves `codigos_externos`/`fotografias`; no vuelve a calcular completitud ni reglas de régimen.
+- Se conservan los tipos/páginas de otros flujos. Las incompatibilidades de esos flujos con v3 se informan sin corregirlas dentro de F0. Ver `docs/f0/README.md`.
+- Usar tokens existentes y foco visible. En F0 se usa `rojo-oscuro` para contraste AA de botones con texto blanco, sin crear colores; las entradas móviles usan 16 px.
+- Verificación: `npm run build`, `npm run lint` (dos advertencias previas), Playwright opcional `npm run test:f0` con runtime ya disponible. Evidencia y capturas en `docs/f0/`. Nunca probar contra Supabase durante desarrollo.
+
+
+## F2 · ficha de la pieza sobre v3 (20/10/2026)
+
+Dueño: Divano Pérez. Contrato en `Base-de-conocimiento/contratos-api/F2-piezas.md` y `museo-backend/docs/openapi.yaml`.
+
+- **Alta** (`/coleccion/nueva`, `NuevaPiezaPage`, permiso `piezas.crear`): `FormularioFicha` (F0) más `components/f2/DatosAlta`
+  (códigos, régimen de tenencia y ubicación inicial). Todo viaja en un solo `POST /piezas`; si algo falla no se crea nada.
+- **Ficha** (`PiezaDetailPage`): una sola consulta, `GET /piezas/{id}/ficha-completa`; cada sección invalida `["ficha", id]`
+  después de un cambio. Solo muestra los campos con dato; los vacíos los lista `CamposFaltantes`.
+- **Edición**: `FormularioFicha` con `PATCH /piezas/{id}` y la `version` leída. Si otra persona guardó antes, el backend
+  responde 409 `conflicto_version` y la pantalla ofrece recargar.
+- **Revisión** (`PATCH /piezas/{id}/estado-ficha`): enviar a revisión, aprobar, rechazar con motivo y volver a borrador. Los
+  botones solo aparecen si el permiso y el estado lo permiten. Baja y restauración siempre con motivo.
+- **Secciones** en `src/components/f2/`: `Codigos` (F1, RF-03/04), `Tenencia` (RF-56), `Fotografias` (RF-10: principal,
+  orden, tipo de vista, retiro), `Auditoria` (RNF-11). La ubicación y el estado solo se muestran: los traslados se
+  registran en «Ubicación y movimientos» (F6).
+- Catálogos compartidos en `hooks/useCatalogosF2.ts`. Tipos v3 en `types/index.ts` (`PiezaV3`, `FichaCompleta`…); los
+  tipos legados (`Pieza`, `PiezaDetalle`) siguen solo porque otras páginas aún los usan.
+- Verificado en el navegador contra el backend local: alta, edición, conflicto, aprobación y rechazo, códigos (y el
+  error de duplicado), tenencia (error de contraparte), fotos, baja y restauración.
+- Pendiente de F2: documentos de la pieza (RF-11), corrección excepcional del código I (RF-05) y sugerencias de IA en
+  la ficha (F10).

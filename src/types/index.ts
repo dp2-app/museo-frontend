@@ -62,7 +62,7 @@ export interface Fotografia {
 }
 
 export type EstadoFicha = "borrador" | "en_revision" | "aprobada" | "rechazada";
-export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar";
+export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar" | "volver_borrador";
 
 export interface Pieza {
   id: string;
@@ -191,6 +191,9 @@ export interface Usuario {
   email: string;
   activo: boolean;
   rol: Rol;
+  proveedorAuth?: string;
+  ultimoAcceso?: string | null;
+  creadoEn?: string;
 }
 
 export interface UsuarioInput {
@@ -213,6 +216,8 @@ export interface RegistroAuditoriaGlobal extends RegistroAuditoria {
   id: string;
   tabla: string;
   registroId: string;
+  motivo?: string | null;
+  usuarioNombre?: string | null;
 }
 
 // --- HU-17: panel principal ---
@@ -223,14 +228,16 @@ export interface AlertaPanel {
   camposFaltantes: string[];
 }
 
+// Contrato v3 de GET /reportes/panel-principal. `piezasSinUbicacion` es null si el rol no ve el campo de ubicación (F9, RF-57).
+// `alertas` ya no viene en v3: la lista de piezas incompletas está en /reportes/informacion-incompleta.
 export interface ReportePanelPrincipal {
   totalPiezas: number;
   porcentajeCompleto: number;
-  piezasSinUbicacion: number;
+  piezasSinUbicacion: number | null;
   piezasSinFoto: number;
-  piezasRequierenRestauracion: number;
+  piezasRequierenAtencion: number;
   distribucionPorColeccion: { coleccion: string; total: number }[];
-  alertas: AlertaPanel[];
+  alertas?: AlertaPanel[];
 }
 
 // --- RF-034: piezas por ubicación ---
@@ -238,4 +245,106 @@ export interface ReportePanelPrincipal {
 export interface ReportePorUbicacion {
   porUbicacion: { ubicacionId: string; ubicacion: string; total: number }[];
   sinUbicacion: number;
+}
+
+// F0 · Contrato v3, aditivo: conserva los tipos de los otros flujos.
+export interface ErrorApi { campo: string | null; codigo: string; mensaje: string; }
+export interface TipoLista { id: string; clave: string; nombre: string; descripcion: string | null; esSistema: boolean; activo: boolean; }
+export interface ValorLista { id: string; etiqueta: string; codigo: string | null; orden: number; activo: boolean; esSistema: boolean; }
+export interface Equivalencia { id: string; textoOrigen: string; textoNormalizado: string; valorId: string; valorEtiqueta: string; fuente: string | null; validado: boolean; }
+export interface Parametro { clave: string; valor: unknown; descripcion: string | null; }
+export interface CampoFicha {
+  id: string; clave: string; etiqueta: string; tipo: "texto" | "numero" | "fecha" | "lista" | "referencia";
+  lista: Pick<TipoLista, "id" | "clave" | "nombre"> | null;
+  multivalor: boolean; obligatorio: boolean; orden: number; grupo: string; ayuda: string | null;
+  activo: boolean; esBase: boolean; almacenamiento: "columna" | "adicional" | "lista"; soloLectura: boolean;
+}
+export interface SesionV3 { usuario: Usuario; permisos: string[]; camposOcultos: string[]; }
+export interface DatosFichaV3 { campos: Record<string, unknown>; listas: Record<string, string[]>; }
+
+// --- F9: permisos por funcionalidad y acción (RF-52) ---
+
+export type AccionPermiso = "ver" | "crear" | "editar" | "aprobar" | "exportar" | "otra";
+
+/** Una celda de la matriz: `recurso` es la fila y `accion` la columna. `requiere` es el permiso previo (editar exige ver). */
+export interface Permiso {
+  clave: string;
+  modulo: string;
+  recurso: string;
+  accion: AccionPermiso;
+  requiere: string | null;
+  orden: number;
+  descripcion: string | null;
+}
+
+export interface RolDetalle extends Rol {
+  descripcion: string | null;
+  activo: boolean;
+  esSistema: boolean;
+  permisos: string[];
+}
+
+export interface VisibilidadCampo {
+  campoId: string;
+  clave: string;
+  etiqueta: string | null;
+  grupo: string | null;
+  rolId: string;
+  rol: string;
+  visible: boolean;
+}
+
+// --- F2: ficha de la pieza sobre el contrato v3 (GET /piezas/{id}/ficha-completa) ---
+
+export interface UsuarioResumen { id: string; nombre: string; }
+export interface CodigoResumen { id: string; tipoCodigo: string; tipoNombre: string; valor: string; bloqueado: boolean; }
+export interface CodigoV3 extends CodigoResumen {
+  tipoCodigoId: string; valorNormalizado: string; nota: string | null; vigente: boolean; fuente: string | null; creadoEn: string;
+}
+export interface TipoCodigo {
+  id: string; clave: string; nombre: string; descripcion: string | null; patron: string | null; esUnico: boolean;
+  inmutable: boolean; esPrincipal: boolean; permiteMultiples: boolean; orden: number; activo: boolean;
+}
+export interface Regimen {
+  id: string; clave: string; nombre: string; descripcion: string | null; ingresaInventarioPermanente: boolean;
+  requiereContraparte: boolean; requiereFechas: boolean; orden: number; activo: boolean;
+}
+export interface Propietario { id: string; tipoPersona: string; nombre: string; esPorDefecto: boolean; activo: boolean; }
+export interface TenenciaV3 {
+  id: string; regimen: string; regimenNombre: string; contraparte: Propietario | null; fechaInicio: string | null;
+  fechaFin: string | null; vigente: boolean; condicionesContractuales: string | null; restringidoPublicacion: boolean; creadoEn: string;
+}
+export interface FotoV3 {
+  id: string; url: string; claveArchivo: string | null; tipoVistaId: string | null; orden: number; esPrincipal: boolean;
+  restringidoUso: boolean; creadoEn: string;
+}
+export interface DocumentoV3 {
+  id: string; tipoDocumentoId: string | null; titulo: string | null; fechaDocumento: string | null; descripcion: string | null;
+  url: string; restringidoUso: boolean; creadoEn: string;
+}
+export interface HistorialItem {
+  id: string; fecha: string; motivo: string | null; ubicacionAnterior?: string | null; ubicacionNueva?: string | null;
+  estadoAnterior?: string | null; estadoNuevo?: string | null;
+}
+export interface PiezaV3 {
+  id: string; version: string; estadoFicha: EstadoFicha; motivoRechazo: string | null; incompleta: boolean;
+  camposFaltantes: string[]; campos: Record<string, unknown>; listas: Record<string, { id: string; etiqueta: string | null }[]>;
+  etiquetas: Record<string, string | null>; codigos: CodigoResumen[];
+  tenenciaVigente: { regimen: string; regimenNombre: string; restringidoPublicacion: boolean } | null;
+  fotoPrincipal: { id: string; url: string } | null; dadaDeBaja: boolean;
+  creadoPor: UsuarioResumen | null; creadoEn: string; actualizadoPor: UsuarioResumen | null; actualizadoEn: string;
+}
+export interface FichaCompleta extends PiezaV3 {
+  codigosDetalle: CodigoV3[]; tenencias: TenenciaV3[]; fotografias: FotoV3[]; documentos: DocumentoV3[];
+  movimientos: HistorialItem[]; estados: HistorialItem[];
+}
+export interface AuditoriaV3 {
+  id: string; tabla: string; campo: string; valorAnterior: string | null; valorNuevo: string | null; accion: string;
+  motivo: string | null; usuarioNombre?: string | null; fecha: string;
+}
+export interface CodigoAlta { tipoCodigoId: string; valor: string; }
+export interface PiezaAlta extends DatosFichaV3 {
+  codigos: CodigoAlta[];
+  tenencia: { regimenId: string; contraparteId?: string | null; fechaInicio?: string | null; fechaFin?: string | null } | null;
+  ubicacionInicialId: string | null;
 }
