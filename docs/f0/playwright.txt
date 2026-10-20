@@ -1,0 +1,18 @@
+OK Login v3, permisos y retorno a Administración
+OK Extractor compatible con errores v3, detail legado y validación Pydantic
+OK Buscar campos, filtrar activos/inactivos y limpiar un estado sin resultados
+OK Navegación de Administración accesible en móvil y catálogo sin desborde de página
+OK Crear campo adicional real en el catálogo
+OK Error real 409 del servidor junto al campo
+OK Creación de lista multivalor y controles de referencia, número y fecha
+OK Obligatoriedad vigente en vista previa sin guardar piezas
+OK Campo base no desactivable en UI ni por API
+OK Contrato F2 conserva listas y excluye campos de solo lectura al guardar
+OK CamposFaltantes muestra código y foto calculados por el servidor
+OK Valor en uso: rechazo real de borrado y desactivación por UI
+OK Equivalencia del Excel guardada contra API real
+OK Error institucional del backend identificado junto al nombre
+OK Logo con protocolo inválido rechazado por el servidor junto al campo
+OK Nombre/logo reales, vista previa y efecto inmediato en reportes
+OK Responsive móvil y tablet sin desborde horizontal
+OK Permiso negativo: catalogador sin acceso a configuración por API y ruta

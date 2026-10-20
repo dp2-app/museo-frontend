@@ -104,3 +104,39 @@
     @apply block text-xs font-semibold uppercase tracking-wide text-gris-2 mb-1;
   }
 }
+
+
+/* F0: el token rojo oscuro permite contraste AA del texto blanco de los botones. */
+@layer components {
+  .f0-admin .btn-primary { @apply bg-rojo-oscuro; }
+  .f0-admin .glass-input { @apply text-base; }
+}
+
+/* F0: superficies tranquilas, navegación contextual y acciones de fila discretas. */
+@layer components {
+  .f0-workspace { @apply grid gap-6 lg:grid-cols-[208px_minmax(0,1fr)]; }
+  .f0-sidebar { @apply hidden lg:flex gap-1 flex-col self-start sticky top-24; }
+  .f0-nav-label { @apply hidden lg:block px-3 pt-2 pb-3 text-xs font-semibold uppercase tracking-widest text-texto/60; }
+  .f0-nav-item { @apply flex shrink-0 items-center gap-3 rounded-btn px-3 py-3 text-sm text-texto/80 font-semibold transition hover:bg-white disabled:opacity-40; }
+  .f0-nav-active { @apply bg-white text-azul shadow-sombra; }
+  .f0-nav-active svg { @apply text-rojo-oscuro; }
+  .f0-admin .section-title { @apply text-xl font-semibold; }
+  .f0-admin .glass-panel { @apply shadow-none; }
+  .f0-admin .glass-input { @apply border-linea min-h-11; }
+  .f0-surface { @apply rounded-card border border-linea bg-white p-4 sm:p-6; }
+  .f0-notice { @apply flex items-start gap-3 rounded-card bg-azul/5 px-4 py-3 text-sm text-azul; }
+  .f0-catalogue { @apply overflow-hidden rounded-card border border-linea bg-white; }
+  .f0-toolbar { @apply flex flex-col sm:flex-row gap-3 p-4; }
+  .f0-table { @apply w-full text-left text-sm; }
+  .f0-table thead { @apply border-y border-linea text-texto/70; }
+  .f0-table thead th { @apply px-4 py-3 font-semibold whitespace-nowrap; }
+  .f0-table tbody td, .f0-table tbody th { @apply px-4 py-4 border-b border-linea; }
+  .f0-table tbody tr:not(.f0-group) { @apply hover:bg-fondo-suave/60; }
+  .f0-table .f0-group th { @apply bg-fondo-suave px-4 py-3 text-xs uppercase tracking-wider text-azul; }
+  .f0-action { @apply inline-flex items-center justify-center gap-2 min-h-11 min-w-11 rounded-btn px-3 py-2 text-sm font-semibold text-azul hover:bg-fondo-suave transition disabled:opacity-40 disabled:pointer-events-none; }
+  .f0-badge { @apply inline-flex items-center gap-2 rounded-pill px-2 py-1 bg-fondo-suave text-xs font-semibold text-texto/70; }
+  .f0-badge-active { @apply bg-azul/5 text-azul; }
+  .f0-institution { @apply grid gap-6 sm:grid-cols-2; }
+  .f0-logo-preview { @apply min-h-40 flex items-center justify-center bg-fondo-suave rounded-btn p-4 text-center text-sm text-texto/70; }
+  .f0-value-list { @apply rounded-card border border-linea bg-white; }
+}

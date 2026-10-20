@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { extraerMensajeError } from "../lib/api";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,8 @@ export function LoginPage() {
     setCargando(true);
     try {
       await login(email, password);
-      navigate("/");
+      const desde = (location.state as { desde?: string } | null)?.desde;
+      navigate(desde?.startsWith("/") && !desde.startsWith("//") ? desde : "/");
     } catch (err) {
       setError(extraerMensajeError(err) || "Email o contraseña incorrectos");
     } finally {

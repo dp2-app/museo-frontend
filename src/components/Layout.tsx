@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { CircleUser, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { usePermisos } from "../hooks/usePermisos";
 import { ROL_ETIQUETA, seccionesPara } from "../lib/secciones";
 
 // Header/nav/footer per la especificación de diseño §6. El nombre del
@@ -11,7 +12,7 @@ import { ROL_ETIQUETA, seccionesPara } from "../lib/secciones";
 // footer institucional.
 
 function NavEnlaces({ className, onNavigate }: { className?: string; onNavigate?: () => void }) {
-  const { rol } = useAuth();
+  const { rol } = usePermisos();
   const secciones = seccionesPara(rol);
 
   return (
@@ -71,26 +72,27 @@ function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => vo
 }
 
 export function Layout() {
-  const { rol, logout } = useAuth();
+  const { logout } = useAuth();
+  const { rol } = usePermisos();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-20 bg-white border-b border-linea shadow-sombra">
-        <div className="max-w-contenido mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-20 bg-white border-b border-linea">
+        <div className="max-w-contenido mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
           {/* Escritorio: lockup completo. Móvil: solo isotipo + rol activo (spec §6). */}
           <img
             src="/brand/matp_lockup_positivo.svg"
             alt='Museo de Artes y Tradiciones Populares "Luis Repetto Málaga"'
-            className="h-10 hidden md:block"
+            className="h-10 xl:h-12 hidden md:block shrink-0"
           />
           <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-9 md:hidden" />
 
-          <NavEnlaces className="hidden lg:flex items-center gap-5 text-[15px] font-semibold" />
+          <NavEnlaces className="hidden lg:flex order-last w-full justify-between xl:order-none xl:w-auto items-center gap-3 text-sm font-semibold" />
 
           <div className="flex items-center gap-3">
-            <span className="hidden md:inline text-xs font-semibold uppercase tracking-wide text-gris-2">
+            <span className="hidden md:inline xl:hidden text-xs font-semibold uppercase tracking-wide text-gris-2">
               {rol ? ROL_ETIQUETA[rol] ?? rol : ""}
             </span>
 
