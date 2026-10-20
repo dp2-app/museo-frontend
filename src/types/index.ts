@@ -191,6 +191,9 @@ export interface Usuario {
   email: string;
   activo: boolean;
   rol: Rol;
+  proveedorAuth?: string;
+  ultimoAcceso?: string | null;
+  creadoEn?: string;
 }
 
 export interface UsuarioInput {
@@ -213,6 +216,8 @@ export interface RegistroAuditoriaGlobal extends RegistroAuditoria {
   id: string;
   tabla: string;
   registroId: string;
+  motivo?: string | null;
+  usuarioNombre?: string | null;
 }
 
 // --- HU-17: panel principal ---
@@ -254,3 +259,35 @@ export interface CampoFicha {
 }
 export interface SesionV3 { usuario: Usuario; permisos: string[]; camposOcultos: string[]; }
 export interface DatosFichaV3 { campos: Record<string, unknown>; listas: Record<string, string[]>; }
+
+// --- F9: permisos por funcionalidad y acción (RF-52) ---
+
+export type AccionPermiso = "ver" | "crear" | "editar" | "aprobar" | "exportar" | "otra";
+
+/** Una celda de la matriz: `recurso` es la fila y `accion` la columna. `requiere` es el permiso previo (editar exige ver). */
+export interface Permiso {
+  clave: string;
+  modulo: string;
+  recurso: string;
+  accion: AccionPermiso;
+  requiere: string | null;
+  orden: number;
+  descripcion: string | null;
+}
+
+export interface RolDetalle extends Rol {
+  descripcion: string | null;
+  activo: boolean;
+  esSistema: boolean;
+  permisos: string[];
+}
+
+export interface VisibilidadCampo {
+  campoId: string;
+  clave: string;
+  etiqueta: string | null;
+  grupo: string | null;
+  rolId: string;
+  rol: string;
+  visible: boolean;
+}

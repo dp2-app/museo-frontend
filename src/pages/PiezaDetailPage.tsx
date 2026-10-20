@@ -3,10 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Archive, Check, X as IconoX } from "lucide-react";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
-import { useAuth } from "../contexts/AuthContext";
+import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerMensajeError } from "../lib/api";
 import { cloudinaryConfigurado, subirImagenACloudinary } from "../lib/cloudinary";
-import { ADMINISTRADOR, CATALOGADOR, GESTOR_COLECCIONES } from "../lib/secciones";
 import { aplanarUbicaciones } from "../lib/ubicaciones";
 import type {
   AccionEstadoFicha,
@@ -44,7 +43,7 @@ function Fila({ etiqueta, children }: { etiqueta: string; children: ReactNode })
 
 export function PiezaDetailPage() {
   const { piezaId } = useParams<{ piezaId: string }>();
-  const { rol } = useAuth();
+  const { puede } = usePermisos();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +250,7 @@ export function PiezaDetailPage() {
               onClick={() => cambiarEstadoFicha.mutate({ accion: "enviar_revision" })}
               disabled={
                 cambiarEstadoFicha.isPending ||
-                !(rol === ADMINISTRADOR || rol === CATALOGADOR) ||
+                !puede("piezas.editar") ||
                 !(pieza.estadoFicha === "borrador" || pieza.estadoFicha === "rechazada")
               }
               className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm"
@@ -263,7 +262,7 @@ export function PiezaDetailPage() {
               onClick={() => cambiarEstadoFicha.mutate({ accion: "aprobar" })}
               disabled={
                 cambiarEstadoFicha.isPending ||
-                !(rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES) ||
+                !puede("piezas.aprobar_ficha") ||
                 pieza.estadoFicha !== "en_revision"
               }
               className="btn-primary !min-h-0 !py-1.5 !px-3 !text-sm"
@@ -275,7 +274,7 @@ export function PiezaDetailPage() {
               onClick={() => setMostrarRechazo((v) => !v)}
               disabled={
                 cambiarEstadoFicha.isPending ||
-                !(rol === ADMINISTRADOR || rol === GESTOR_COLECCIONES) ||
+                !puede("piezas.aprobar_ficha") ||
                 pieza.estadoFicha !== "en_revision"
               }
               className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm !border-rojo !text-rojo"
@@ -332,7 +331,7 @@ export function PiezaDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirmandoBaja(true)}
-                disabled={rol !== ADMINISTRADOR}
+                disabled={!puede("piezas.baja")}
                 className="btn-glass !min-h-0 !py-1.5 !px-3 !text-sm !border-rojo !text-rojo"
               >
                 <Archive size={16} aria-hidden="true" /> Dar de baja

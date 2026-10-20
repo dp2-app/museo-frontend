@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { IconoRetablo } from "../components/IconoRetablo";
-import { useAuth } from "../contexts/AuthContext";
+import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerMensajeError } from "../lib/api";
 import type { Coleccion, Pagina, Pieza } from "../types";
 
@@ -143,7 +143,7 @@ function PiezasDadasDeBaja() {
 }
 
 export function PiezasPage() {
-  const { rol } = useAuth();
+  const { puede } = usePermisos();
   const queryClient = useQueryClient();
   const [codigo, setCodigo] = useState("");
   const [coleccionId, setColeccionId] = useState("");
@@ -202,7 +202,7 @@ export function PiezasPage() {
       </div>
 
       <GestionarColecciones />
-      {rol === "Administrador" && <PiezasDadasDeBaja />}
+      {puede("piezas.restaurar") && <PiezasDadasDeBaja />}
 
       <form onSubmit={onBuscar} className="glass-panel-sm flex flex-wrap gap-3 items-end p-4">
         <div>

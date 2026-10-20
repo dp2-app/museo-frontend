@@ -1,4 +1,4 @@
-# Contexto del proyecto — museo-frontend
+﻿# Contexto del proyecto — museo-frontend
 
 > Este archivo lo lee automáticamente Claude Code al abrir este repo. Está pensado
 > para que **cualquier integrante del equipo**, al pedirle ayuda a su Claude en este
@@ -59,29 +59,24 @@ documentada en `museo-backend/CLAUDE.md`):
   porque el QR debe ser escaneable de verdad (apunta a la ficha de la pieza en
   este mismo sistema), no solo visualmente parecido a uno.
 
-## Las 7 páginas (spec §6, §8) y sus roles
+## Las 7 páginas (spec §6, §8) y sus permisos
 
-| Ruta | Página | Roles (nombres reales del backend, ver `src/lib/secciones.ts`) |
+| Ruta | Página | Se muestra con al menos uno de estos permisos (`src/lib/secciones.ts`) |
 |---|---|---|
-| `/` | Panel principal | todos |
-| `/coleccion` | Colección | Administrador, Gestor de colecciones, Catalogador/practicante, Consulta interna |
-| `/ubicacion-y-movimientos` | Ubicación y movimientos | Administrador, Conservación |
-| `/importacion` | Importación | Administrador, Catalogador/practicante |
-| `/consultas-y-reportes` | Consultas y reportes | Administrador, Gestor de colecciones, Consulta interna |
-| `/asistente-ia` | Asistente IA | Administrador, Gestor de colecciones, Catalogador/practicante |
-| `/administracion` | Administración | Administrador |
+| `/` | Panel principal | cualquier usuario con sesión |
+| `/coleccion` | Colección | `piezas.ver` |
+| `/ubicacion-y-movimientos` | Ubicación y movimientos | `movimientos.registrar`, `estados.cambiar`, `ubicaciones.gestionar` |
+| `/importacion` | Importación | `importacion.ver`, `importacion.cargar` |
+| `/consultas-y-reportes` | Consultas y reportes | `reportes.ver` |
+| `/asistente-ia` | Asistente IA | `ia.usar` |
+| `/administracion` | Administración | cualquiera de los `*.ver` de configuración, usuarios, roles y auditoría |
 
-`ROL_ETIQUETA` en `secciones.ts` traduce esos nombres técnicos (los que ya usa
-`app/core/roles.py` en el backend) a los nombres "amigables" del spec (Curador,
-Conservador, Consulta) **solo para mostrar en la UI** — la autorización real
-siempre compara contra el nombre técnico. Rutas legadas `/piezas`, `/colecciones`
-e `/ia` redirigen a sus equivalentes nuevas (`/coleccion`, `/coleccion`,
-`/asistente-ia`) para no romper enlaces existentes.
+**La autorización es por permiso, nunca por nombre de rol (F9, RNF-08).** `usePermisos()` lee `GET /auth/sesion` (`puede`, `puedeAlguno`); no se decodifica el JWT.
+`ROL_ETIQUETA` solo traduce el nombre del rol para mostrarlo. El permiso real de cada acción está en `Base-de-conocimiento` y en `museo-backend/docs/matriz-permisos.md`.
+Cada sección de Administración se muestra con su permiso «ver» y sus acciones de edición dependen de su permiso «editar». La pantalla de roles asigna un nivel por funcionalidad (sin acceso / solo ver / ver y editar) y, en la misma pantalla, los campos de la ficha que el rol ve. Más detalle en `docs/f9/README.md`.
 
-`RequireRole` (spec §5): un ítem de nav no permitido no se renderiza
-(`seccionesPara(rol)` en `NavEnlaces`); visitar una ruta directamente sin permiso
-redirige a `/`. Esto es solo UX — la autorización real la valida el backend
-(401/403) en cada endpoint.
+`RequirePermiso` (spec §5): un ítem de nav no permitido no se renderiza (`seccionesPara(puedeAlguno)`); visitar una ruta directamente sin permiso redirige a `/`.
+Esto es solo UX: la autorización real la valida el backend (401/403) en cada endpoint. Rutas legadas `/piezas`, `/colecciones` e `/ia` redirigen a sus equivalentes.
 
 ## Estado actual
 

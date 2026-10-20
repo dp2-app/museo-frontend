@@ -4,14 +4,12 @@ import { api, TOKEN_STORAGE_KEY } from "../lib/api";
 
 interface JwtPayload {
   sub: string;
-  rol: string;
   exp: number;
 }
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   usuarioId: string | null;
-  rol: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -48,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     isAuthenticated: payload !== null,
     usuarioId: payload?.sub ?? null,
-    rol: payload?.rol ?? null,
     login,
     logout,
   };
