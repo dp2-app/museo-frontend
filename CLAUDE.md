@@ -23,7 +23,7 @@ negocio (RN-*) que esta interfaz debe respetar.
 
 Este frontend usaba antes una paleta propia "Liquid Glass" (terracota/clay,
 Fraunces+Manrope). Se reemplazó por completo por el sistema de diseño oficial
-MATP/PUCP que el equipo definió en `sgdcm-frontend/FRONTEND_DESIGN_SPEC.md`
+MATP/PUCP que el equipo definió en `prototipo-frontend/FRONTEND_DESIGN_SPEC.md`
 (colores institucionales azul/rojo, Montserrat+Source Serif 4, logo oficial,
 íconos Lucide) y se reestructuró la navegación a las **7 páginas** de esa
 especificación — ver "Las 7 páginas" más abajo. La diferencia clave con el
@@ -35,7 +35,7 @@ sección "Hecho y verificado", commits de HU-05/HU-06/HU-17/HU-21/HU-22).
 
 ## Leer antes de tocar código
 
-1. `../sgdcm-frontend/FRONTEND_DESIGN_SPEC.md` — fuente única de verdad de diseño
+1. `../prototipo-frontend/FRONTEND_DESIGN_SPEC.md` — fuente única de verdad de diseño
    (colores, tipografía, iconografía, RBAC, las 7 páginas, componentes). Cualquier
    color/radio/sombra fuera de `tailwind.config.js`/`src/index.css` es un error.
 2. `../museo-backend/docs/openapi.yaml` — contrato REST completo. `src/types/index.ts`
@@ -211,3 +211,17 @@ Por la Estrategia de Gestión del proyecto: trabajo por rama, integración vía 
 request revisado por **un integrante distinto del autor**. Si agregas una pantalla
 nueva o cambias una existente de forma visible, pruébala en el navegador contra el
 backend real antes de dar el PR por terminado — no basta con que compile.
+
+
+## F0 · frontend v3 autorizado (19/10/2026)
+
+El líder autorizó específicamente las pantallas F0 según el pedido del dueño; las notas globales de evaluación las cambia el líder. Alcance: Administración con campos, listas/equivalencias, institución y vista previa. `src/components/f0/` contiene esas secciones y los componentes reutilizables `FormularioFicha` y `CamposFaltantes` para F2. No se construye la matriz de visibilidad (F9).
+
+- Campos y listas se leen del contrato v3: `/campos-ficha`, `/config/campos-ficha`, `/listas/{clave}/valores`. No introducir vocabularios fijos ni datos MSW.
+- `api.ts` admite errores v3 y legados y normaliza el nombre del token v3 exclusivamente para el login legado. `usePermisos()` lee `/auth/sesion`; el JWT no es fuente de permisos. AuthContext permanece intacto.
+- `useConsultaF0()` separa la caché por cuenta/sesión. No reutilizar catálogos visibles de otra cuenta.
+- `FormularioFicha` entrega `{campos, listas}` sin campos de solo lectura/inactivos; el consumidor F2 aporta el guardado y la versión de PATCH. Sin callback es vista previa y nunca escribe piezas. Solo ayuda visual para obligatorios; toda validación real está en el backend.
+- `CamposFaltantes` muestra el resultado del backend, incluidas las claves `codigos_externos`/`fotografias`; no vuelve a calcular completitud ni reglas de régimen.
+- Se conservan los tipos/páginas de otros flujos. Las incompatibilidades de esos flujos con v3 se informan sin corregirlas dentro de F0. Ver `docs/f0/README.md`.
+- Usar tokens existentes y foco visible. En F0 se usa `rojo-oscuro` para contraste AA de botones con texto blanco, sin crear colores; las entradas móviles usan 16 px.
+- Verificación: `npm run build`, `npm run lint` (dos advertencias previas), Playwright opcional `npm run test:f0` con runtime ya disponible. Evidencia y capturas en `docs/f0/`. Nunca probar contra Supabase durante desarrollo.
