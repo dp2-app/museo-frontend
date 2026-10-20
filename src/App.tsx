@@ -1,14 +1,8 @@
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { RequireRole } from "./components/RequireRole";
-import {
-  ADMINISTRADOR,
-  CATALOGADOR,
-  CONSERVACION,
-  CONSULTA_INTERNA,
-  GESTOR_COLECCIONES,
-} from "./lib/secciones";
+import { RequirePermiso } from "./components/RequirePermiso";
+import { SECCIONES } from "./lib/secciones";
 import { AdministracionPage } from "./pages/AdministracionPage";
 import { AsistenteIAPage } from "./pages/AsistenteIAPage";
 import { CargaDetailPage } from "./pages/CargaDetailPage";
@@ -19,6 +13,9 @@ import { PanelPrincipalPage } from "./pages/PanelPrincipalPage";
 import { PiezaDetailPage } from "./pages/PiezaDetailPage";
 import { PiezasPage } from "./pages/PiezasPage";
 import { UbicacionMovimientosPage } from "./pages/UbicacionMovimientosPage";
+
+/** Permisos que dan acceso a una sección: una sola fuente con el menú (lib/secciones.ts). */
+const permisosDe = (ruta: string) => SECCIONES.find((s) => s.ruta === ruta)?.permisos ?? [];
 
 export default function App() {
   return (
@@ -38,17 +35,17 @@ export default function App() {
         <Route
           path="/coleccion"
           element={
-            <RequireRole roles={[ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR, CONSULTA_INTERNA]}>
+            <RequirePermiso permisos={permisosDe("/coleccion")}>
               <PiezasPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
         <Route
           path="/coleccion/:piezaId"
           element={
-            <RequireRole roles={[ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR, CONSULTA_INTERNA]}>
+            <RequirePermiso permisos={permisosDe("/coleccion")}>
               <PiezaDetailPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
         <Route path="/piezas" element={<Navigate to="/coleccion" replace />} />
@@ -59,9 +56,9 @@ export default function App() {
         <Route
           path="/ubicacion-y-movimientos"
           element={
-            <RequireRole roles={[ADMINISTRADOR, CONSERVACION]}>
+            <RequirePermiso permisos={permisosDe("/ubicacion-y-movimientos")}>
               <UbicacionMovimientosPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
 
@@ -69,17 +66,17 @@ export default function App() {
         <Route
           path="/importacion"
           element={
-            <RequireRole roles={[ADMINISTRADOR, CATALOGADOR]}>
+            <RequirePermiso permisos={permisosDe("/importacion")}>
               <ImportacionPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
         <Route
           path="/importacion/:cargaId"
           element={
-            <RequireRole roles={[ADMINISTRADOR, CATALOGADOR]}>
+            <RequirePermiso permisos={permisosDe("/importacion")}>
               <CargaDetailPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
 
@@ -87,9 +84,9 @@ export default function App() {
         <Route
           path="/consultas-y-reportes"
           element={
-            <RequireRole roles={[ADMINISTRADOR, GESTOR_COLECCIONES, CONSULTA_INTERNA]}>
+            <RequirePermiso permisos={permisosDe("/consultas-y-reportes")}>
               <ConsultasReportesPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
 
@@ -97,9 +94,9 @@ export default function App() {
         <Route
           path="/asistente-ia"
           element={
-            <RequireRole roles={[ADMINISTRADOR, GESTOR_COLECCIONES, CATALOGADOR]}>
+            <RequirePermiso permisos={permisosDe("/asistente-ia")}>
               <AsistenteIAPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
         <Route path="/ia" element={<Navigate to="/asistente-ia" replace />} />
@@ -108,9 +105,9 @@ export default function App() {
         <Route
           path="/administracion"
           element={
-            <RequireRole roles={[ADMINISTRADOR]}>
+            <RequirePermiso permisos={permisosDe("/administracion")}>
               <AdministracionPage />
-            </RequireRole>
+            </RequirePermiso>
           }
         />
       </Route>

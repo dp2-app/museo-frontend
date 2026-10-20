@@ -1,0 +1,20 @@
+{
+  "fecha": "2026-10-20T12:24:06.891Z",
+  "comprobaciones": [
+    "Administrador ve todo el menú (derivado de sus 44 permisos, no de su nombre de rol)",
+    "«Puede editar» fotografías activa «Solo ver» en Fichas (dependencia) y lo avisa",
+    "Quitar el acceso a Fichas quita lo que depende de él (Fotografías) y lo avisa",
+    "El rol nuevo se guardó en el servidor con exactamente esa combinación",
+    "Usuario creado desde la pantalla con el rol nuevo",
+    "El menú del usuario nuevo muestra solo Panel, Importación y Consultas",
+    "Entrar por URL a /administracion sin permiso redirige al inicio",
+    "Llamadas directas a la API sin permiso: 403 (usuarios, crear fichas, propietarios)",
+    "Al guardar el rol, el usuario ve «Asistente IA» tras recargar, con el mismo inicio de sesión",
+    "Rol de solo lectura: ve únicamente las 3 secciones de seguridad (sin configuración de ficha)",
+    "Solo lectura: sin botones de crear/guardar y desplegables deshabilitados",
+    "Aunque se fuerce la llamada, el servidor rechaza la edición (403)",
+    "Ocultar «Autor» al Catalogador desde la pantalla de roles: el servidor deja de entregárselo en el formulario; se restaura al volver a marcarlo",
+    "La bitácora muestra los cambios de roles y permisos con quién, cuándo, antes y después",
+    "En móvil (390 px) no hay desborde horizontal de la página"
+  ]
+}

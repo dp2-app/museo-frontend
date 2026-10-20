@@ -37,18 +37,19 @@ export function PanelPrincipalPage() {
         <p className="text-sm text-gris-2">Cargando panel...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <TarjetaKpi etiqueta="Total de piezas" valor={String(data.totalPiezas)} />
             <TarjetaKpi etiqueta="Catalogación completa" valor={`${data.porcentajeCompleto}%`} />
             <TarjetaKpi
               etiqueta="Sin ubicación"
-              valor={String(data.piezasSinUbicacion)}
-              detalle="RF-019, HU-09"
+              valor={data.piezasSinUbicacion === null ? "—" : String(data.piezasSinUbicacion)}
+              detalle={data.piezasSinUbicacion === null ? "Campo no visible para tu rol" : "RF-019, HU-09"}
             />
+            <TarjetaKpi etiqueta="Sin fotografía" valor={String(data.piezasSinFoto)} />
             <TarjetaKpi
-              etiqueta="Requieren restauración"
-              valor={String(data.piezasRequierenRestauracion)}
-              detalle="HU-03"
+              etiqueta="Requieren atención"
+              valor={String(data.piezasRequierenAtencion)}
+              detalle="Restauración o mantenimiento, HU-03"
             />
           </div>
 
@@ -74,14 +75,13 @@ export function PanelPrincipalPage() {
             )}
           </div>
 
-          <div className="glass-panel p-5">
-            <h2 className="section-title mb-4 flex items-center gap-2">
-              <MapPinOff size={18} className="text-rojo" aria-hidden="true" />
-              Alertas · piezas con ubicación o fotografía en blanco
-            </h2>
-            {data.alertas.length === 0 ? (
-              <p className="text-sm text-gris-2">Sin alertas pendientes: todas las piezas tienen ubicación y foto.</p>
-            ) : (
+          {/* v3 no entrega la lista de alertas: solo se muestra si la API la incluye. */}
+          {data.alertas && data.alertas.length > 0 && (
+            <div className="glass-panel p-5">
+              <h2 className="section-title mb-4 flex items-center gap-2">
+                <MapPinOff size={18} className="text-rojo" aria-hidden="true" />
+                Alertas · piezas con ubicación o fotografía en blanco
+              </h2>
               <ul className="divide-y divide-linea">
                 {data.alertas.slice(0, 20).map((a) => (
                   <li key={a.piezaId} className="py-2 flex items-center justify-between gap-3">
@@ -95,8 +95,8 @@ export function PanelPrincipalPage() {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
     </div>

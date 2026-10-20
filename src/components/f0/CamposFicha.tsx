@@ -12,7 +12,8 @@ const nombresTipo: Record<string, string> = { texto: "Texto", numero: "Número",
 
 export function CamposFicha() {
   const permisos = usePermisos();
-  const puede = permisos.puede("config.campos");
+  const puedeVer = permisos.puede("config.campos.ver");
+  const puede = permisos.puede("config.campos"); // editar
   const cache = useQueryClient();
   const [seleccionado, setSeleccionado] = useState<CampoFicha | null>(null);
   const [abierto, setAbierto] = useState(false);
@@ -27,8 +28,8 @@ export function CamposFicha() {
       editor.current?.querySelector<HTMLInputElement>("input:not([disabled])")?.focus({ preventScroll: true });
     }
   }, [abierto, seleccionado?.id]);
-  const campos = useQuery({ queryKey: ["f0", "campos-admin"], enabled: puede, queryFn: async () => (await api.get<CampoFicha[]>("/config/campos-ficha")).data });
-  const listas = useQuery({ queryKey: ["f0", "listas"], enabled: puede, queryFn: async () => (await api.get<TipoLista[]>("/listas")).data });
+  const campos = useQuery({ queryKey: ["f0", "campos-admin"], enabled: puedeVer, queryFn: async () => (await api.get<CampoFicha[]>("/config/campos-ficha")).data });
+  const listas = useQuery({ queryKey: ["f0", "listas"], enabled: puedeVer, queryFn: async () => (await api.get<TipoLista[]>("/listas")).data });
   const guardar = useMutation({
     mutationFn: async () => seleccionado
       ? api.patch(`/config/campos-ficha/${seleccionado.id}`, {
@@ -53,7 +54,7 @@ export function CamposFicha() {
     setForm(campo ? { clave: campo.clave, etiqueta: campo.etiqueta, tipo: campo.tipo, tipoListaId: campo.lista?.id ?? "", multivalor: campo.multivalor, obligatorio: campo.obligatorio, orden: campo.orden, grupo: campo.grupo, ayuda: campo.ayuda ?? "", activo: campo.activo } : vacio);
   }
   function enviar(e: FormEvent) { e.preventDefault(); if (puede) guardar.mutate(); }
-  if (!puede) return <p>No tienes permiso para configurar los campos de la ficha.</p>;
+  if (!puedeVer) return <p>No tienes permiso para ver los campos de la ficha.</p>;
   if (campos.isPending || campos.isError || listas.isError) return <EstadoConsulta cargando={campos.isPending} error={campos.error ?? listas.error} reintentar={() => { void campos.refetch(); void listas.refetch(); }} />;
   const ordenados = [...(campos.data ?? [])].sort((a, b) => a.orden - b.orden || a.clave.localeCompare(b.clave));
   const visibles = ordenados.filter((c) =>
@@ -61,8 +62,8 @@ export function CamposFicha() {
     (estado === "todos" || (estado === "activos" ? c.activo : !c.activo)));
   const grupos = [...new Set(visibles.map((c) => c.grupo))];
   return <section className="space-y-5" aria-label="Configuración de campos">
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="section-title">Campos de la ficha</h2><p className="text-texto">Configura la información que recoge el museo.</p></div>
-      <button type="button" className="btn-primary" onClick={() => abrir()}><Plus size={20} aria-hidden="true" />Crear campo adicional</button></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="section-title">Campos de la ficha</h2><p className="text-texto">{puede ? "Configura la información que recoge el museo." : "Consulta la información que recoge el museo. Tu rol no puede modificarla."}</p></div>
+      {puede && <button type="button" className="btn-primary" onClick={() => abrir()}><Plus size={20} aria-hidden="true" />Crear campo adicional</button>}</div>
     <p className="f0-notice"><Info size={20} className="shrink-0 mt-0.5" aria-hidden="true" /><span>Denominación es obligatoria provisionalmente (P30 sin respuesta del museo).</span></p>
     {aviso && <p role="status" className="font-semibold text-azul">{aviso}</p>}
     {abierto && <form ref={editor} onSubmit={enviar} className="scroll-mt-40 glass-panel p-4 sm:p-6 space-y-4" aria-label={seleccionado ? "Editar campo" : "Crear campo"}>
@@ -99,7 +100,7 @@ export function CamposFicha() {
               <td>{nombresTipo[c.tipo] ?? c.tipo}{c.multivalor && " · múltiple"}{c.lista && <span className="block text-xs text-texto/60 mt-1">{c.lista.nombre}</span>}</td>
               <td>{c.orden}</td><td>{c.obligatorio ? <span className="font-semibold">Sí</span> : <span className="text-texto/60">No</span>}</td>
               <td><span className={`f0-badge ${c.activo ? "f0-badge-active" : ""}`}><span className="h-1 w-1 rounded-pill bg-current" />{c.activo ? "Activo" : "Inactivo"}</span></td>
-              <td><button type="button" className="f0-action" onClick={() => abrir(c)} aria-label={`Editar ${c.etiqueta}`}><Pencil size={20} aria-hidden="true" /><span className="sr-only">Editar</span></button></td>
+              <td>{puede && <button type="button" className="f0-action" onClick={() => abrir(c)} aria-label={`Editar ${c.etiqueta}`}><Pencil size={20} aria-hidden="true" /><span className="sr-only">Editar</span></button>}</td>
             </tr>)}
           </tbody>)}
         </table>

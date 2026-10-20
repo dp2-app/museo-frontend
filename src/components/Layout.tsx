@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { CircleUser, LogOut, Menu, X } from "lucide-react";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermisos } from "../hooks/usePermisos";
 import { ROL_ETIQUETA, seccionesPara } from "../lib/secciones";
@@ -8,12 +9,12 @@ import { ROL_ETIQUETA, seccionesPara } from "../lib/secciones";
 // Header/nav/footer per la especificación de diseño §6. El nombre del
 // archivo/export se conserva (Layout) para no tocar App.tsx ni los imports
 // existentes; lo que cambia es el shell completo: logo oficial, navegación
-// filtrada por rol (RBAC visual, spec §5), menú móvil a pantalla completa y
+// filtrada por permiso (RBAC visual, spec §5), menú móvil a pantalla completa y
 // footer institucional.
 
 function NavEnlaces({ className, onNavigate }: { className?: string; onNavigate?: () => void }) {
-  const { rol } = usePermisos();
-  const secciones = seccionesPara(rol);
+  const { puedeAlguno } = usePermisos();
+  const secciones = seccionesPara(puedeAlguno);
 
   return (
     <nav className={className}>
@@ -74,6 +75,7 @@ function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => vo
 export function Layout() {
   const { logout } = useAuth();
   const { rol } = usePermisos();
+  const { pathname } = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
 
@@ -142,7 +144,9 @@ export function Layout() {
       <MenuMovil abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
 
       <main className="flex-1 max-w-contenido w-full mx-auto px-4 py-6 sm:px-6 sm:py-8 overflow-x-hidden">
-        <Outlet />
+        <ErrorBoundary key={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <footer className="bg-azul text-white/80 mt-auto">
