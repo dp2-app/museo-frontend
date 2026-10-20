@@ -239,3 +239,18 @@ export interface ReportePorUbicacion {
   porUbicacion: { ubicacionId: string; ubicacion: string; total: number }[];
   sinUbicacion: number;
 }
+
+// F0 · Contrato v3, aditivo: conserva los tipos de los otros flujos.
+export interface ErrorApi { campo: string | null; codigo: string; mensaje: string; }
+export interface TipoLista { id: string; clave: string; nombre: string; descripcion: string | null; esSistema: boolean; activo: boolean; }
+export interface ValorLista { id: string; etiqueta: string; codigo: string | null; orden: number; activo: boolean; esSistema: boolean; }
+export interface Equivalencia { id: string; textoOrigen: string; textoNormalizado: string; valorId: string; valorEtiqueta: string; fuente: string | null; validado: boolean; }
+export interface Parametro { clave: string; valor: unknown; descripcion: string | null; }
+export interface CampoFicha {
+  id: string; clave: string; etiqueta: string; tipo: "texto" | "numero" | "fecha" | "lista" | "referencia";
+  lista: Pick<TipoLista, "id" | "clave" | "nombre"> | null;
+  multivalor: boolean; obligatorio: boolean; orden: number; grupo: string; ayuda: string | null;
+  activo: boolean; esBase: boolean; almacenamiento: "columna" | "adicional" | "lista"; soloLectura: boolean;
+}
+export interface SesionV3 { usuario: Usuario; permisos: string[]; camposOcultos: string[]; }
+export interface DatosFichaV3 { campos: Record<string, unknown>; listas: Record<string, string[]>; }
