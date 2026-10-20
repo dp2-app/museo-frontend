@@ -62,7 +62,7 @@ export interface Fotografia {
 }
 
 export type EstadoFicha = "borrador" | "en_revision" | "aprobada" | "rechazada";
-export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar";
+export type AccionEstadoFicha = "enviar_revision" | "aprobar" | "rechazar" | "volver_borrador";
 
 export interface Pieza {
   id: string;
@@ -292,4 +292,59 @@ export interface VisibilidadCampo {
   rolId: string;
   rol: string;
   visible: boolean;
+}
+
+// --- F2: ficha de la pieza sobre el contrato v3 (GET /piezas/{id}/ficha-completa) ---
+
+export interface UsuarioResumen { id: string; nombre: string; }
+export interface CodigoResumen { id: string; tipoCodigo: string; tipoNombre: string; valor: string; bloqueado: boolean; }
+export interface CodigoV3 extends CodigoResumen {
+  tipoCodigoId: string; valorNormalizado: string; nota: string | null; vigente: boolean; fuente: string | null; creadoEn: string;
+}
+export interface TipoCodigo {
+  id: string; clave: string; nombre: string; descripcion: string | null; patron: string | null; esUnico: boolean;
+  inmutable: boolean; esPrincipal: boolean; permiteMultiples: boolean; orden: number; activo: boolean;
+}
+export interface Regimen {
+  id: string; clave: string; nombre: string; descripcion: string | null; ingresaInventarioPermanente: boolean;
+  requiereContraparte: boolean; requiereFechas: boolean; orden: number; activo: boolean;
+}
+export interface Propietario { id: string; tipoPersona: string; nombre: string; esPorDefecto: boolean; activo: boolean; }
+export interface TenenciaV3 {
+  id: string; regimen: string; regimenNombre: string; contraparte: Propietario | null; fechaInicio: string | null;
+  fechaFin: string | null; vigente: boolean; condicionesContractuales: string | null; restringidoPublicacion: boolean; creadoEn: string;
+}
+export interface FotoV3 {
+  id: string; url: string; claveArchivo: string | null; tipoVistaId: string | null; orden: number; esPrincipal: boolean;
+  restringidoUso: boolean; creadoEn: string;
+}
+export interface DocumentoV3 {
+  id: string; tipoDocumentoId: string | null; titulo: string | null; fechaDocumento: string | null; descripcion: string | null;
+  url: string; restringidoUso: boolean; creadoEn: string;
+}
+export interface HistorialItem {
+  id: string; fecha: string; motivo: string | null; ubicacionAnterior?: string | null; ubicacionNueva?: string | null;
+  estadoAnterior?: string | null; estadoNuevo?: string | null;
+}
+export interface PiezaV3 {
+  id: string; version: string; estadoFicha: EstadoFicha; motivoRechazo: string | null; incompleta: boolean;
+  camposFaltantes: string[]; campos: Record<string, unknown>; listas: Record<string, { id: string; etiqueta: string | null }[]>;
+  etiquetas: Record<string, string | null>; codigos: CodigoResumen[];
+  tenenciaVigente: { regimen: string; regimenNombre: string; restringidoPublicacion: boolean } | null;
+  fotoPrincipal: { id: string; url: string } | null; dadaDeBaja: boolean;
+  creadoPor: UsuarioResumen | null; creadoEn: string; actualizadoPor: UsuarioResumen | null; actualizadoEn: string;
+}
+export interface FichaCompleta extends PiezaV3 {
+  codigosDetalle: CodigoV3[]; tenencias: TenenciaV3[]; fotografias: FotoV3[]; documentos: DocumentoV3[];
+  movimientos: HistorialItem[]; estados: HistorialItem[];
+}
+export interface AuditoriaV3 {
+  id: string; tabla: string; campo: string; valorAnterior: string | null; valorNuevo: string | null; accion: string;
+  motivo: string | null; usuarioNombre?: string | null; fecha: string;
+}
+export interface CodigoAlta { tipoCodigoId: string; valor: string; }
+export interface PiezaAlta extends DatosFichaV3 {
+  codigos: CodigoAlta[];
+  tenencia: { regimenId: string; contraparteId?: string | null; fechaInicio?: string | null; fechaFin?: string | null } | null;
+  ubicacionInicialId: string | null;
 }
