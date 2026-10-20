@@ -228,14 +228,16 @@ export interface AlertaPanel {
   camposFaltantes: string[];
 }
 
+// Contrato v3 de GET /reportes/panel-principal. `piezasSinUbicacion` es null si el rol no ve el campo de ubicación (F9, RF-57).
+// `alertas` ya no viene en v3: la lista de piezas incompletas está en /reportes/informacion-incompleta.
 export interface ReportePanelPrincipal {
   totalPiezas: number;
   porcentajeCompleto: number;
-  piezasSinUbicacion: number;
+  piezasSinUbicacion: number | null;
   piezasSinFoto: number;
-  piezasRequierenRestauracion: number;
+  piezasRequierenAtencion: number;
   distribucionPorColeccion: { coleccion: string; total: number }[];
-  alertas: AlertaPanel[];
+  alertas?: AlertaPanel[];
 }
 
 // --- RF-034: piezas por ubicación ---

@@ -48,3 +48,7 @@ después de aplicar la migración `0105`**. Primero la migración y el backend; 
 
 Colección, Importación y Consultas y reportes siguen con el contrato anterior (ver `docs/f0/README.md`). Aquí solo se cambió su control de acceso a
 permisos; con v3 pueden mostrar el aviso del `ErrorBoundary` hasta que su dueño las migre.
+
+**Panel principal** (pantalla de inicio de todos los usuarios): se adaptó lo mínimo al contrato v3 en un commit aparte, para que no falle al abrir la sesión.
+Lee `piezasRequierenAtencion` (antes `piezasRequierenRestauracion`), muestra «Sin fotografía» y «—» si el rol no ve la ubicación (`piezasSinUbicacion` es `null`),
+y la lista de alertas solo aparece si la API la entrega (v3 no la incluye). El dueño de F7/F8 puede reemplazarlo al migrar la pantalla completa.
