@@ -35,6 +35,7 @@ export interface Seccion {
 /** Permisos que dan acceso a cada pantalla de Administración (ver AdministracionPage). */
 export const PERMISOS_ADMINISTRACION = [
   "config.campos.ver", "config.listas", "config.institucion.ver",
+  "config.codigos_tenencia",
   "usuarios.ver", "roles.ver", "auditoria.ver",
 ];
 

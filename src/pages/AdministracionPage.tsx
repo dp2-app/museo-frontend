@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, History, Landmark, List, Settings, ShieldCheck, SlidersHorizontal, Users, type LucideIcon } from "lucide-react";
+import { Eye, Hash, History, Landmark, List, Scale, Settings, ShieldCheck, SlidersHorizontal, UserRound, Users, type LucideIcon } from "lucide-react";
 import { Bitacora } from "../components/f9/Bitacora";
 import { RolesPermisos } from "../components/f9/RolesPermisos";
 import { Usuarios } from "../components/f9/Usuarios";
@@ -7,9 +7,12 @@ import { CamposFicha } from "../components/f0/CamposFicha";
 import { ListasValores } from "../components/f0/ListasValores";
 import { Institucion } from "../components/f0/Institucion";
 import { VistaPreviaFicha } from "../components/f0/FormularioFicha";
+import { TiposCodigo } from "../components/f1/TiposCodigo";
+import { Regimenes } from "../components/f1/Regimenes";
+import { Propietarios } from "../components/f1/Propietarios";
 import { usePermisos } from "../hooks/usePermisos";
 
-type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "usuarios" | "roles" | "bitacora";
+type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "tipos-codigo" | "regimenes" | "propietarios" | "usuarios" | "roles" | "bitacora";
 
 interface Seccion {
   clave: Pestana;
@@ -27,6 +30,16 @@ const GRUPOS: { titulo: string; secciones: Seccion[] }[] = [
       { clave: "catalogos", etiqueta: "Listas de valores", Icono: List, permiso: "config.listas" },
       { clave: "institucion", etiqueta: "Institución", Icono: Landmark, permiso: "config.institucion.ver" },
       { clave: "vista-previa", etiqueta: "Vista previa", Icono: Eye, permiso: "piezas.ver" },
+    ],
+  },
+  {
+    // F1: no hay un permiso «ver» de tipos y regímenes (la lectura es de sesión); la sección la abre quien los configura.
+    // Los préstamos temporales son operación diaria, no configuración: viven en Colección (/coleccion/prestamos-temporales).
+    titulo: "Códigos y tenencia",
+    secciones: [
+      { clave: "tipos-codigo", etiqueta: "Tipos de código", Icono: Hash, permiso: "config.codigos_tenencia" },
+      { clave: "regimenes", etiqueta: "Regímenes", Icono: Scale, permiso: "config.codigos_tenencia" },
+      { clave: "propietarios", etiqueta: "Propietarios", Icono: UserRound, permiso: "propietarios.ver" },
     ],
   },
   {
@@ -54,7 +67,7 @@ export function AdministracionPage() {
         <span className="hidden sm:flex h-14 w-14 items-center justify-center rounded-card bg-white border border-linea"><Settings size={24} className="text-azul" aria-hidden="true" /></span>
         <div>
           <h1>Administración</h1>
-          <p className="text-sm text-gris-2">Configura la ficha y los datos de la institución; administra usuarios, roles y permisos.</p>
+          <p className="text-sm text-gris-2">Configura la ficha, los códigos, la tenencia y los datos de la institución; administra usuarios, roles y permisos.</p>
         </div>
       </div>
 
@@ -90,6 +103,9 @@ export function AdministracionPage() {
             {pestana === "catalogos" && <ListasValores />}
             {pestana === "institucion" && <Institucion />}
             {pestana === "vista-previa" && <VistaPreviaFicha />}
+            {pestana === "tipos-codigo" && <TiposCodigo />}
+            {pestana === "regimenes" && <Regimenes />}
+            {pestana === "propietarios" && <Propietarios />}
             {pestana === "usuarios" && <Usuarios />}
             {pestana === "roles" && <RolesPermisos />}
             {pestana === "bitacora" && <Bitacora />}

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { IconoRetablo } from "../components/IconoRetablo";
+import { AccesosF1 } from "../components/f1/PendienteCodigoI";
 import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerMensajeError } from "../lib/api";
 import type { Coleccion, Pagina, Pieza } from "../types";
@@ -201,6 +202,7 @@ export function PiezasPage() {
         </div>
       </div>
 
+      <AccesosF1 />
       <GestionarColecciones />
       {puede("piezas.restaurar") && <PiezasDadasDeBaja />}
 

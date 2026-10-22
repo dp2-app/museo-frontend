@@ -220,3 +220,14 @@ El líder autorizó específicamente las pantallas F0 según el pedido del dueñ
 - Se conservan los tipos/páginas de otros flujos. Las incompatibilidades de esos flujos con v3 se informan sin corregirlas dentro de F0. Ver `docs/f0/README.md`.
 - Usar tokens existentes y foco visible. En F0 se usa `rojo-oscuro` para contraste AA de botones con texto blanco, sin crear colores; las entradas móviles usan 16 px.
 - Verificación: `npm run build`, `npm run lint` (dos advertencias previas), Playwright opcional `npm run test:f0` con runtime ya disponible. Evidencia y capturas en `docs/f0/`. Nunca probar contra Supabase durante desarrollo.
+
+## F1 · identificadores y tenencia (21/10/2026)
+
+Pantallas sobre el contrato v3 (requiere museo-backend#41). Detalle, pruebas y capturas en `docs/f1/README.md`.
+
+- **Administración › Códigos y tenencia** (`config.codigos_tenencia`): tipos de código (RF-55), regímenes y códigos que admiten (RF-56) y propietarios (`propietarios.ver`). `PERMISOS_ADMINISTRACION` solo suma `config.codigos_tenencia`: Administración sigue siendo configuración.
+- **Colección › Pendientes de código I** (`/coleccion/pendientes-codigo-i`, RF-06) y **Préstamos temporales** (`/coleccion/prestamos-temporales`, `tenencias.ver`). Se llega por `<AccesosF1 />` en `PiezasPage`; consérvalo al reescribir la página.
+- Para la ficha (F2): `AgregarCodigo`, `CorregirCodigo` (RF-05), `ResultadoValidacion` e `InsigniaPendienteI` en `components/f1/`; hooks en `hooks/useCodigosF1.ts` y `hooks/useCatalogosF1.ts`; tipos en `types/f1.ts`; criterios (`pendienteDeCodigoI`, `admite`, `puedeCorregir`) en `lib/f1.ts`.
+- Validar mientras se escribe es `POST /codigos/validar` en modo `manual`; la regla final siempre es del backend. Una corrección se valida sin pieza ni régimen (lo mismo que revisa `corregir_codigo`).
+- Una pieza nueva sin régimen toma el primer régimen activo de inventario por `orden`: la pantalla de regímenes lo marca y propone el orden siguiente al mayor.
+- Verificación: `npm run build`, `npm run lint` y `npm run test:f1` (Playwright, backend real local, cuentas en `F1_ACCOUNT_FILE`).
