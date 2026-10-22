@@ -1,0 +1,16 @@
+{
+  "comprobaciones": [
+    "Grupos del catálogo completos, únicos e independientes de los filtros",
+    "Crear un campo en un grupo existente y comprobarlo en API",
+    "Lista hacia abajo, desplazamiento vertical y botón Crear grupo fijo",
+    "Teclado, Escape y clic fuera cierran o seleccionan sin enviar el formulario",
+    "Edición conserva seleccionado el grupo actual",
+    "Crear grupo enfoca el nombre y rechaza vacío o solo espacios",
+    "Volver a un grupo existente cancela la creación sin guardar un grupo",
+    "Guardar grupo nuevo con nombre recortado sin cambiar el contrato",
+    "Grupo persiste tras recargar y se reutiliza al editar otro campo",
+    "Selector y nombre del grupo utilizables en móvil y tablet sin desborde",
+    "Cambiar de campo durante edición reinicia el modo de creación de grupo"
+  ],
+  "errores": []
+}
