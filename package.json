@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:f0": "node tests/f0.e2e.cjs",
     "test:f9": "node tests/f9.e2e.cjs",
-    "test:f0:grupos": "node tests/f0-grupos.e2e.cjs"
+    "test:f0:grupos": "node tests/f0-grupos.e2e.cjs",
+    "test:f1": "node tests/f1.e2e.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
