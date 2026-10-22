@@ -19,8 +19,21 @@ async function api(ruta, method = 'GET', body) {
 }
 function ok(nombre) { informe.comprobaciones.push(nombre); console.log('OK ' + nombre); }
 async function aviso(texto) { await page.getByRole('status').filter({ hasText: texto }).waitFor(); }
-async function shot(nombre) { await page.screenshot({ path: path.join(out, nombre + '.png') }); }
+async function shot(nombre) { await page.screenshot({ path: path.join(out, nombre + '.png'), animations: 'disabled' }); }
 async function grupo() { return page.getByRole('combobox', { name: 'Grupo', exact: true }); }
+async function abrirGrupo() {
+  const control = await grupo();
+  if (await control.getAttribute('aria-expanded') !== 'true') await control.click();
+}
+async function seleccionarGrupo(nombre) {
+  await abrirGrupo();
+  await page.getByRole('option', { name: nombre, exact: true }).click();
+}
+async function crearGrupo() {
+  await abrirGrupo();
+  await page.getByRole('button', { name: 'Crear grupo', exact: true }).click();
+}
+
 async function editar(campo) {
   await page.getByRole('row').filter({ hasText: campo.clave }).getByRole('button', { name: 'Editar ' + campo.etiqueta, exact: true }).click();
 }
@@ -37,7 +50,7 @@ async function nuevo(clave, etiqueta) {
     const existente = grupos.find(g => g === 'Identificación') || grupos[0];
     const nombreNuevo = 'Datos del artesano';
     const marca = Date.now();
-    browser = await chromium.launch({ headless: true, channel: 'chrome' });
+    browser = await chromium.launch({ headless: true, channel: 'chrome', ignoreDefaultArgs: ['--hide-scrollbars'] });
     page = await browser.newPage({ viewport: { width: 1366, height: 1000 } });
     page.on('pageerror', e => informe.errores.push(e.message));
     await page.goto(web + '/administracion');
@@ -47,11 +60,12 @@ async function nuevo(clave, etiqueta) {
     await page.getByRole('button', { name: 'Crear campo adicional', exact: true }).waitFor();
 
     await nuevo('grupo_existente_' + marca, 'Taller de prueba F0');
-    const opciones = await (await grupo()).locator('option').allTextContents();
+    await abrirGrupo();
+    const opciones = await page.getByRole('listbox').getByRole('option').allTextContents();
     assert.equal(opciones.length, new Set(opciones).size);
     for (const g of grupos) assert.ok(opciones.includes(g));
     ok('Grupos del catálogo completos, únicos e independientes de los filtros');
-    await (await grupo()).selectOption({ label: existente });
+    await seleccionarGrupo(existente);
     await page.getByRole('button', { name: 'Guardar campo', exact: true }).click();
     await aviso('Campo creado');
     const a = (await api('/config/campos-ficha')).find(c => c.clave === 'grupo_existente_' + marca);
@@ -59,16 +73,33 @@ async function nuevo(clave, etiqueta) {
     ok('Crear un campo en un grupo existente y comprobarlo en API');
 
     await editar(a);
-    assert.equal(await (await grupo()).inputValue(), 'existente:' + existente);
+    assert.equal(await (await grupo()).innerText(), existente);
     await page.getByRole('form', { name: 'Editar campo', exact: true }).scrollIntoViewIfNeeded();
     await shot('01-editar-grupo-existente');
-    await (await grupo()).focus(); await (await grupo()).press('Alt+ArrowDown');
+    await (await grupo()).focus(); await (await grupo()).press('ArrowDown');
+    const lista = page.getByRole('listbox', { name: 'Grupos existentes', exact: true });
+    const cajaLista = await lista.boundingBox(), cajaControl = await (await grupo()).boundingBox();
+    assert.ok(cajaLista.y >= cajaControl.y + cajaControl.height);
+    assert.ok(await lista.evaluate(e => e.scrollHeight > e.clientHeight));
+    await lista.evaluate(e => { e.scrollTop = e.scrollHeight; });
+    assert.ok(await lista.evaluate(e => e.scrollTop > 0));
+    await page.getByRole('button', { name: 'Crear grupo', exact: true }).isVisible().then(v => assert.ok(v));
+    await lista.evaluate(e => { e.scrollTop = 0; });
     await shot('02-lista-de-grupos'); await page.keyboard.press('Escape');
+    ok('Lista hacia abajo, desplazamiento vertical y botón Crear grupo fijo');
+    await (await grupo()).press('ArrowDown'); await (await grupo()).press('End');
+    const ultima = await page.getByRole('listbox').getByRole('option').last().innerText();
+    await (await grupo()).press('Enter');
+    assert.equal(await (await grupo()).innerText(), ultima);
+    await seleccionarGrupo(existente);
+    await abrirGrupo(); await page.getByRole('heading', { name: 'Editar: Taller de prueba F0', exact: true }).click();
+    assert.equal(await (await grupo()).getAttribute('aria-expanded'), 'false');
+    ok('Teclado, Escape y clic fuera cierran o seleccionan sin enviar el formulario');
     await page.getByRole('button', { name: 'Cerrar editor', exact: true }).click();
     ok('Edición conserva seleccionado el grupo actual');
 
     await nuevo('grupo_nuevo_' + marca, 'Marca del taller');
-    await (await grupo()).selectOption('nuevo');
+    await crearGrupo();
     const nombre = page.getByLabel('Nombre del nuevo grupo', { exact: true });
     await nombre.waitFor();
     assert.equal(await nombre.evaluate(e => e === document.activeElement), true);
@@ -76,8 +107,8 @@ async function nuevo(clave, etiqueta) {
     await nombre.fill('   '); assert.equal(await nombre.evaluate(e => e.checkValidity()), false);
     ok('Crear grupo enfoca el nombre y rechaza vacío o solo espacios');
     await nombre.fill('Grupo temporal sin guardar');
-    await (await grupo()).selectOption({ label: existente }); assert.equal(await nombre.count(), 0);
-    await (await grupo()).selectOption('nuevo'); assert.equal(await nombre.inputValue(), '');
+    await seleccionarGrupo(existente); assert.equal(await nombre.count(), 0);
+    await crearGrupo(); assert.equal(await nombre.inputValue(), '');
     await nombre.fill('  ' + nombreNuevo + '  ');
     await page.getByRole('form', { name: 'Crear campo', exact: true }).scrollIntoViewIfNeeded();
     await shot('03-crear-nuevo-grupo');
@@ -90,8 +121,9 @@ async function nuevo(clave, etiqueta) {
 
     await page.reload();
     await editar(a);
-    assert.equal(await (await grupo()).locator('option').filter({ hasText: nombreNuevo }).count(), 1);
-    await (await grupo()).selectOption({ label: nombreNuevo });
+    await abrirGrupo();
+    assert.equal(await page.getByRole('option', { name: nombreNuevo, exact: true }).count(), 1);
+    await seleccionarGrupo(nombreNuevo);
     await page.getByRole('form', { name: 'Editar campo', exact: true }).scrollIntoViewIfNeeded();
     await shot('04-reutilizar-grupo');
     await page.getByRole('button', { name: 'Guardar campo', exact: true }).click(); await aviso('Campo actualizado');
@@ -100,7 +132,12 @@ async function nuevo(clave, etiqueta) {
 
     await editar(b);
     await page.setViewportSize({ width: 390, height: 844 });
-    await (await grupo()).selectOption('nuevo'); await nombre.fill('Datos del artesano');
+    await abrirGrupo();
+    await (await grupo()).evaluate(e => window.scrollBy(0, e.getBoundingClientRect().top - 220));
+    const movilLista = page.getByRole('listbox', { name: 'Grupos existentes', exact: true });
+    await shot('07-lista-grupos-movil');
+    assert.ok((await movilLista.boundingBox()).y >= (await (await grupo()).boundingBox()).y);
+    await crearGrupo(); await nombre.fill('Datos del artesano');
     await (await grupo()).scrollIntoViewIfNeeded();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await shot('05-nuevo-grupo-movil');
@@ -111,7 +148,7 @@ async function nuevo(clave, etiqueta) {
     await page.setViewportSize({ width: 1366, height: 1000 });
     await editar(a);
     assert.equal(await nombre.count(), 0);
-    assert.equal(await (await grupo()).inputValue(), 'existente:' + nombreNuevo);
+    assert.equal(await (await grupo()).innerText(), nombreNuevo);
     ok('Cambiar de campo durante edición reinicia el modo de creación de grupo');
     assert.deepEqual(informe.errores, []);
   } catch (e) {

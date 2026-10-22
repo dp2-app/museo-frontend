@@ -140,3 +140,9 @@
   .f0-logo-preview { @apply min-h-40 flex items-center justify-center bg-fondo-suave rounded-btn p-4 text-center text-sm text-texto/70; }
   .f0-value-list { @apply rounded-card border border-linea bg-white; }
 }
+
+/* La lista de grupos mantiene una barra visible y deja fija la acción de creación. */
+.f0-grupos-scroll { scrollbar-width: auto; scrollbar-color: theme("colors.gris-1") theme("colors.fondo-suave"); scrollbar-gutter: stable; }
+.f0-grupos-scroll::-webkit-scrollbar { width: 8px; }
+.f0-grupos-scroll::-webkit-scrollbar-track { background: theme("colors.fondo-suave"); }
+.f0-grupos-scroll::-webkit-scrollbar-thumb { background: theme("colors.gris-1"); border-radius: theme("borderRadius.pill"); }

@@ -4,9 +4,11 @@ El campo Grupo de alta y edición ahora permite elegir una sección existente o 
 
 El grupo nuevo solo se persiste al guardar el campo, con espacios exteriores recortados. El nombre es obligatorio y no admite solo espacios. Elegir un grupo existente cancela la entrada nueva; cambiar de campo reinicia el selector. Sin cambios en backend, contrato, dependencias ni migraciones del producto.
 
+La lista se abre siempre hacia abajo, tiene altura limitada y barra vertical. El botón «Crear grupo» permanece fijo al pie mientras se desplazan las opciones. Se mantiene el uso con flechas, Inicio/Fin, Enter, Escape y Tab, y se cierra al pulsar fuera del control. El foco pasa al nombre solo al pulsar Crear grupo.
+
 ## Verificación
 
-- Nueve comprobaciones Playwright del selector, con Chrome y backend real.
+- Once comprobaciones Playwright del selector, con Chrome y backend real.
 - Las 18 comprobaciones existentes de F0 aprobadas, con la interacción Grupo adaptada al desplegable.
 - Backend: copia de origin/main `e058bd1`, PostgreSQL local exclusivo de F0, esquema `f0_temporal`, actualizado a 0106. Nunca Supabase.
 - Solo campos sintéticos: se desactivan al finalizar para conservar el historial. No se eliminan bases ni esquemas.
@@ -24,4 +26,6 @@ Resultados: [selector](resultado.json), [regresión F0](regresion-f0.json).
 
 ![Reutilizar grupo](04-reutilizar-grupo.png)
 
-![Móvil](05-nuevo-grupo-movil.png)
+![Lista desplegada en móvil](07-lista-grupos-movil.png)
+
+![Nuevo grupo en móvil](05-nuevo-grupo-movil.png)

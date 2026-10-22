@@ -66,7 +66,7 @@ async function estado(texto) { await page.getByRole('status').filter({hasText:te
   const clave='f0_visual_'+Date.now();
   await page.getByRole('button',{name:'Crear campo adicional',exact:true}).click();
   await page.getByLabel('Clave',{exact:true}).fill(clave);await page.getByLabel('Etiqueta',{exact:true}).fill('Marca del taller F0');
-  await page.getByLabel('Grupo',{exact:true}).selectOption('nuevo');await page.getByLabel('Nombre del nuevo grupo',{exact:true}).fill('Pruebas de F0');await page.getByRole('button',{name:'Guardar campo',exact:true}).click();await estado('Campo creado');
+  await page.getByRole('combobox',{name:'Grupo',exact:true}).click();await page.getByRole('button',{name:'Crear grupo',exact:true}).click();await page.getByLabel('Nombre del nuevo grupo',{exact:true}).fill('Pruebas de F0');await page.getByRole('button',{name:'Guardar campo',exact:true}).click();await estado('Campo creado');
   creado=(await api('/config/campos-ficha')).find(c=>c.clave===clave);assert.ok(creado);ok('Crear campo adicional real en el catálogo');
   await shot('01-campos');
   await page.getByRole('button',{name:'Crear campo adicional',exact:true}).click();await page.getByLabel('Clave',{exact:true}).fill(clave);await page.getByLabel('Etiqueta',{exact:true}).fill('Clave duplicada');
