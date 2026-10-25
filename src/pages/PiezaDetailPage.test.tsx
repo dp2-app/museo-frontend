@@ -87,14 +87,63 @@ describe("Ficha de la pieza", () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/codigos/c2/baja", { motivo: "Era de otra pieza" }));
   });
 
-  it("tenencia: cambia a comodato indicando la contraparte", async () => {
+  it("tenencia: comodato con contraparte, condiciones y restricción de publicación (RN-07)", async () => {
     const api = abrir(["piezas.ver", "tenencias.gestionar", "propietarios.ver"], ficha(), { "POST /piezas/p1/tenencias": {} });
     const usuario = userEvent.setup();
     await usuario.click(await screen.findByRole("button", { name: "Cambiar régimen" }));
     await usuario.selectOptions(screen.getByLabelText("Nuevo régimen"), "r-com");
-    await usuario.selectOptions(await screen.findByLabelText("Contraparte"), "pr-1");
+    await usuario.selectOptions(await screen.findByLabelText("Propietario o institución que cede"), "pr-1");
+    await usuario.type(screen.getByLabelText("Condiciones del contrato"), "Solo exhibición en sala");
+    await usuario.click(screen.getByLabelText(/No se puede publicar/));
     await usuario.click(screen.getByRole("button", { name: "Guardar" }));
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/tenencias", { regimenId: "r-com", contraparteId: "pr-1" }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/tenencias", {
+      regimenId: "r-com", contraparteId: "pr-1", condicionesContractuales: "Solo exhibición en sala", restringidoPublicacion: true }));
+  });
+
+  it("propiedad no pide contraparte ni condiciones", async () => {
+    abrir(["piezas.ver", "tenencias.gestionar"]);
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: "Cambiar régimen" }));
+    await usuario.selectOptions(screen.getByLabelText("Nuevo régimen"), "r-prop");
+    expect(screen.queryByLabelText("Condiciones del contrato")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Propietario o institución/)).not.toBeInTheDocument();
+  });
+
+  it("corrección del código I (RF-05): solo con el permiso especial, con valor nuevo y motivo", async () => {
+    const sinPermiso = abrir(["piezas.ver", "codigos.gestionar"]);
+    const seccion = await screen.findByRole("region", { name: "Códigos del museo" });
+    expect(within(seccion).queryByRole("button", { name: "Corregir" })).not.toBeInTheDocument(); // el código I está bloqueado
+    expect(sinPermiso.post).not.toHaveBeenCalled();
+  });
+
+  it("corrige el código I con codigos.corregir_inmutable", async () => {
+    const api = abrir(["piezas.ver", "codigos.corregir_inmutable"], ficha(), { "POST /piezas/p1/codigos/c1/correccion": {} });
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: "Corregir" }));
+    const form = screen.getByRole("form", { name: /Corregir N° de inventario/ });
+    const corregir = within(form).getByRole("button", { name: "Corregir" });
+    expect(corregir).toBeDisabled(); // mismo valor y sin motivo
+    await usuario.clear(within(form).getByLabelText("Valor correcto"));
+    await usuario.type(within(form).getByLabelText("Valor correcto"), "I-04382");
+    expect(corregir).toBeDisabled(); // falta el motivo
+    await usuario.type(within(form).getByLabelText("Motivo de la corrección"), "Error de transcripción");
+    await usuario.click(corregir);
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/codigos/c1/correccion", { valor: "I-04382", motivo: "Error de transcripción" }));
+  });
+
+  it("si falta información para enviar a revisión, dice qué falta", async () => {
+    abrir(["piezas.ver", "piezas.editar"], ficha(), { "PATCH /piezas/p1/estado-ficha": () => { throw errorApi(422, [
+      { campo: "codigos_externos", codigo: "obligatorio", mensaje: "Complete el campo antes de enviar a revisión" },
+      { campo: "procedencia", codigo: "obligatorio", mensaje: "Complete el campo antes de enviar a revisión" },
+    ]); } });
+    await userEvent.setup().click(await screen.findByRole("button", { name: /Enviar a revisión/ }));
+    expect(await screen.findByText("No se puede enviar a revisión. Falta: Código del museo, Procedencia.")).toBeInTheDocument();
+  });
+
+  it("marca una foto como de uso restringido (RN-07)", async () => {
+    const api = abrir(["piezas.ver", "fotos.gestionar"], ficha(), { "PATCH /piezas/p1/fotografias/f1": {} });
+    await userEvent.setup().click(await screen.findByLabelText(/Uso restringido/));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/piezas/p1/fotografias/f1", { restringidoUso: true }));
   });
 
   it("dar de baja pide motivo y vuelve a la colección", async () => {
