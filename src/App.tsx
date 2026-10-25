@@ -9,6 +9,7 @@ import { CargaDetailPage } from "./pages/CargaDetailPage";
 import { ConsultasReportesPage } from "./pages/ConsultasReportesPage";
 import { ImportacionPage } from "./pages/ImportacionPage";
 import { LoginPage } from "./pages/LoginPage";
+import { NuevaPiezaPage } from "./pages/NuevaPiezaPage";
 import { PanelPrincipalPage } from "./pages/PanelPrincipalPage";
 import { PiezaDetailPage } from "./pages/PiezaDetailPage";
 import { PiezasPage } from "./pages/PiezasPage";
@@ -37,6 +38,14 @@ export default function App() {
           element={
             <RequirePermiso permisos={permisosDe("/coleccion")}>
               <PiezasPage />
+            </RequirePermiso>
+          }
+        />
+        <Route
+          path="/coleccion/nueva"
+          element={
+            <RequirePermiso permisos={["piezas.crear"]}>
+              <NuevaPiezaPage />
             </RequirePermiso>
           }
         />

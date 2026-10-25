@@ -1,12 +1,22 @@
 name: build
 
+# Integración continua del frontend (parte del workflow del PR #14 de Cereal-jpg).
+#   1. calidad   lint, tipos, pruebas unitarias y de componentes (Vitest, cobertura mínima) y build.
+#   2. e2e       el navegador (Playwright) contra el backend REAL de museo-backend@main y un PostgreSQL
+#                desechable. Necesita el secreto BACKEND_REPO_TOKEN (lectura de dp2-app/museo-backend,
+#                que es privado); sin él, el trabajo se salta con un aviso.
+# El despliegue (CD) lo hace Vercel: una vista previa por PR y producción al fusionar en main.
 on:
   pull_request:
   push:
     branches: [main]
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  calidad:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,4 +26,99 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run typecheck
+      - name: Pruebas unitarias y de componentes
+        run: npm run test:cobertura
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura-frontend
+          path: coverage/
+
+  e2e:
+    needs: calidad
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_TOKEN: ${{ secrets.BACKEND_REPO_TOKEN }}
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: museo_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - name: ¿Hay acceso al backend?
+        id: acceso
+        run: |
+          if [ -n "$BACKEND_TOKEN" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::Sin el secreto BACKEND_REPO_TOKEN no se corren las pruebas de punta a punta."; fi
+      - uses: actions/checkout@v4
+        if: steps.acceso.outputs.ok == 'true'
+      - uses: actions/checkout@v4
+        if: steps.acceso.outputs.ok == 'true'
+        with:
+          repository: dp2-app/museo-backend
+          ref: main
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
+          path: backend
+      - uses: actions/setup-python@v5
+        if: steps.acceso.outputs.ok == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Levantar el backend con una base nueva
+        if: steps.acceso.outputs.ok == 'true'
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/museo_e2e
+          DB_SCHEMA: museo
+          JWT_SECRET_KEY: clave-e2e
+          FRONTEND_ORIGIN: http://localhost:5173
+        run: |
+          pip install -r requirements.txt
+          alembic upgrade head
+          E2E_PASSWORD="$(openssl rand -hex 16)"
+          echo "::add-mask::$E2E_PASSWORD"
+          echo "E2E_EMAIL=admin-e2e@museo.pe" >> "$GITHUB_ENV"
+          echo "E2E_PASSWORD=$E2E_PASSWORD" >> "$GITHUB_ENV"
+          E2E_PASSWORD="$E2E_PASSWORD" python - <<'EOF'
+          import os
+          from sqlalchemy import select
+          import app.modelos  # noqa: F401
+          from app.adaptadores.identidad import hash_password
+          from app.core.db import SessionLocal
+          from app.modulos.acceso.modelos import Rol, Usuario
+          db = SessionLocal()
+          rol = db.execute(select(Rol).where(Rol.nombre == "Administrador")).scalar_one()
+          db.add(Usuario(nombre="Administrador E2E", email="admin-e2e@museo.pe", rol_id=rol.id,
+                         password_hash=hash_password(os.environ["E2E_PASSWORD"])))
+          db.commit()
+          EOF
+          nohup uvicorn app.main:app --port 8000 > ../backend.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/health && break; sleep 2; done
+          curl -sf http://localhost:8000/health
+      - uses: actions/setup-node@v4
+        if: steps.acceso.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - name: Pruebas de punta a punta (Playwright)
+        if: steps.acceso.outputs.ok == 'true'
+        env:
+          E2E_API: http://localhost:8000/api/v1
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.acceso.outputs.ok == 'true'
+        with:
+          name: e2e-reporte
+          path: |
+            playwright-report/
+            backend.log

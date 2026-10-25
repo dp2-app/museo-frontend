@@ -99,13 +99,8 @@ Esto es solo UX: la autorización real la valida el backend (401/403) en cada en
   `GET /reportes/panel-principal` (total, % completo, sin ubicación, requieren
   restauración), barras de distribución por colección, alertas con enlace a la
   ficha.
-- **Colección** (`PiezasPage`/`PiezaDetailPage`): todo lo que ya funcionaba
-  (búsqueda, alta, identificadores con 🔒, fotografías, movimientos, auditoría)
-  más el widget "Gestionar colecciones" (RF-010, plegable) y el **flujo de
-  aprobación de ficha real** (HU-05): botones Enviar a revisión/Aprobar/Rechazar
-  visibles-pero-deshabilitados según rol y estado actual, `PATCH
-  /piezas/{id}/estado-ficha`, chip de estado con los colores del spec §7, motivo
-  de rechazo obligatorio.
+- **Colección** (`PiezasPage`/`NuevaPiezaPage`/`PiezaDetailPage`): pasada al contrato v3 en F2 (ver
+  la sección «F2 · ficha de la pieza sobre v3» al final).
 - **Ubicación y movimientos** (`UbicacionMovimientosPage`, nueva, HU-07/HU-08):
   selector de pieza, breadcrumb jerárquico real (`lib/ubicaciones.ts`), **código
   QR real** (librería `qrcode`, no un patrón simulado — apunta a la ficha de la
@@ -158,11 +153,11 @@ Esto es solo UX: la autorización real la valida el backend (401/403) en cada en
   explícito si no está configurado).
 - **HU-22 (SSO PUCP/Google Workspace)**: no implementado — fuera del stack
   cerrado (JWT propio); anotado igual en `museo-backend/CLAUDE.md`.
-- **Sin pruebas automatizadas de frontend** (el Plan de Adquisiciones prevé
-  Playwright para E2E; no hay ningún test escrito en este repo todavía — el
-  rediseño se verificó manualmente en el navegador contra el backend real,
-  capturas en la conversación de la sesión que lo hizo).
-- **Sin CI/CD ni despliegue en Vercel configurado.**
+- **Pruebas**: hay pruebas unitarias y de componentes (Vitest) y de punta a punta (Playwright) para F2; los demás
+  flujos todavía no tienen (agregar las suyas y sumar sus archivos a `coverage.include` en `vite.config.ts`).
+  Utilidades compartidas en `src/test/` (`simularApi`, `renderizar`, datos con la forma del contrato v3).
+- **CI/CD**: `.github/workflows/build.yml` (lint, tipos, pruebas, build y E2E contra el backend real) y Vercel. Falta
+  el secreto `BACKEND_REPO_TOKEN` para que el trabajo E2E corra, y marcar los checks como obligatorios en `main`.
 
 ## Convenciones de código
 
@@ -220,3 +215,29 @@ El líder autorizó específicamente las pantallas F0 según el pedido del dueñ
 - Se conservan los tipos/páginas de otros flujos. Las incompatibilidades de esos flujos con v3 se informan sin corregirlas dentro de F0. Ver `docs/f0/README.md`.
 - Usar tokens existentes y foco visible. En F0 se usa `rojo-oscuro` para contraste AA de botones con texto blanco, sin crear colores; las entradas móviles usan 16 px.
 - Verificación: `npm run build`, `npm run lint` (dos advertencias previas), Playwright opcional `npm run test:f0` con runtime ya disponible. Evidencia y capturas en `docs/f0/`. Nunca probar contra Supabase durante desarrollo.
+
+
+## F2 · ficha de la pieza sobre v3 (20/10/2026)
+
+Dueño: Divano Pérez. Contrato en `Base-de-conocimiento/contratos-api/F2-piezas.md` y `museo-backend/docs/openapi.yaml`.
+
+- **Alta** (`/coleccion/nueva`, `NuevaPiezaPage`, permiso `piezas.crear`): `FormularioFicha` (F0) más `components/f2/DatosAlta`
+  (códigos, régimen de tenencia y ubicación inicial). Todo viaja en un solo `POST /piezas`; si algo falla no se crea nada.
+- **Ficha** (`PiezaDetailPage`): una sola consulta, `GET /piezas/{id}/ficha-completa`; cada sección invalida `["ficha", id]`
+  después de un cambio. Solo muestra los campos con dato; los vacíos los lista `CamposFaltantes`.
+- **Edición**: `FormularioFicha` con `PATCH /piezas/{id}` y la `version` leída. Si otra persona guardó antes, el backend
+  responde 409 `conflicto_version` y la pantalla ofrece recargar.
+- **Revisión** (`PATCH /piezas/{id}/estado-ficha`): enviar a revisión, aprobar, rechazar con motivo y volver a borrador. Los
+  botones solo aparecen si el permiso y el estado lo permiten. Baja y restauración siempre con motivo.
+- **Secciones** en `src/components/f2/`: `Codigos` (F1, RF-03/04), `Tenencia` (RF-56), `Fotografias` (RF-10: principal,
+  orden, tipo de vista, retiro), `Auditoria` (RNF-11). La ubicación y el estado solo se muestran: los traslados se
+  registran en «Ubicación y movimientos» (F6).
+- Catálogos compartidos en `hooks/useCatalogosF2.ts`. Tipos v3 en `types/index.ts` (`PiezaV3`, `FichaCompleta`…); los
+  tipos legados (`Pieza`, `PiezaDetalle`) siguen solo porque otras páginas aún los usan.
+- Verificado en el navegador contra el backend local: alta, edición, conflicto, aprobación y rechazo, códigos (y el
+  error de duplicado), tenencia (error de contraparte), fotos, baja y restauración.
+- `Documentos` (RF-11), `SugerenciasIA` (F10, RIA-01: aplicar todo, una parte o rechazar; nada se escribe sin
+  aprobación, DA-006) y subcolecciones (RF-07) en «Gestionar colecciones». `Auditoria` muestra etiquetas y nombres.
+  `GET /ia/sugerencias` no filtra por pieza: la ficha filtra en el cliente (agregar `piezaId` al backend si la cola crece).
+- Corrección de códigos (RF-05) en `Codigos`; datos del régimen (contraparte, fechas, condiciones y RN-07) en
+  `CamposRegimen`, compartido por el alta y la ficha.

@@ -22,6 +22,26 @@ npm run dev
 La aplicación queda en `http://localhost:5173`. El primer usuario se crea con
 `python -m app.seed` en el backend (ver su README).
 
+## Pruebas e integración continua
+
+| Nivel | Herramienta | Qué prueba | Comando |
+|---|---|---|---|
+| Unitarias | Vitest | Funciones de `src/lib` (errores de la API, ficha, ubicaciones, navegación por permiso) | `npm test` |
+| Componentes (integración) | Vitest + Testing Library | Pantallas completas con la API simulada: alta, ficha, edición con conflicto, revisión, fotos, códigos, tenencia, bajas | `npm test` |
+| Punta a punta | Playwright | El navegador contra el backend real y un PostgreSQL de pruebas | `npm run test:e2e` |
+
+`npm run test:cobertura` exige al menos 80 % de líneas en el código cubierto (ver `vite.config.ts`). Las pruebas
+de punta a punta necesitan el backend corriendo y una cuenta de prueba:
+
+```bash
+E2E_API=http://localhost:8000/api/v1 E2E_EMAIL=... E2E_PASSWORD=... npm run test:e2e
+```
+
+La CI (`.github/workflows/build.yml`) corre en cada PR: lint, tipos, pruebas con cobertura y build. Después
+levanta `museo-backend@main` con una base nueva y corre Playwright. Para eso necesita el secreto
+`BACKEND_REPO_TOKEN`, un token de solo lectura de `dp2-app/museo-backend`; sin él, ese trabajo se salta. Vercel
+publica una vista previa por PR y producción al fusionar en `main`.
+
 ## Estructura
 
 ```
