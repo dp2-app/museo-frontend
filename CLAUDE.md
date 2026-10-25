@@ -236,5 +236,7 @@ Dueño: Divano Pérez. Contrato en `Base-de-conocimiento/contratos-api/F2-piezas
   tipos legados (`Pieza`, `PiezaDetalle`) siguen solo porque otras páginas aún los usan.
 - Verificado en el navegador contra el backend local: alta, edición, conflicto, aprobación y rechazo, códigos (y el
   error de duplicado), tenencia (error de contraparte), fotos, baja y restauración.
-- Pendiente de F2: documentos de la pieza (RF-11), corrección excepcional del código I (RF-05) y sugerencias de IA en
-  la ficha (F10).
+- `Documentos` (RF-11), `SugerenciasIA` (F10, RIA-01: aplicar todo, una parte o rechazar; nada se escribe sin
+  aprobación, DA-006) y subcolecciones (RF-07) en «Gestionar colecciones». `Auditoria` muestra etiquetas y nombres.
+  `GET /ia/sugerencias` no filtra por pieza: la ficha filtra en el cliente (agregar `piezaId` al backend si la cola crece).
+- Pendiente de F2: corrección excepcional del código I (RF-05, permiso `codigos.corregir_inmutable`).
