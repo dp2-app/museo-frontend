@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CATALOGOS, ficha } from "../test/datos";
@@ -157,14 +157,17 @@ describe("Ficha de la pieza", () => {
     expect(api.post).toHaveBeenCalledWith("/piezas/p1/baja", { motivo: "Registro duplicado" });
   });
 
-  it("agrega una foto por URL e indica el tipo de vista", async () => {
+  it("agrega una foto con fotógrafo y fecha de la toma, e indica el tipo de vista", async () => {
     const api = abrir(["piezas.ver", "fotos.gestionar"], ficha(), {
       "POST /piezas/p1/fotografias": { id: "f3" }, "PATCH /piezas/p1/fotografias/f1": {},
     });
     const usuario = userEvent.setup();
-    await usuario.type(await screen.findByLabelText(/Agregar fotografía/), "https://archivos.museo.pe/f3.jpg");
+    await usuario.selectOptions(await screen.findByLabelText("Fotógrafo"), "per-1");
+    await usuario.type(screen.getByLabelText("Fecha de la toma"), "2026-10-20");
+    await usuario.type(screen.getByLabelText(/URL ya subida/), "https://archivos.museo.pe/f3.jpg");
     await usuario.click(screen.getByRole("button", { name: "Añadir" }));
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/fotografias", { url: "https://archivos.museo.pe/f3.jpg" }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/fotografias",
+      { url: "https://archivos.museo.pe/f3.jpg", fotografoId: "per-1", fechaFotografia: "2026-10-20" }));
     await usuario.selectOptions(screen.getByLabelText("Tipo de vista"), "v-frontal");
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/piezas/p1/fotografias/f1", { tipoVistaId: "v-frontal" }));
   });
@@ -180,5 +183,39 @@ describe("Ficha de la pieza", () => {
     await waitFor(() => expect(historial).toHaveTextContent("«Desconocido» → «Taller Jiménez»"));
     expect(historial).toHaveTextContent("Sistema · Dio de baja");
     expect(historial).toHaveTextContent("Motivo: Duplicado");
+  });
+
+  it("reordena arrastrando una miniatura sobre otra", async () => {
+    const api = abrir(["piezas.ver", "fotos.gestionar"], ficha(), { "PUT /piezas/p1/fotografias/orden": [] });
+    const miniaturas = within(await screen.findByRole("list", { name: "Miniaturas" })).getAllByRole("listitem");
+    fireEvent.dragStart(miniaturas[1]);
+    fireEvent.dragOver(miniaturas[0]);
+    fireEvent.drop(miniaturas[0]);
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith("/piezas/p1/fotografias/orden", { ids: ["f2", "f1"] }));
+  });
+
+  it("al editar envía solo lo que cambió, aunque haya obligatorios vacíos (R2)", async () => {
+    const api = abrir(["piezas.ver", "piezas.editar"], ficha(), { "PATCH /piezas/p1": {} });
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: /Editar/ }));
+    const autor = await screen.findByLabelText(/Autor/);
+    await usuario.clear(autor);
+    await usuario.type(autor, "Otro autor");
+    await usuario.click(screen.getByRole("button", { name: "Guardar ficha" }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/piezas/p1",
+      { campos: { autor: "Otro autor" }, listas: {}, version: "2026-10-20T10:00:00.000001+00:00" }));
+  });
+
+  it("vaciar un obligatorio que tenía valor sigue bloqueado; sin cambios no llama al backend", async () => {
+    const api = abrir(["piezas.ver", "piezas.editar"]);
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: /Editar/ }));
+    await usuario.clear(await screen.findByLabelText(/Título \/ Denominación/));
+    await usuario.click(screen.getByRole("button", { name: "Guardar ficha" }));
+    expect(await screen.findByText(/completa este campo obligatorio/)).toBeInTheDocument();
+    await usuario.type(screen.getByLabelText(/Título \/ Denominación/), "Retablo ayacuchano");
+    await usuario.click(screen.getByRole("button", { name: "Guardar ficha" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Editar ficha" })).not.toBeInTheDocument());
+    expect(api.patch).not.toHaveBeenCalled();
   });
 });

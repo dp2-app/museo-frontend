@@ -38,6 +38,7 @@ export const CATALOGOS = {
   "/ubicaciones": UBICACIONES,
   "/listas/estado_conservacion/valores": ESTADOS_CONSERVACION,
   "/listas/tipo_vista_foto/valores": VISTAS,
+  "/personas": [{ id: "per-1", nombreCompleto: "Daniel Giannoni", alias: null, activo: true }],
   "/listas/tipo_documento/valores": [{ id: "td-acta", etiqueta: "Acta", codigo: null, orden: 1, activo: true, esSistema: true }],
 };
 

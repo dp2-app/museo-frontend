@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       // Lo que cubren las pruebas de F2 y las utilidades compartidas; cada flujo suma sus archivos al agregar pruebas.
-      include: ['src/lib/api.ts', 'src/lib/fichaF0.ts', 'src/lib/ubicaciones.ts', 'src/lib/secciones.ts', 'src/components/f2/**',
+      include: ['src/lib/api.ts', 'src/lib/f2.ts', 'src/lib/fichaF0.ts', 'src/lib/ubicaciones.ts', 'src/lib/secciones.ts', 'src/components/f2/**',
         'src/pages/NuevaPiezaPage.tsx', 'src/pages/PiezaDetailPage.tsx', 'src/pages/PiezasPage.tsx'],
       reporter: ['text-summary', 'cobertura'],
       thresholds: { lines: 80 },

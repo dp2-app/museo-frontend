@@ -1,5 +1,10 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/** Con E2E_EVIDENCIA=1 guarda capturas en docs/f2/evidencia (evidencia de la matriz de cobertura). */
+async function evidencia(page: Page, nombre: string) {
+  if (process.env.E2E_EVIDENCIA) await page.screenshot({ path: `docs/f2/evidencia/${nombre}.png`, fullPage: true });
+}
 
 const cuenta: { email: string; password: string } = process.env.E2E_CUENTA
   ? JSON.parse(readFileSync(process.env.E2E_CUENTA, "utf8"))
@@ -26,14 +31,16 @@ test("F2 de punta a punta: registrar, completar, aprobar y encontrar por código
   await page.getByLabel("Valor del código 1").fill(codigo);
   await page.getByLabel("Sede o ubicación").selectOption({ index: 1 });
   await page.getByLabel(/Título \/ Denominación/).fill(nombre);
+  await evidencia(page, "01-alta-con-codigo-y-ubicacion");
   await page.getByRole("button", { name: "Guardar ficha" }).click();
 
   await expect(page.getByRole("heading", { name: nombre })).toBeVisible();
   await expect(page.getByText("Pieza registrada. La ficha está en borrador.")).toBeVisible();
+  await evidencia(page, "02-ficha-recien-creada");
   await expect(page.getByRole("region", { name: "Información faltante" })).toContainText("Fotografía");
 
   // Foto (RF-10): con ella la ficha queda completa
-  await page.getByLabel(/Agregar fotografía/).fill(`https://archivos.museo.pe/e2e-${sufijo}.jpg`);
+  await page.getByLabel(/URL ya subida/).fill(`https://archivos.museo.pe/e2e-${sufijo}.jpg`);
   await page.getByRole("button", { name: "Añadir" }).click();
   await expect(page.getByText("Principal", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "Información faltante" })).toHaveCount(0);
@@ -48,6 +55,7 @@ test("F2 de punta a punta: registrar, completar, aprobar y encontrar por código
   await page.getByRole("button", { name: /Enviar a revisión/ }).click();
   await page.getByRole("button", { name: /Aprobar/ }).click();
   await expect(page.locator("h1 + div .chip").first()).toHaveText("Aprobada");
+  await evidencia(page, "03-ficha-aprobada-con-foto");
 
   // El código I no se puede repetir: el error del backend se ve en la pantalla
   await page.getByLabel("Tipo", { exact: true }).selectOption({ label: "N° de inventario MATP (I)" });
@@ -60,6 +68,7 @@ test("F2 de punta a punta: registrar, completar, aprobar y encontrar por código
   await page.getByLabel("Código").fill(codigo.toLowerCase().replace("-", " "));
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByRole("row", { name: new RegExp(nombre) })).toBeVisible();
+  await evidencia(page, "04-busqueda-por-codigo-normalizado");
 });
 
 test("F2: documentos, corrección del código I y alta en comodato (RN-03, RN-07)", async ({ page }) => {
@@ -90,6 +99,7 @@ test("F2: documentos, corrección del código I y alta en comodato (RN-03, RN-07
   await codigos.getByRole("form").getByRole("button", { name: "Corregir" }).click();
   await expect(codigos).toContainText(`I-7${sufijo}`);
   await expect(page.getByRole("region", { name: "Historial de cambios" })).toContainText("Motivo: Error de transcripción");
+  await evidencia(page, "05-documento-y-correccion-del-codigo-i");
 
   // El comodato no admite código I: la base lo rechaza y la pantalla lo dice (RN-03)
   await page.getByRole("button", { name: "Cambiar régimen" }).click();
@@ -97,6 +107,7 @@ test("F2: documentos, corrección del código I y alta en comodato (RN-03, RN-07
   await page.getByLabel("Propietario o institución que cede").selectOption({ index: 1 });
   await page.getByRole("region", { name: "Tenencia" }).getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByRole("alert")).toContainText("RN-03");
+  await evidencia(page, "06-comodato-rechazado-por-codigo-i");
 
   // Alta en comodato sin código I, con condiciones y restricción de publicación (RN-07)
   await page.goto("/coleccion/nueva");
@@ -109,4 +120,33 @@ test("F2: documentos, corrección del código I y alta en comodato (RN-03, RN-07
   const tenencia = page.getByRole("region", { name: "Tenencia" });
   await expect(tenencia).toContainText("Comodato");
   await expect(tenencia).toContainText("No se puede publicar (RN-07)");
+  await evidencia(page, "07-alta-en-comodato-restringido");
+});
+
+test("F2: una ficha incompleta se edita sin completarla, no se envía a revisión y la bandeja la separa", async ({ page }) => {
+  const nombre = `Ficha incompleta E2E ${Date.now().toString().slice(-6)}`;
+  await page.goto("/coleccion/nueva");
+  await page.getByLabel(/Título \/ Denominación/).fill(nombre);
+  await page.getByRole("button", { name: "Guardar ficha" }).click();
+  await expect(page.getByRole("region", { name: "Información faltante" })).toBeVisible();
+
+  // R2: se edita sin completar lo que falta
+  await page.getByRole("button", { name: "Editar" }).click();
+  await page.getByLabel(/Autor/).fill("Taller E2E");
+  await page.getByRole("button", { name: "Guardar ficha" }).click();
+  await expect(page.getByRole("region", { name: "Descripción" })).toContainText("Taller E2E");
+
+  // V10: no se envía a revisión incompleta y la pantalla dice qué falta
+  await page.getByRole("button", { name: /Enviar a revisión/ }).click();
+  await expect(page.getByRole("alert")).toContainText("No se puede enviar a revisión. Falta:");
+  await evidencia(page, "08-revision-bloqueada-por-faltantes");
+
+  // R3: la bandeja del gestor
+  await page.goto("/coleccion");
+  const bandeja = page.getByRole("button", { name: /Por revisar/ });
+  if (await bandeja.count()) {
+    await bandeja.click();
+    await expect(page.getByLabel("Estado de la ficha")).toHaveValue("en_revision");
+    await evidencia(page, "09-bandeja-de-revision");
+  }
 });

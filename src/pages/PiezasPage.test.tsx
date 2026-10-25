@@ -59,3 +59,24 @@ describe("Subcolecciones (RF-07)", () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/colecciones/col-1/subcolecciones", { nombre: "Mates burilados" }));
   });
 });
+
+describe("Bandeja de revisión (R3)", () => {
+  const segunEstado = (opciones?: unknown) =>
+    (opciones as { params?: { estadoFicha?: string } } | undefined)?.params?.estadoFicha === "en_revision" ? { items: [pieza], total: 2 } : pagina(5);
+
+  it("quien aprueba ve cuántas fichas esperan y las filtra con un clic", async () => {
+    const api = simularApi({ "/colecciones": [], "/piezas": segunEstado }, ["piezas.ver", "piezas.aprobar_ficha"]);
+    renderizar(<PiezasPage />);
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: "Por revisar (2)" }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/piezas", { params: expect.objectContaining({ estadoFicha: "en_revision", pagina: 1 }) }));
+    expect(screen.getByLabelText("Estado de la ficha")).toHaveValue("en_revision");
+  });
+
+  it("sin permiso de aprobar no aparece la bandeja", async () => {
+    simularApi({ "/colecciones": [], "/piezas": segunEstado }, ["piezas.ver"]);
+    renderizar(<PiezasPage />);
+    expect(await screen.findByText("Retablo ayacuchano")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Por revisar/ })).not.toBeInTheDocument();
+  });
+});
