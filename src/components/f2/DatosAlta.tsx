@@ -1,8 +1,9 @@
 import { Plus, Trash2 } from "lucide-react";
 import { usePermisos } from "../../hooks/usePermisos";
-import { usePropietarios, useRegimenes, useTiposCodigo, useUbicaciones } from "../../hooks/useCatalogosF2";
+import { useRegimenes, useTiposCodigo, useUbicaciones } from "../../hooks/useCatalogosF2";
 import { aplanarUbicaciones } from "../../lib/ubicaciones";
 import type { PiezaAlta } from "../../types";
+import { CamposRegimen } from "./Tenencia";
 
 type Extras = Pick<PiezaAlta, "codigos" | "tenencia" | "ubicacionInicialId">;
 
@@ -14,7 +15,6 @@ export function DatosAlta({ valor, cambiar, errores }: { valor: Extras; cambiar:
   const regimenes = useRegimenes();
   const ubicaciones = useUbicaciones();
   const regimen = regimenes.data?.find((r) => r.id === valor.tenencia?.regimenId);
-  const propietarios = usePropietarios(Boolean(regimen?.requiereContraparte) && puede("propietarios.ver"));
   const codigoError = (i: number) => errores[`codigos[${i}].valor`] ?? errores[`codigos[${i}]`];
 
   function codigo(i: number, cambio: Partial<Extras["codigos"][number]>) {
@@ -65,23 +65,7 @@ export function DatosAlta({ valor, cambiar, errores }: { valor: Extras; cambiar:
               </select>
               {errores.tenencia && <p className="mt-1 text-sm" role="alert">{errores.tenencia}</p>}
             </div>
-            {regimen?.requiereContraparte && (
-              <div>
-                <label className="form-label" htmlFor="alta-contraparte">Propietario o institución que cede</label>
-                <select id="alta-contraparte" className="glass-input" value={valor.tenencia?.contraparteId ?? ""}
-                  onChange={(e) => cambiar({ ...valor, tenencia: { ...valor.tenencia!, contraparteId: e.target.value || null } })}>
-                  <option value="">Seleccionar…</option>
-                  {propietarios.data?.filter((p) => p.activo).map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
-              </div>
-            )}
-            {regimen?.requiereFechas && (["fechaInicio", "fechaFin"] as const).map((campo) => (
-              <div key={campo}>
-                <label className="form-label" htmlFor={`alta-${campo}`}>{campo === "fechaInicio" ? "Fecha de inicio" : "Fecha de fin"}</label>
-                <input id={`alta-${campo}`} type="date" className="glass-input" value={valor.tenencia?.[campo] ?? ""}
-                  onChange={(e) => cambiar({ ...valor, tenencia: { ...valor.tenencia!, [campo]: e.target.value || null } })} />
-              </div>
-            ))}
+            {valor.tenencia && <CamposRegimen regimen={regimen} valor={valor.tenencia} prefijo="alta" cambiar={(t) => cambiar({ ...valor, tenencia: t })} />}
           </div>
         </fieldset>
       )}

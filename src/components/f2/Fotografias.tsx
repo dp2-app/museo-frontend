@@ -31,7 +31,7 @@ export function Fotografias({ piezaId, fotos, alCambiar }: { piezaId: string; fo
     onSuccess: (foto) => { setUrl(""); if (archivo.current) archivo.current.value = ""; setActivaId(foto.id); alCambiar(); },
   });
   const editar = useMutation({
-    mutationFn: async (cambio: { tipoVistaId?: string | null; esPrincipal?: boolean }) => api.patch(`/piezas/${piezaId}/fotografias/${activa!.id}`, cambio),
+    mutationFn: async (cambio: { tipoVistaId?: string | null; esPrincipal?: boolean; restringidoUso?: boolean }) => api.patch(`/piezas/${piezaId}/fotografias/${activa!.id}`, cambio),
     onSuccess: alCambiar,
   });
   const ordenar = useMutation({
@@ -56,6 +56,7 @@ export function Fotografias({ piezaId, fotos, alCambiar }: { piezaId: string; fo
           <div className="relative aspect-square rounded-2xl overflow-hidden border border-linea bg-fondo-suave">
             <img src={activa.url} alt={`Fotografía ${indice + 1} de ${ordenadas.length}`} className="w-full h-full object-contain" />
             {activa.esPrincipal && <span className="chip absolute top-2 left-2"><Star size={14} aria-hidden="true" /> Principal</span>}
+            {activa.restringidoUso && <span className="chip absolute top-2 right-2">Uso restringido</span>}
           </div>
           <figcaption className="text-xs text-gris-2">
             {vistas.data?.find((v) => v.id === activa.tipoVistaId)?.etiqueta ?? "Vista sin indicar"} · {indice + 1} de {ordenadas.length}
@@ -93,6 +94,11 @@ export function Fotografias({ piezaId, fotos, alCambiar }: { piezaId: string; fo
             <option value="">Sin indicar</option>
             {vistas.data?.filter((v) => v.activo).map((v) => <option key={v.id} value={v.id}>{v.etiqueta}</option>)}
           </select>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={activa.restringidoUso} disabled={editar.isPending}
+              onChange={(e) => editar.mutate({ restringidoUso: e.target.checked })} />
+            Uso restringido: no se difunde (RN-07)
+          </label>
           {retirando && <FormMotivo etiqueta="Motivo para retirar la fotografía" boton="Retirar" pendiente={retirar.isPending}
             onConfirmar={(m) => retirar.mutate(m)} onCancelar={() => setRetirando(false)} />}
         </div>
