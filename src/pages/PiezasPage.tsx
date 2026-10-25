@@ -120,7 +120,7 @@ function PiezasDadasDeBaja() {
 export function PiezasPage() {
   const { puede } = usePermisos();
   const colecciones = useColecciones();
-  const [filtros, setFiltros] = useState({ q: "", codigo: "", coleccionId: "", soloIncompletas: false });
+  const [filtros, setFiltros] = useState({ q: "", codigo: "", coleccionId: "", estadoFicha: "", soloIncompletas: false });
   const [aplicados, setAplicados] = useState(filtros);
   const [pagina, setPagina] = useState(1);
   const tamano = 25;
@@ -129,10 +129,15 @@ export function PiezasPage() {
     queryKey: ["piezas", aplicados, pagina],
     queryFn: async () => (await api.get<Pagina<PiezaV3>>("/piezas", { params: {
       pagina, tamano, q: aplicados.q || undefined, codigo: aplicados.codigo || undefined,
-      coleccionId: aplicados.coleccionId || undefined, soloIncompletas: aplicados.soloIncompletas || undefined,
+      coleccionId: aplicados.coleccionId || undefined, estadoFicha: aplicados.estadoFicha || undefined,
+      soloIncompletas: aplicados.soloIncompletas || undefined,
     } })).data,
   });
   const paginas = Math.max(1, Math.ceil((piezas.data?.total ?? 0) / tamano));
+  // R3: bandeja del gestor, las fichas que esperan su revisión.
+  const porRevisar = useQuery({ queryKey: ["piezas", "por-revisar"], enabled: puede("piezas.aprobar_ficha"),
+    queryFn: async () => (await api.get<Pagina<PiezaV3>>("/piezas", { params: { estadoFicha: "en_revision", tamano: 1 } })).data.total });
+  const verPorRevisar = () => { const f = { ...filtros, estadoFicha: "en_revision" }; setFiltros(f); setAplicados(f); setPagina(1); };
 
   return (
     <div className="space-y-6">
@@ -144,7 +149,11 @@ export function PiezasPage() {
             <p className="text-sm text-gris-2">Busca por texto, código o colección.</p>
           </div>
         </div>
-        {puede("piezas.crear") && <Link to="/coleccion/nueva" className="btn-primary"><Plus size={18} aria-hidden="true" /> Registrar pieza</Link>}
+        <div className="flex flex-wrap gap-2">
+          {puede("piezas.aprobar_ficha") && Boolean(porRevisar.data) &&
+            <button type="button" className="btn-glass" onClick={verPorRevisar}>Por revisar ({porRevisar.data})</button>}
+          {puede("piezas.crear") && <Link to="/coleccion/nueva" className="btn-primary"><Plus size={18} aria-hidden="true" /> Registrar pieza</Link>}
+        </div>
       </div>
 
       {puede("colecciones.gestionar") && <Desplegable titulo="Gestionar colecciones"><GestionarColecciones /></Desplegable>}
@@ -164,6 +173,16 @@ export function PiezasPage() {
           <select id="buscar-coleccion" value={filtros.coleccionId} onChange={(e) => setFiltros({ ...filtros, coleccionId: e.target.value })} className="glass-input min-w-[10rem]">
             <option value="">Todas</option>
             {colecciones.data?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="form-label" htmlFor="buscar-estado">Estado de la ficha</label>
+          <select id="buscar-estado" value={filtros.estadoFicha} onChange={(e) => setFiltros({ ...filtros, estadoFicha: e.target.value })} className="glass-input">
+            <option value="">Todos</option>
+            <option value="borrador">Borrador</option>
+            <option value="en_revision">En revisión</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
           </select>
         </div>
         <label className="flex items-center gap-1.5 text-sm pb-2">

@@ -29,3 +29,8 @@ export function useValoresLista(clave: string) {
   return useQuery({ queryKey: ["f2", "lista", clave], staleTime: fresco,
     queryFn: async () => (await api.get<ValorLista[]>(`/listas/${clave}/valores`)).data });
 }
+
+export function usePersonas(habilitado = true) {
+  return useQuery({ queryKey: ["f2", "personas"], staleTime: fresco, enabled: habilitado,
+    queryFn: async () => (await api.get<{ id: string; nombreCompleto: string; activo: boolean }[]>("/personas")).data });
+}

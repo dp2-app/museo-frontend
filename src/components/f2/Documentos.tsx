@@ -4,11 +4,14 @@ import { ExternalLink, FileText, Plus } from "lucide-react";
 import { usePermisos } from "../../hooks/usePermisos";
 import { useValoresLista } from "../../hooks/useCatalogosF2";
 import { api } from "../../lib/api";
+import { cloudinaryConfigurado, subirArchivoACloudinary } from "../../lib/cloudinary";
+import { extension, FORMATOS_DOCUMENTO, validarArchivo } from "../../lib/f2";
 import type { DocumentoV3 } from "../../types";
 import { ErrorOperacion } from "../f0/Comun";
 import { FormMotivo, Seccion } from "./FichaComun";
 
 const vacio = { url: "", titulo: "", tipoDocumentoId: "", fechaDocumento: "", descripcion: "" };
+const MAX_DOCUMENTO_MB = 25; // ARCHIVO_MAX_DOCUMENTO_MB del backend
 
 /** RF-11: documentos asociados a la pieza (ficha de ingreso, actas, contratos de comodato). Como las fotos,
  * el archivo vive en el almacén y aquí se registra su URL; retirar uno es baja lógica con motivo. */
@@ -20,13 +23,22 @@ export function Documentos({ piezaId, documentos, alCambiar }: { piezaId: string
   const [retirando, setRetirando] = useState<string | null>(null);
   const tipo = (id: string | null) => tipos.data?.find((t) => t.id === id)?.etiqueta;
 
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const agregar = useMutation({
     mutationFn: async () => api.post(`/piezas/${piezaId}/documentos`, {
-      url: nuevo.url.trim(), titulo: nuevo.titulo.trim() || null, tipoDocumentoId: nuevo.tipoDocumentoId || null,
+      url: archivo ? await subirArchivoACloudinary(archivo, "auto") : nuevo.url.trim(),
+      titulo: nuevo.titulo.trim() || null, tipoDocumentoId: nuevo.tipoDocumentoId || null,
       fechaDocumento: nuevo.fechaDocumento || null, descripcion: nuevo.descripcion.trim() || null,
+      ...(archivo ? { formato: extension(archivo.name), tamanoBytes: archivo.size } : {}),
     }),
-    onSuccess: () => { setNuevo(vacio); setAbierto(false); alCambiar(); },
+    onSuccess: () => { setNuevo(vacio); setArchivo(null); setAbierto(false); alCambiar(); },
   });
+  function elegir(f: File | undefined) {
+    const error = f ? validarArchivo(f, FORMATOS_DOCUMENTO, MAX_DOCUMENTO_MB) : null;
+    setAviso(error);
+    setArchivo(f && !error ? f : null);
+  }
   const retirar = useMutation({
     mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => api.post(`/piezas/${piezaId}/documentos/${id}/baja`, { motivo }),
     onSuccess: () => { setRetirando(null); alCambiar(); },
@@ -65,10 +77,18 @@ export function Documentos({ piezaId, documentos, alCambiar }: { piezaId: string
       <ErrorOperacion error={agregar.error ?? retirar.error} />
       {abierto && (
         <form className="grid gap-3 md:grid-cols-2" onSubmit={(e: FormEvent) => { e.preventDefault(); agregar.mutate(); }}>
-          <div className="md:col-span-2">
-            <label className="form-label" htmlFor="doc-url">URL del documento (ya subido)</label>
-            <input id="doc-url" type="url" required placeholder="https://…" className="glass-input" {...campo("url")} />
-          </div>
+          {cloudinaryConfigurado() ? (
+            <div className="md:col-span-2">
+              <label className="form-label" htmlFor="doc-archivo">Archivo (PDF, JPG o PNG, hasta {MAX_DOCUMENTO_MB} MB)</label>
+              <input id="doc-archivo" type="file" required accept=".pdf,.jpg,.jpeg,.png" className="text-sm" onChange={(e) => elegir(e.target.files?.[0])} />
+              {aviso && <p role="alert" className="mt-1 text-sm">{aviso}</p>}
+            </div>
+          ) : (
+            <div className="md:col-span-2">
+              <label className="form-label" htmlFor="doc-url">URL del documento (ya subido)</label>
+              <input id="doc-url" type="url" required placeholder="https://…" className="glass-input" {...campo("url")} />
+            </div>
+          )}
           <div>
             <label className="form-label" htmlFor="doc-titulo">Título</label>
             <input id="doc-titulo" className="glass-input" {...campo("titulo")} />
@@ -90,7 +110,7 @@ export function Documentos({ piezaId, documentos, alCambiar }: { piezaId: string
           </div>
           <div className="md:col-span-2 flex gap-2 justify-end">
             <button type="button" className="btn-glass" onClick={() => { setAbierto(false); setNuevo(vacio); }}>Cancelar</button>
-            <button className="btn-primary" disabled={agregar.isPending}>Asociar</button>
+            <button className="btn-primary" disabled={agregar.isPending}>{agregar.isPending ? "Subiendo…" : "Asociar"}</button>
           </div>
         </form>
       )}
