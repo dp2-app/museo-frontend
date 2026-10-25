@@ -13,7 +13,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:cobertura": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:f0:grupos": "node tests/f0-grupos.e2e.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

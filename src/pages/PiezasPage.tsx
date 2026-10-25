@@ -8,7 +8,7 @@ import { ErrorOperacion } from "../components/f0/Comun";
 import { FormMotivo } from "../components/f2/FichaComun";
 import { usePermisos } from "../hooks/usePermisos";
 import { api } from "../lib/api";
-import type { Coleccion, Pagina, PiezaV3 } from "../types";
+import type { Coleccion, Pagina, PiezaV3, Subcoleccion } from "../types";
 
 const denominacion = (p: PiezaV3) => String(p.campos.denominacion ?? "") || "(sin denominación)";
 
@@ -46,7 +46,42 @@ function GestionarColecciones() {
       </form>
       <ErrorOperacion error={crear.error} />
       <div className="flex flex-wrap gap-2">{colecciones.data?.map((c) => <span key={c.id} className="chip">{c.nombre}</span>)}</div>
+      {Boolean(colecciones.data?.length) && <Subcolecciones colecciones={colecciones.data!} />}
     </>
+  );
+}
+
+/** RF-07: subcolecciones dentro de una colección (p. ej. las series de una donación). */
+function Subcolecciones({ colecciones }: { colecciones: Coleccion[] }) {
+  const queryClient = useQueryClient();
+  const [coleccionId, setColeccionId] = useState("");
+  const [nombre, setNombre] = useState("");
+  const subcolecciones = useQuery({ queryKey: ["subcolecciones", coleccionId], enabled: Boolean(coleccionId),
+    queryFn: async () => (await api.get<Subcoleccion[]>(`/colecciones/${coleccionId}/subcolecciones`)).data });
+  const crear = useMutation({
+    mutationFn: async () => api.post(`/colecciones/${coleccionId}/subcolecciones`, { nombre: nombre.trim() }),
+    onSuccess: () => { setNombre(""); queryClient.invalidateQueries({ queryKey: ["subcolecciones", coleccionId] }); },
+  });
+  return (
+    <div className="space-y-2 border-t border-linea pt-3">
+      <p className="text-sm font-semibold text-azul">Subcolecciones</p>
+      <form className="flex flex-wrap gap-2" onSubmit={(e: FormEvent) => { e.preventDefault(); if (nombre.trim()) crear.mutate(); }}>
+        <label className="sr-only" htmlFor="sub-coleccion">Colección de la subcolección</label>
+        <select id="sub-coleccion" className="glass-input max-w-xs" value={coleccionId} onChange={(e) => setColeccionId(e.target.value)}>
+          <option value="">Elige una colección…</option>
+          {colecciones.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        <label className="sr-only" htmlFor="sub-nombre">Nombre de la nueva subcolección</label>
+        <input id="sub-nombre" className="glass-input max-w-xs" placeholder="Nombre de la subcolección" value={nombre}
+          disabled={!coleccionId} onChange={(e) => setNombre(e.target.value)} />
+        <button className="btn-glass shrink-0" disabled={!coleccionId || crear.isPending}>Crear subcolección</button>
+      </form>
+      <ErrorOperacion error={crear.error ?? subcolecciones.error} />
+      {coleccionId && <div className="flex flex-wrap gap-2">
+        {subcolecciones.data?.map((s) => <span key={s.id} className="chip">{s.nombre}</span>)}
+        {subcolecciones.data?.length === 0 && <span className="text-sm text-gris-2">Esta colección aún no tiene subcolecciones.</span>}
+      </div>}
+    </div>
   );
 }
 

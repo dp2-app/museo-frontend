@@ -7,8 +7,10 @@ import { ErrorOperacion } from "../components/f0/Comun";
 import { CamposFaltantes, FormularioFicha } from "../components/f0/FormularioFicha";
 import { Auditoria } from "../components/f2/Auditoria";
 import { Codigos } from "../components/f2/Codigos";
+import { Documentos } from "../components/f2/Documentos";
 import { CamposPorGrupo, Fila, FormMotivo, Seccion } from "../components/f2/FichaComun";
 import { Fotografias } from "../components/f2/Fotografias";
+import { SugerenciasIA } from "../components/f2/SugerenciasIA";
 import { Tenencia } from "../components/f2/Tenencia";
 import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerErroresApi } from "../lib/api";
@@ -130,8 +132,11 @@ export function PiezaDetailPage() {
             <CamposPorGrupo pieza={p} excluir={["ubicacion_actual_id", "estado_pieza_id"]} />
           )}
 
+          <SugerenciasIA pieza={p} alCambiar={recargar} />
           <Codigos piezaId={piezaId} codigos={p.codigosDetalle} alCambiar={recargar} />
           <Tenencia piezaId={piezaId} tenencias={p.tenencias} alCambiar={recargar} />
+
+          <Documentos piezaId={piezaId} documentos={p.documentos} alCambiar={recargar} />
 
           <Seccion titulo="Ubicación y estado" acciones={<Link to="/ubicacion-y-movimientos" className="text-sm text-azul hover:underline">Registrar un traslado →</Link>}>
             <dl>
@@ -149,7 +154,7 @@ export function PiezaDetailPage() {
             </dl>
           </Seccion>
 
-          <Auditoria piezaId={piezaId} />
+          <Auditoria pieza={p} />
         </div>
       </div>
     </div>

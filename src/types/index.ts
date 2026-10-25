@@ -176,6 +176,7 @@ export interface SugerenciaIA {
   modeloUsado: string;
   confianza: number | null;
   estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
+  creadoEn?: string;
 }
 
 // --- HU-22: usuarios y roles ---
