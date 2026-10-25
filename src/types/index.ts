@@ -338,7 +338,7 @@ export interface EjecucionIndice {
   piezasRevisadas: number | null;
   indexadas: number | null;
   conEmbedding: number | null;
-  corte: "cuota_diaria" | "error" | null;
+  corte: "cuota_diaria" | "cupo_diario" | "error" | null;
   detalle: string | null;
 }
 
@@ -352,6 +352,10 @@ export interface EstadoIndiceSalas {
   sinEmbedding: number;
   enCurso: boolean;
   ultimaEjecucion: EjecucionIndice | null;
+  cuotaDiaria: number | null;
+  cupoDiarioIndexado: number | null;
+  indexadoHoy: number;
+  reservaConsultas: number;
   automatico: boolean;
   horaProgramada: string;
   zonaHoraria: string;

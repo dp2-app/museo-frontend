@@ -9,6 +9,7 @@ const fechaHora = (iso: string) =>
 
 const CORTE: Record<string, string> = {
   cuota_diaria: "se detuvo al agotar la cuota diaria del proveedor; sigue en la próxima ejecución",
+  cupo_diario: "llegó al cupo diario de indexado (el resto queda para consultas); sigue en la próxima ejecución",
   error: "terminó con error; se reintenta en la próxima ejecución",
 };
 
@@ -72,6 +73,15 @@ export function EstadoIndiceSalas() {
           </p>
         )}
       </div>
+
+      {estado.cuotaDiaria !== null && estado.cupoDiarioIndexado !== null && (
+        <p className="text-xs text-gris-2">
+          Hoy: {estado.indexadoHoy.toLocaleString("es-PE")} de {estado.cupoDiarioIndexado.toLocaleString("es-PE")} textos
+          para indexar. Capacidad diaria {estado.cuotaDiaria.toLocaleString("es-PE")}; el{" "}
+          {Math.round(estado.reservaConsultas * 100)} % (
+          {(estado.cuotaDiaria - estado.cupoDiarioIndexado).toLocaleString("es-PE")}) queda siempre para consultas.
+        </p>
+      )}
 
       <dl className="grid sm:grid-cols-2 gap-2 text-xs">
         <div>
