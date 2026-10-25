@@ -40,3 +40,22 @@ describe("Colección: búsqueda y bajas", () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith("/piezas/p1/restaurar", { motivo: "Se dio de baja por error" }));
   });
 });
+
+describe("Subcolecciones (RF-07)", () => {
+  it("lista las de la colección elegida y crea una nueva", async () => {
+    const api = simularApi({
+      "/colecciones": [{ id: "col-1", nombre: "Mildred Merino de Zela", descripcion: null }], "/piezas": { items: [], total: 0 },
+      "/colecciones/col-1/subcolecciones": [{ id: "s1", coleccionId: "col-1", nombre: "Retablos", descripcion: null }],
+      "POST /colecciones/col-1/subcolecciones": {},
+    }, ["piezas.ver", "colecciones.gestionar"]);
+    renderizar(<PiezasPage />);
+    const usuario = userEvent.setup();
+    await usuario.click(await screen.findByRole("button", { name: "Gestionar colecciones" }));
+    expect(await screen.findByLabelText("Nombre de la nueva subcolección")).toBeDisabled();
+    await usuario.selectOptions(screen.getByLabelText("Colección de la subcolección"), "col-1");
+    expect(await screen.findByText("Retablos")).toBeInTheDocument();
+    await usuario.type(screen.getByLabelText("Nombre de la nueva subcolección"), "Mates burilados");
+    await usuario.click(screen.getByRole("button", { name: "Crear subcolección" }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/colecciones/col-1/subcolecciones", { nombre: "Mates burilados" }));
+  });
+});

@@ -38,6 +38,7 @@ export const CATALOGOS = {
   "/ubicaciones": UBICACIONES,
   "/listas/estado_conservacion/valores": ESTADOS_CONSERVACION,
   "/listas/tipo_vista_foto/valores": VISTAS,
+  "/listas/tipo_documento/valores": [{ id: "td-acta", etiqueta: "Acta", codigo: null, orden: 1, activo: true, esSistema: true }],
 };
 
 export function ficha(cambios: Partial<FichaCompleta> = {}): FichaCompleta {
