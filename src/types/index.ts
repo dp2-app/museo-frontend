@@ -328,3 +328,33 @@ export interface VisibilidadCampo {
   rol: string;
   visible: boolean;
 }
+
+// --- F10 · RIA-05: estado del índice de salas (GET /ia/salas/indice) ---
+
+export interface EjecucionIndice {
+  origen: "programada" | "manual";
+  iniciadaEn: string;
+  terminadaEn: string | null;
+  piezasRevisadas: number | null;
+  indexadas: number | null;
+  conEmbedding: number | null;
+  corte: "cuota_diaria" | "error" | null;
+  detalle: string | null;
+}
+
+export interface EstadoIndiceSalas {
+  proveedor: string;
+  proveedorDisponible: boolean;
+  piezasElegibles: number;
+  conTexto: number;
+  conEmbeddingAlDia: number;
+  conEmbeddingDesactualizado: number;
+  sinEmbedding: number;
+  enCurso: boolean;
+  ultimaEjecucion: EjecucionIndice | null;
+  automatico: boolean;
+  horaProgramada: string;
+  zonaHoraria: string;
+  proximaEjecucion: string;
+  atrasada: boolean;
+}

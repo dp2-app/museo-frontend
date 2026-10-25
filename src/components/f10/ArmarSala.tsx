@@ -5,6 +5,7 @@ import { AlertTriangle, Bot, Download } from "lucide-react";
 import { api, extraerMensajeError } from "../../lib/api";
 import { usePermisos } from "../../hooks/usePermisos";
 import type { SalaSugerida } from "../../types";
+import { EstadoIndiceSalas } from "./EstadoIndiceSalas";
 
 const CANTIDAD_MIN = 10;
 const CANTIDAD_MAX = 30;
@@ -71,6 +72,8 @@ export function ArmarSala() {
           menor coincidencia. Tú eliges cuáles tomar (también alguna con puntaje bajo) y exportas tu selección.
         </p>
       </div>
+
+      {puede("ia.ejecutar_lote") && <EstadoIndiceSalas />}
 
       <form onSubmit={onSugerir} className="glass-panel p-5 flex flex-col sm:flex-row gap-3 sm:items-end">
         <label className="flex-1">
