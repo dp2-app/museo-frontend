@@ -317,7 +317,7 @@ export interface TenenciaV3 {
 }
 export interface FotoV3 {
   id: string; url: string; claveArchivo: string | null; tipoVistaId: string | null; orden: number; esPrincipal: boolean;
-  restringidoUso: boolean; creadoEn: string;
+  restringidoUso: boolean; creadoEn: string; fotografoId?: string | null; fechaFotografia?: string | null;
 }
 export interface DocumentoV3 {
   id: string; tipoDocumentoId: string | null; titulo: string | null; fechaDocumento: string | null; descripcion: string | null;

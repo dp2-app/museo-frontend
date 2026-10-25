@@ -15,3 +15,14 @@ export function soloCambios(antes: DatosFichaV3, despues: DatosFichaV3): DatosFi
 }
 
 export const sinCambios = (d: DatosFichaV3) => !Object.keys(d.campos).length && !Object.keys(d.listas).length;
+
+/** V12/V13 en el navegador, antes de subir nada: el backend vuelve a validar. */
+export const FORMATOS_FOTO = ["jpg", "jpeg", "png"];
+export const FORMATOS_DOCUMENTO = ["pdf", "jpg", "jpeg", "png"];
+export const extension = (nombre: string) => nombre.split(".").pop()?.toLowerCase() ?? "";
+
+export function validarArchivo(archivo: File, formatos: string[], maxMb: number): string | null {
+  if (!formatos.includes(extension(archivo.name))) return `«${archivo.name}»: formato no permitido; use ${formatos.join(", ")}.`;
+  if (archivo.size > maxMb * 1024 * 1024) return `«${archivo.name}» pesa más de ${maxMb} MB.`;
+  return null;
+}

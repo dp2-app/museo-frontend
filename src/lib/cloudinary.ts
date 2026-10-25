@@ -16,6 +16,11 @@ export function cloudinaryConfigurado(): boolean {
 }
 
 export async function subirImagenACloudinary(archivo: File): Promise<string> {
+  return subirArchivoACloudinary(archivo, "image");
+}
+
+/** «auto» deja que Cloudinary reconozca PDF e imágenes (documentos de la pieza, RF-11). */
+export async function subirArchivoACloudinary(archivo: File, recurso: "image" | "auto"): Promise<string> {
   if (!cloudinaryConfigurado()) {
     throw new Error(
       "Cloudinary no está configurado (VITE_CLOUDINARY_CLOUD_NAME / VITE_CLOUDINARY_UPLOAD_PRESET ausentes).",
@@ -26,7 +31,7 @@ export async function subirImagenACloudinary(archivo: File): Promise<string> {
   form.append("file", archivo);
   form.append("upload_preset", UPLOAD_PRESET!);
 
-  const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+  const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${recurso}/upload`, {
     method: "POST",
     body: form,
   });
