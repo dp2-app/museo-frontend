@@ -344,8 +344,12 @@ export interface AuditoriaV3 {
   motivo: string | null; usuarioNombre?: string | null; fecha: string;
 }
 export interface CodigoAlta { tipoCodigoId: string; valor: string; }
+export interface TenenciaInputV3 {
+  regimenId: string; contraparteId?: string | null; fechaInicio?: string | null; fechaFin?: string | null;
+  condicionesContractuales?: string | null; restringidoPublicacion?: boolean;
+}
 export interface PiezaAlta extends DatosFichaV3 {
   codigos: CodigoAlta[];
-  tenencia: { regimenId: string; contraparteId?: string | null; fechaInicio?: string | null; fechaFin?: string | null } | null;
+  tenencia: TenenciaInputV3 | null;
   ubicacionInicialId: string | null;
 }

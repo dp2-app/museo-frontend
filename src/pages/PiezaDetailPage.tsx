@@ -12,9 +12,22 @@ import { CamposPorGrupo, Fila, FormMotivo, Seccion } from "../components/f2/Fich
 import { Fotografias } from "../components/f2/Fotografias";
 import { SugerenciasIA } from "../components/f2/SugerenciasIA";
 import { Tenencia } from "../components/f2/Tenencia";
+import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
 import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerErroresApi } from "../lib/api";
 import type { AccionEstadoFicha, DatosFichaV3, FichaCompleta, HistorialItem } from "../types";
+
+const EXTRAS: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
+
+/** Si el backend rechaza el cambio de estado por campos faltantes (V10), dice cuáles en vez de repetir el mensaje. */
+function ErrorRevision({ error }: { error: unknown }) {
+  const catalogo = useCatalogoFicha();
+  const errores = extraerErroresApi(error);
+  if (!errores.length || errores.some((e) => !e.campo)) return <ErrorOperacion error={error} />;
+  const nombre = (c: string) => catalogo.data?.find((x) => x.clave === c)?.etiqueta ?? EXTRAS[c] ?? c;
+  return <p role="alert" className="rounded-card border border-rojo p-3 text-sm">
+    No se puede enviar a revisión. Falta: {[...new Set(errores.map((e) => nombre(e.campo!)))].join(", ")}.</p>;
+}
 
 function Historial({ titulo, items, texto }: { titulo: string; items: HistorialItem[]; texto: (h: HistorialItem) => string }) {
   return (
@@ -107,7 +120,8 @@ export function PiezaDetailPage() {
             onConfirmar={(m) => estado.mutate({ accion: "rechazar", motivoRechazo: m })} onCancelar={() => setRechazando(false)} />}
           {dandoDeBaja && <FormMotivo etiqueta="Motivo de la baja (la pieza no se borra; se puede restaurar)" boton="Confirmar baja" pendiente={baja.isPending}
             onConfirmar={(m) => baja.mutate(m)} onCancelar={() => setDandoDeBaja(false)} />}
-          <ErrorOperacion error={estado.error ?? baja.error} />
+          <ErrorRevision error={estado.error} />
+          <ErrorOperacion error={baja.error} />
         </div>
       </div>
 
