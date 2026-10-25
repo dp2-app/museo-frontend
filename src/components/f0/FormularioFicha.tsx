@@ -38,10 +38,12 @@ export interface FormularioFichaProps {
   errores?: Record<string, string>;
   onGuardar?: (datos: DatosFichaV3) => Promise<void>;
   onChange?: (datos: DatosFichaV3) => void;
+  /** «editar» (R2): una ficha incompleta se guarda sin completarla; solo se bloquea vaciar un obligatorio que tenía valor. */
+  modo?: "crear" | "editar";
 }
 
 /** F2 integra onGuardar; sin callback es vista previa y no escribe ninguna pieza. */
-export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange }: FormularioFichaProps) {
+export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange, modo = "crear" }: FormularioFichaProps) {
   const catalogo = useCatalogoFicha();
   const [datos, setDatos] = useState<DatosFichaV3>(inicial ?? { campos: {}, listas: {} });
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -60,10 +62,11 @@ export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuar
   }
   async function enviar(event: FormEvent) {
     event.preventDefault(); setError(null);
-    const faltan = campos.filter((c) => c.obligatorio && !c.soloLectura && (() => {
-      const v = c.almacenamiento === "lista" ? datos.listas[c.clave] : datos.campos[c.clave];
+    const vacio = (d: DatosFichaV3 | undefined, c: CampoFicha) => {
+      const v = c.almacenamiento === "lista" ? d?.listas[c.clave] : d?.campos[c.clave];
       return v == null || (typeof v === "string" && !v.trim()) || (Array.isArray(v) && !v.length);
-    })());
+    };
+    const faltan = campos.filter((c) => c.obligatorio && !c.soloLectura && vacio(datos, c) && (modo === "crear" || !vacio(inicial, c)));
     setErrores(Object.fromEntries(faltan.map((c) => [c.clave, `${c.etiqueta}: completa este campo obligatorio.`])));
     if (faltan.length) { setAviso("Revisa los campos obligatorios señalados."); return; }
     if (!onGuardar) { setAviso("Los obligatorios están completos. Esta vista previa no guarda piezas; el servidor valida los datos al guardar una ficha real."); return; }

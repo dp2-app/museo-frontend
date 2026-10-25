@@ -15,7 +15,11 @@ import { Tenencia } from "../components/f2/Tenencia";
 import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
 import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerErroresApi } from "../lib/api";
+import { sinCambios, soloCambios } from "../lib/f2";
 import type { AccionEstadoFicha, DatosFichaV3, FichaCompleta, HistorialItem } from "../types";
+
+const datosDeFicha = (p: FichaCompleta): DatosFichaV3 =>
+  ({ campos: p.campos, listas: Object.fromEntries(Object.entries(p.listas).map(([k, v]) => [k, v.map((x) => x.id)])) });
 
 const EXTRAS: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
 
@@ -71,8 +75,10 @@ export function PiezaDetailPage() {
   });
 
   async function guardarEdicion(datos: DatosFichaV3) {
+    const cambios = soloCambios(datosDeFicha(ficha.data!), datos);
+    if (sinCambios(cambios)) { setEditando(false); return; }
     try {
-      await api.patch(`/piezas/${piezaId}`, { ...datos, version: ficha.data!.version });
+      await api.patch(`/piezas/${piezaId}`, { ...cambios, version: ficha.data!.version });
       setEditando(false);
       recargar();
     } catch (e) {
@@ -138,8 +144,7 @@ export function PiezaDetailPage() {
                   Recargar la ficha con los cambios de la otra persona
                 </button>
               )}
-              <FormularioFicha key={p.version} onGuardar={guardarEdicion}
-                inicial={{ campos: p.campos, listas: Object.fromEntries(Object.entries(p.listas).map(([k, v]) => [k, v.map((x) => x.id)])) }} />
+              <FormularioFicha key={p.version} modo="editar" onGuardar={guardarEdicion} inicial={datosDeFicha(p)} />
               <button type="button" className="btn-glass" onClick={() => setEditando(false)}>Cancelar edición</button>
             </section>
           ) : (
