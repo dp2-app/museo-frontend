@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Download, Upload } from "lucide-react";
-import { api, extraerMensajeError } from "../lib/api";
+import { apiDatos, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina } from "../types";
 
 const etiquetaClasificacion: Record<FilaImportacion["clasificacion"], string> = {
@@ -18,17 +18,18 @@ export function CargaDetailPage() {
   const navigate = useNavigate();
   const inputCorregido = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState("");
 
   const cargaQuery = useQuery({
     queryKey: ["carga", cargaId],
-    queryFn: async () => (await api.get<CargaExcel>(`/importacion/cargas/${cargaId}`)).data,
+    queryFn: async () => (await apiDatos.get<CargaExcel>(`/importacion/cargas/${cargaId}`)).data,
   });
   const carga = cargaQuery.data;
 
   const filasQuery = useQuery({
     queryKey: ["carga-filas", cargaId],
     queryFn: async () =>
-      (await api.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, { params: { pageSize: 200 } })).data,
+      (await apiDatos.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, { params: { tamano: 200 } })).data,
   });
 
   const invalidarTodo = () => {
@@ -39,14 +40,14 @@ export function CargaDetailPage() {
 
   const revisarFila = useMutation({
     mutationFn: async ({ filaId, estado }: { filaId: string; estado: "aprobado" | "rechazado" }) =>
-      (await api.patch(`/importacion/cargas/${cargaId}/filas/${filaId}`, { estado })).data,
+      (await apiDatos.patch(`/importacion/cargas/${cargaId}/filas/${filaId}`, { estado })).data,
     onSuccess: invalidarTodo,
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
   const descargarReporte = useMutation({
     mutationFn: async () =>
-      (await api.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" })).data as Blob,
+      (await apiDatos.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" })).data as Blob,
     onSuccess: (blob) => {
       setError(null);
       const url = URL.createObjectURL(blob);
@@ -63,8 +64,8 @@ export function CargaDetailPage() {
     mutationFn: async (archivo: File) => {
       const form = new FormData();
       form.append("archivo", archivo);
-      if (carga?.plantillaMapeoId) form.append("plantilla_mapeo_id", carga.plantillaMapeoId);
-      return (await api.post<CargaExcel>("/importacion/cargas", form)).data;
+      if (carga?.plantillaMapeoId) form.append("plantillaMapeoId", carga.plantillaMapeoId);
+      return (await apiDatos.post<CargaExcel>("/importacion/cargas", form)).data;
     },
     onSuccess: (nueva) => {
       setError(null);
@@ -75,7 +76,7 @@ export function CargaDetailPage() {
   });
 
   const aprobarCarga = useMutation({
-    mutationFn: async () => (await api.post(`/importacion/cargas/${cargaId}/aprobar`)).data,
+    mutationFn: async () => (await apiDatos.post(`/importacion/cargas/${cargaId}/aprobar`)).data,
     onSuccess: () => {
       setError(null);
       invalidarTodo();
@@ -84,8 +85,13 @@ export function CargaDetailPage() {
   });
 
   const rechazarCarga = useMutation({
-    mutationFn: async () => (await api.post(`/importacion/cargas/${cargaId}/rechazar`)).data,
-    onSuccess: invalidarTodo,
+    mutationFn: async () =>
+      (await apiDatos.post(`/importacion/cargas/${cargaId}/rechazar`, { motivo: motivoRechazo.trim() })).data,
+    onSuccess: () => {
+      setError(null);
+      setMotivoRechazo("");
+      invalidarTodo();
+    },
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
@@ -152,11 +158,24 @@ export function CargaDetailPage() {
       )}
 
       {carga?.estado === "en_revision" && (
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 items-end">
           <button onClick={() => aprobarCarga.mutate()} disabled={aprobarCarga.isPending} className="btn-primary">
-            Aprobar carga completa (RF-027)
+            Aprobar carga completa
           </button>
-          <button onClick={() => rechazarCarga.mutate()} disabled={rechazarCarga.isPending} className="btn-glass">
+          <div>
+            <label htmlFor="motivo-rechazo" className="form-label">Motivo del rechazo</label>
+            <input
+              id="motivo-rechazo"
+              value={motivoRechazo}
+              onChange={(e) => setMotivoRechazo(e.target.value)}
+              className="glass-input min-w-[16rem]"
+            />
+          </div>
+          <button
+            onClick={() => rechazarCarga.mutate()}
+            disabled={rechazarCarga.isPending || !motivoRechazo.trim()}
+            className="btn-glass"
+          >
             Rechazar carga
           </button>
         </div>
@@ -192,7 +211,7 @@ export function CargaDetailPage() {
                         {e.valorOriginal != null && ` (valor: "${e.valorOriginal}")`}
                       </p>
                     ))}
-                    {fila.advertencias.map((a) => (
+                    {(fila.datosNormalizados?.advertencias ?? []).map((a) => (
                       <p key={`${a.campo}-${a.mensaje}`} className="text-xs text-gris-2 mt-1">
                         {a.columna ?? a.campo}: {a.mensaje}
                       </p>

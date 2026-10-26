@@ -2,13 +2,30 @@ import axios from "axios";
 import type { ErrorApi } from "../types";
 
 export const TOKEN_STORAGE_KEY = "museo.accessToken";
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1" });
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export const api = axios.create({ baseURL: API_BASE_URL });
+/** API de datos e integración (`/datos/v1`, importación y exportación): mismo servidor, otro contrato. */
+export const apiDatos = axios.create({
+  baseURL: import.meta.env.VITE_DATOS_BASE_URL ?? API_BASE_URL.replace(/\/api\/v1\/?$/, "/datos/v1"),
 });
+
+for (const cliente of [api, apiDatos]) {
+  cliente.interceptors.request.use((config) => {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+}
+
+function cerrarSesionSi401(error: { response?: { status?: number } }) {
+  if (error.response?.status === 401) {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
+  }
+  return Promise.reject(error);
+}
+
+apiDatos.interceptors.response.use((response) => response, cerrarSesionSi401);
 
 api.interceptors.response.use(
   (response) => {
@@ -18,13 +35,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  },
+  cerrarSesionSi401,
 );
 
 function objeto(value: unknown): Record<string, unknown> | undefined {

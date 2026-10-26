@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Upload } from "lucide-react";
-import { api, extraerMensajeError } from "../lib/api";
+import { apiDatos, extraerMensajeError } from "../lib/api";
 import type { CargaExcel, PlantillaMapeo } from "../types";
 
 const CAMPOS_DESTINO_SUGERIDOS = [
@@ -25,20 +25,20 @@ export function ImportacionPage() {
 
   const { data: cargas, isLoading } = useQuery({
     queryKey: ["cargas"],
-    queryFn: async () => (await api.get<CargaExcel[]>("/importacion/cargas")).data,
+    queryFn: async () => (await apiDatos.get<CargaExcel[]>("/importacion/cargas")).data,
   });
 
   const { data: plantillas } = useQuery({
     queryKey: ["plantillas-mapeo"],
-    queryFn: async () => (await api.get<PlantillaMapeo[]>("/importacion/plantillas")).data,
+    queryFn: async () => (await apiDatos.get<PlantillaMapeo[]>("/importacion/plantillas")).data,
   });
 
   const subir = useMutation({
     mutationFn: async (archivo: File) => {
       const form = new FormData();
       form.append("archivo", archivo);
-      if (plantillaSeleccionada) form.append("plantilla_mapeo_id", plantillaSeleccionada);
-      return (await api.post<CargaExcel>("/importacion/cargas", form)).data;
+      if (plantillaSeleccionada) form.append("plantillaMapeoId", plantillaSeleccionada);
+      return (await apiDatos.post<CargaExcel>("/importacion/cargas", form)).data;
     },
     onSuccess: () => {
       setError(null);
@@ -59,6 +59,7 @@ export function ImportacionPage() {
     pendiente_aprobacion: "Pendiente de aprobación",
     aprobada: "Aprobada",
     rechazada: "Rechazada",
+    cancelada: "Cancelada",
   };
 
   return (
@@ -168,7 +169,7 @@ function NuevaPlantillaForm({ onCreada }: { onCreada: () => void }) {
         filas.filter((f) => f.columnaOrigen.trim() && f.campoDestino.trim()).map((f) => [f.columnaOrigen.trim(), f.campoDestino.trim()]),
       );
       return (
-        await api.post<PlantillaMapeo>("/importacion/plantillas", { nombre, fuenteOrigen, mapeoColumnas })
+        await apiDatos.post<PlantillaMapeo>("/importacion/plantillas", { nombre, fuenteOrigen, mapeoColumnas })
       ).data;
     },
     onSuccess: () => {
