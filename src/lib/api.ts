@@ -2,41 +2,38 @@ import axios from "axios";
 import type { ErrorApi } from "../types";
 
 export const TOKEN_STORAGE_KEY = "museo.accessToken";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
-export const api = axios.create({ baseURL: API_BASE_URL });
-/** API de datos e integración (`/datos/v1`, importación y exportación): mismo servidor, otro contrato. */
-export const apiDatos = axios.create({
-  baseURL: import.meta.env.VITE_DATOS_BASE_URL ?? API_BASE_URL.replace(/\/api\/v1\/?$/, "/datos/v1"),
+const baseNegocio = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export const api = axios.create({ baseURL: baseNegocio });
+export const datosApi = axios.create({
+  baseURL: import.meta.env.VITE_DATOS_API_BASE_URL ?? baseNegocio.replace(/\/api\/v1\/?$/, "/datos/v1"),
+  // La validación de un inventario completo puede durar varios minutos.
+  timeout: 0,
 });
 
-for (const cliente of [api, apiDatos]) {
+for (const cliente of [api, datosApi]) {
   cliente.interceptors.request.use((config) => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   });
+
+  cliente.interceptors.response.use(
+    (response) => {
+      // Puente de login v3 para AuthContext legado. No cambia ni inventa claims del JWT.
+      if (response.config.url === "/auth/login" && response.data?.accessToken && !response.data.access_token) {
+        response.data = { ...response.data, access_token: response.data.accessToken };
+      }
+      return response;
+    },
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    },
+  );
 }
-
-function cerrarSesionSi401(error: { response?: { status?: number } }) {
-  if (error.response?.status === 401) {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
-  }
-  return Promise.reject(error);
-}
-
-apiDatos.interceptors.response.use((response) => response, cerrarSesionSi401);
-
-api.interceptors.response.use(
-  (response) => {
-    // Puente de login v3 para AuthContext legado. No cambia ni inventa claims del JWT.
-    if (response.config.url === "/auth/login" && response.data?.accessToken && !response.data.access_token) {
-      response.data = { ...response.data, access_token: response.data.accessToken };
-    }
-    return response;
-  },
-  cerrarSesionSi401,
-);
 
 function objeto(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object" ? value as Record<string, unknown> : undefined;

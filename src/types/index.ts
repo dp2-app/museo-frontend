@@ -107,20 +107,14 @@ export interface PlantillaMapeo {
   nombre: string;
   fuenteOrigen: string;
   mapeoColumnas: Record<string, string>;
-  creadoEn?: string;
-}
-
-export interface ReglasAplicadas {
-  activas?: string[];
-  similitudMinima?: number;
 }
 
 export interface CargaExcel {
   id: string;
   archivoNombre: string;
   hojaNombre: string | null;
-  plantillaMapeoId: string | null;
   usuarioId: string;
+  plantillaMapeoId: string | null;
   estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada" | "cancelada";
   totalFilas: number;
   filasNuevas: number;
@@ -131,62 +125,10 @@ export interface CargaExcel {
   filasConError: number;
   iniciadaEn: string;
   aprobadaEn: string | null;
-  aprobadaPor: string | null;
   motivoRechazo: string | null;
-  rechazadaEn: string | null;
+  puedeAprobar?: boolean | null;
   /** Reglas de duplicado con que se concilió la carga (RF-58, RF-39). */
-  reglasAplicadas: ReglasAplicadas;
-}
-
-export interface IncidenciaFila {
-  campo: string;
-  codigo?: string;
-  mensaje: string;
-  columna?: string | null;
-  valorOriginal?: string | null;
-}
-
-/** Posible coincidencia de una fila, con la regla que la detectó (RF-33). */
-export interface CandidatoFila {
-  regla: string;
-  piezaId?: string;
-  piezaDenominacion?: string;
-  filaNumero?: number;
-  tipoCodigo?: string;
-  [dato: string]: unknown;
-}
-
-export interface CambioCampo {
-  campo: string;
-  etiqueta: string;
-  valorActual: unknown;
-  valorNuevo: unknown;
-}
-
-export interface FilaImportacion {
-  id: string;
-  numeroFila: number;
-  datosOriginales: Record<string, unknown>;
-  /** Incluye `advertencias` (obligatorio vacío, medida no numérica…); no bloquean la aprobación del lote. */
-  datosNormalizados: (Record<string, unknown> & { advertencias?: IncidenciaFila[] }) | null;
-  clasificacion: "nuevo" | "actualizacion" | "duplicado" | "conflicto";
-  piezaCoincidenteId: string | null;
-  estado: "pendiente" | "aprobado" | "rechazado";
-  motivoRechazo: string | null;
-  errores: IncidenciaFila[];
-  identificadores: Record<string, unknown>[];
-  candidatos: CandidatoFila[];
-  camposNoMapeados: Record<string, unknown>;
-  curacionPendiente: boolean;
-  piezaResultanteId: string | null;
-  /** RF-35: campos de la ficha que cambiarían al aprobar (vacío en filas nuevas). */
-  cambios: CambioCampo[];
-}
-
-export interface FilaImportacionPagina {
-  items: FilaImportacion[];
-  total: number;
-  resumen: { nuevo: number; actualizacion: number; duplicado: number; conflicto: number };
+  reglasAplicadas?: { activas?: string[]; similitudMinima?: number };
 }
 
 export interface ReglaDuplicado {
@@ -217,6 +159,52 @@ export interface CuracionImportacion {
   validadoPor: string | null;
   validadoEn: string | null;
   nota: string | null;
+}
+
+export interface IncidenciaFila {
+  campo: string | null;
+  codigo?: string;
+  mensaje: string;
+  columna?: string | null;
+  valorOriginal?: unknown;
+}
+
+export interface FilaImportacion {
+  id: string;
+  numeroFila: number;
+  datosOriginales: Record<string, unknown>;
+  datosNormalizados: {
+    mapeados?: Record<string, unknown>;
+    columnas?: Record<string, string>;
+    advertencias?: IncidenciaFila[];
+  } | null;
+  clasificacion: "nuevo" | "actualizacion" | "duplicado" | "conflicto";
+  piezaCoincidenteId: string | null;
+  estado: "pendiente" | "aprobado" | "rechazado";
+  motivoRechazo: string | null;
+  errores: IncidenciaFila[];
+  camposNoMapeados: Record<string, unknown>;
+  identificadores: { tipo: string; valor: string }[];
+  candidatos: {
+    regla: string; explicacion: string; piezaId?: string; piezaDenominacion?: string; filaNumero?: number;
+  }[];
+  curacionPendiente: boolean;
+  piezaResultanteId: string | null;
+  cambios: { campo: string; etiqueta: string; valorActual: unknown; valorNuevo: unknown }[];
+}
+
+export interface DeteccionExcel {
+  hoja: string;
+  hojas: string[];
+  columnas: { columna: string; destinoSugerido: string | null; muestra: unknown[]; vacias: number; total: number }[];
+}
+
+export interface DestinoImportacion { clave: string; etiqueta: string; }
+
+export interface FilaImportacionPagina {
+  items: FilaImportacion[];
+  total: number;
+  resumen: { nuevo: number; actualizacion: number; duplicado: number; conflicto: number };
 }
 
 export type TipoSugerencia =
