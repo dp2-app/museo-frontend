@@ -1,0 +1,27 @@
+{
+  "comprobaciones": [
+    "Autenticación y rutas actuales de la API de datos",
+    "Validación de archivo y destinos vigentes, incluidos los campos adicionales",
+    "Error real, reporte, rechazo con motivo y archivo corregido conserva hoja AJB y formato; cierre sin crear piezas",
+    "Inventario: detección, formato, paginación, revisión por API y aprobación desde la interfaz",
+    "AJB: detección, formato, paginación, revisión por API y aprobación desde la interfaz",
+    "7.759 piezas importadas con las dos hojas y sin errores de React"
+  ],
+  "cargas": [
+    {
+      "id": "043547d0-b30c-47ed-b98b-7e3c4b39768d",
+      "hoja": "Inventario",
+      "filas": 4380,
+      "estado": "aprobada"
+    },
+    {
+      "id": "c47ffdf0-7cf9-4a0f-8090-91c4895aeb37",
+      "hoja": "AJB",
+      "filas": 3379,
+      "estado": "aprobada"
+    }
+  ],
+  "erroresReact": [],
+  "sharedDatabaseModified": false,
+  "estado": "correcto"
+}
