@@ -112,37 +112,62 @@ export interface PlantillaMapeo {
 export interface CargaExcel {
   id: string;
   archivoNombre: string;
+  hojaNombre: string | null;
+  usuarioId: string;
   plantillaMapeoId: string | null;
-  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada";
+  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada" | "cancelada";
   totalFilas: number;
   filasNuevas: number;
   filasActualizacion: number;
   filasDuplicadas: number;
   filasConflicto: number;
   filasRechazadas: number;
+  filasConError: number;
   iniciadaEn: string;
   aprobadaEn: string | null;
+  motivoRechazo: string | null;
+  puedeAprobar?: boolean | null;
 }
 
 export interface IncidenciaFila {
-  campo: string;
+  campo: string | null;
+  codigo?: string;
   mensaje: string;
   columna?: string | null;
-  valorOriginal?: string | null;
+  valorOriginal?: unknown;
 }
 
 export interface FilaImportacion {
   id: string;
   numeroFila: number;
   datosOriginales: Record<string, unknown>;
-  datosNormalizados: Record<string, unknown> | null;
+  datosNormalizados: {
+    mapeados?: Record<string, unknown>;
+    columnas?: Record<string, string>;
+    advertencias?: IncidenciaFila[];
+  } | null;
   clasificacion: "nuevo" | "actualizacion" | "duplicado" | "conflicto";
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
   motivoRechazo: string | null;
   errores: IncidenciaFila[];
-  advertencias: IncidenciaFila[];
+  camposNoMapeados: Record<string, unknown>;
+  identificadores: { tipo: string; valor: string }[];
+  candidatos: {
+    regla: string; explicacion: string; piezaId?: string; piezaDenominacion?: string; filaNumero?: number;
+  }[];
+  curacionPendiente: boolean;
+  piezaResultanteId: string | null;
+  cambios: { campo: string; etiqueta: string; valorActual: unknown; valorNuevo: unknown }[];
 }
+
+export interface DeteccionExcel {
+  hoja: string;
+  hojas: string[];
+  columnas: { columna: string; destinoSugerido: string | null; muestra: unknown[]; vacias: number; total: number }[];
+}
+
+export interface DestinoImportacion { clave: string; etiqueta: string; }
 
 export interface FilaImportacionPagina {
   items: FilaImportacion[];

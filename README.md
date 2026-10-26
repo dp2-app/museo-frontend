@@ -45,6 +45,8 @@ src/
 
 ## Notas de diseño
 
+La importación usa la API de datos `/datos/v1`. La [guía de importación y sus validaciones](docs/importacion/README.md) explica la configuración del formato habitual, la revisión y la aprobación de ambas hojas del inventario.
+
 - El wire format de la API es camelCase (ver `app/schemas/base.py` en el backend);
   los tipos en `src/types/index.ts` lo reflejan exactamente.
 - Las fotografías se referencian por URL (ya subida a Cloudinary); esta interfaz no
