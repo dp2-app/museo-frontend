@@ -349,6 +349,7 @@ export interface EstadoIndiceSalas {
   conTexto: number;
   conEmbeddingAlDia: number;
   conEmbeddingDesactualizado: number;
+  sinDescripcion: number;
   sinEmbedding: number;
   enCurso: boolean;
   ultimaEjecucion: EjecucionIndice | null;

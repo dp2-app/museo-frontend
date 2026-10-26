@@ -34,7 +34,8 @@ export function EstadoIndiceSalas() {
   });
 
   if (!estado) return null;
-  const porcentaje = estado.piezasElegibles ? Math.round((estado.conEmbeddingAlDia / estado.piezasElegibles) * 100) : 0;
+  const indexables = estado.piezasElegibles - estado.sinDescripcion;
+  const porcentaje = indexables ? Math.round((estado.conEmbeddingAlDia / indexables) * 100) : 0;
   const ultima = estado.ultimaEjecucion;
 
   return (
@@ -59,7 +60,7 @@ export function EstadoIndiceSalas() {
       <div>
         <p className="text-sm text-texto">
           <strong>{estado.conEmbeddingAlDia.toLocaleString("es-PE")}</strong> de{" "}
-          {estado.piezasElegibles.toLocaleString("es-PE")} piezas indexadas ({porcentaje} %)
+          {indexables.toLocaleString("es-PE")} piezas indexadas ({porcentaje} %)
         </p>
         <div className="mt-1.5 h-2 rounded-pill bg-fondo-suave overflow-hidden" aria-hidden="true">
           <div className="h-full bg-azul" style={{ width: `${porcentaje}%` }} />
@@ -70,6 +71,12 @@ export function EstadoIndiceSalas() {
             {estado.conEmbeddingDesactualizado > 0 &&
               ` y ${estado.conEmbeddingDesactualizado.toLocaleString("es-PE")} con cambios por actualizar`}
             . Mientras tanto se encuentran por texto.
+          </p>
+        )}
+        {estado.sinDescripcion > 0 && (
+          <p className="text-xs text-gris-2 mt-1">
+            {estado.sinDescripcion.toLocaleString("es-PE")} fichas sin denominación ni descripción no se buscan por
+            significado; completarlas las incorpora.
           </p>
         )}
       </div>
