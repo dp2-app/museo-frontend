@@ -192,6 +192,41 @@ export interface ReporteCalidadDatos {
   ria01Configurado: boolean;
 }
 
+// --- F10 · RIA-05: armado de salas (POST /ia/salas/sugerir) ---
+
+export interface AlertaSala {
+  codigo: "ficha_no_aprobada" | "conservacion" | "en_prestamo";
+  mensaje: string;
+}
+
+export interface PiezaSala {
+  posicion: number;
+  piezaId: string;
+  puntaje: number;
+  codigo: string | null;
+  denominacion: string | null;
+  tipoBien: string | null;
+  materiales: string | null;
+  procedencia: string | null;
+  autor: string | null;
+  ubicacion: string | null;
+  estadoFicha: string;
+  alertas: AlertaSala[];
+}
+
+export interface SalaSugerida {
+  sugerenciaId: string;
+  pedido: string;
+  cantidad: number;
+  mensaje: string;
+  fueraDeTema: boolean;
+  pocasPiezas: boolean;
+  busqueda: "hibrida" | "texto";
+  modeloUsado: string;
+  estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
+  piezas: PiezaSala[];
+}
+
 export interface SugerenciaIA {
   id: string;
   tipo: TipoSugerencia;
@@ -317,4 +352,39 @@ export interface VisibilidadCampo {
   rolId: string;
   rol: string;
   visible: boolean;
+}
+
+// --- F10 · RIA-05: estado del índice de salas (GET /ia/salas/indice) ---
+
+export interface EjecucionIndice {
+  origen: "programada" | "manual";
+  iniciadaEn: string;
+  terminadaEn: string | null;
+  piezasRevisadas: number | null;
+  indexadas: number | null;
+  conEmbedding: number | null;
+  corte: "cuota_diaria" | "cupo_diario" | "error" | null;
+  detalle: string | null;
+}
+
+export interface EstadoIndiceSalas {
+  proveedor: string;
+  proveedorDisponible: boolean;
+  piezasElegibles: number;
+  conTexto: number;
+  conEmbeddingAlDia: number;
+  conEmbeddingDesactualizado: number;
+  sinDescripcion: number;
+  sinEmbedding: number;
+  enCurso: boolean;
+  ultimaEjecucion: EjecucionIndice | null;
+  cuotaDiaria: number | null;
+  cupoDiarioIndexado: number | null;
+  indexadoHoy: number;
+  reservaConsultas: number;
+  automatico: boolean;
+  horaProgramada: string;
+  zonaHoraria: string;
+  proximaEjecucion: string;
+  atrasada: boolean;
 }

@@ -220,3 +220,13 @@ El líder autorizó específicamente las pantallas F0 según el pedido del dueñ
 - Se conservan los tipos/páginas de otros flujos. Las incompatibilidades de esos flujos con v3 se informan sin corregirlas dentro de F0. Ver `docs/f0/README.md`.
 - Usar tokens existentes y foco visible. En F0 se usa `rojo-oscuro` para contraste AA de botones con texto blanco, sin crear colores; las entradas móviles usan 16 px.
 - Verificación: `npm run build`, `npm run lint` (dos advertencias previas), Playwright opcional `npm run test:f0` con runtime ya disponible. Evidencia y capturas en `docs/f0/`. Nunca probar contra Supabase durante desarrollo.
+
+## F10 · Armar sala (RIA-05), autorizado por el líder (25/10/2026)
+
+Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`); la pestaña «Calidad de datos» conserva lo anterior (RIA-01/RIA-02, sin adaptar aún al contrato v3).
+
+- `POST /ia/salas/sugerir` `{pedido, cantidad}` (10–30) devuelve `SalaSugerida`: mensaje breve de la IA, ranking con puntaje y alertas (`ficha_no_aprobada`, `conservacion`, `en_prestamo`). Se muestra tal cual: el frontend no reordena, no filtra ni completa nada.
+- El curador marca piezas (por defecto todas) y `POST /ia/salas/{sugerenciaId}/exportar` `{piezaIds}` descarga el Excel. El botón se habilita con `reportes.exportar`; el backend vuelve a validar.
+- Sin IA configurada el backend responde 503 y se muestra su mensaje: nunca se simula una respuesta (DA-006).
+- Con `ia.ejecutar_lote`, arriba aparece `EstadoIndiceSalas`: piezas con búsqueda por significado al día, pendientes, uso de hoy contra el cupo diario (con el 7 % reservado para consultas), última y próxima indexación diaria (`GET /ia/salas/indice`, se refresca cada 15 s mientras corre) y el botón «Indexar ahora» (`POST /ia/salas/indexar`).
+- Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-05) y `DA-015`. Verificado con `npm run build`, `npm run lint` (dos advertencias previas) y en el navegador contra el backend local (escritorio y móvil; sin claves de IA solo se probó el estado 503).
