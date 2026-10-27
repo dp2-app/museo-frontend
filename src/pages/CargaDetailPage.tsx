@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { CLASIFICACIONES, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
-import type { CargaExcel, FilaImportacion, FilaImportacionPagina } from "../types";
+import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
 
 interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; }
 
@@ -32,6 +32,9 @@ export function CargaDetailPage() {
   const cargaQuery = useQuery({ queryKey: ["carga", cargaId], retry: false,
     queryFn: async () => (await datosApi.get<CargaExcel>(`/importacion/cargas/${cargaId}`)).data });
   const carga = cargaQuery.data;
+  const reglasQuery = useQuery({ queryKey: ["reglas-importacion"], enabled: !!carga?.reglasAplicadas,
+    queryFn: async () => (await datosApi.get<ReglasImportacion>("/importacion/reglas")).data });
+  const etiquetaRegla = (clave: string) => reglasQuery.data?.reglas.find((r) => r.clave === clave)?.etiqueta ?? clave;
   const abierta = carga?.estado === "en_revision" || carga?.estado === "pendiente_aprobacion";
   const filasQuery = useQuery({ queryKey: ["carga-filas", cargaId, pagina, clasificacion, estado, soloErrores], enabled: !!carga,
     queryFn: async () => (await datosApi.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, {
@@ -97,6 +100,8 @@ export function CargaDetailPage() {
       <h1 className="mt-2 break-words">{carga.archivoNombre}</h1><p>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></p>
       <p>{carga.totalFilas} filas · {carga.filasConError} con errores · {carga.filasRechazadas} rechazadas</p>
       {carga.motivoRechazo && <p>Motivo: {carga.motivoRechazo}</p>}
+      {carga.reglasAplicadas && <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
+        {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>}
     </header>
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
     {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
