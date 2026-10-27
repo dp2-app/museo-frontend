@@ -4,9 +4,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { CLASIFICACIONES, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
-import type { CargaExcel, FilaImportacion, FilaImportacionPagina } from "../types";
+import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
 
-interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; }
+interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; curacionPendiente?: boolean; }
 
 export function CargaDetailPage() {
   const { cargaId } = useParams<{ cargaId: string }>();
@@ -32,6 +32,9 @@ export function CargaDetailPage() {
   const cargaQuery = useQuery({ queryKey: ["carga", cargaId], retry: false,
     queryFn: async () => (await datosApi.get<CargaExcel>(`/importacion/cargas/${cargaId}`)).data });
   const carga = cargaQuery.data;
+  const reglasQuery = useQuery({ queryKey: ["reglas-importacion"], enabled: !!carga?.reglasAplicadas,
+    queryFn: async () => (await datosApi.get<ReglasImportacion>("/importacion/reglas")).data });
+  const etiquetaRegla = (clave: string) => reglasQuery.data?.reglas.find((r) => r.clave === clave)?.etiqueta ?? clave;
   const abierta = carga?.estado === "en_revision" || carga?.estado === "pendiente_aprobacion";
   const filasQuery = useQuery({ queryKey: ["carga-filas", cargaId, pagina, clasificacion, estado, soloErrores], enabled: !!carga,
     queryFn: async () => (await datosApi.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, {
@@ -97,6 +100,8 @@ export function CargaDetailPage() {
       <h1 className="mt-2 break-words">{carga.archivoNombre}</h1><p>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></p>
       <p>{carga.totalFilas} filas · {carga.filasConError} con errores · {carga.filasRechazadas} rechazadas</p>
       {carga.motivoRechazo && <p>Motivo: {carga.motivoRechazo}</p>}
+      {carga.reglasAplicadas && <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
+        {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>}
     </header>
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
     {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
@@ -165,11 +170,14 @@ export function CargaDetailPage() {
             {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
           </td>
           <td className="p-4">{CLASIFICACIONES[fila.clasificacion]}</td>
-          <td className="p-4">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
+          <td className="p-4">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
           <td className="p-4 min-w-36">{abierta && puedeRevisar && <div className="flex flex-col items-start gap-3">
             <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || fila.estado === "aprobado"} className="text-emerald-700 underline disabled:opacity-40" onClick={() => revisarFila.mutate({ id: fila.id, datos: { estado: "aprobado" } })}>Marcar revisada</button>
             <button disabled={ocupado} className="underline" onClick={() => setEdicion(fila)}>Corregir fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} className="underline" onClick={() => abrirCierre("fila", fila.id)}>Rechazar fila</button>
+            <button disabled={ocupado || fila.estado === "rechazado"} aria-pressed={fila.curacionPendiente} className="underline"
+              onClick={() => revisarFila.mutate({ id: fila.id, datos: { curacionPendiente: !fila.curacionPendiente } })}>
+              {fila.curacionPendiente ? "Quitar de curación" : "Enviar a curación"}</button>
             {fila.clasificacion === "conflicto" && <ResolverConflicto fila={fila} ocupado={ocupado} guardar={(id) => revisarFila.mutate({ id: fila.id, datos: { piezaCoincidenteId: id } })} />}
           </div>}</td>
         </tr>)}</tbody>

@@ -5,6 +5,7 @@ import { Upload } from "lucide-react";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { detectarExcel, ESTADOS_CARGA, subirExcel, validarArchivoExcel, valorLegible } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
+import { ReglasImportacion } from "../components/f5/ReglasImportacion";
 import type { CargaExcel, DeteccionExcel, DestinoImportacion, PlantillaMapeo } from "../types";
 
 export function ImportacionPage() {
@@ -53,6 +54,7 @@ export function ImportacionPage() {
     <div className="flex items-center gap-3"><Upload size={28} aria-hidden="true" /><div>
       <h1>Importación</h1><p className="text-sm text-gris-2">Carga una hoja del inventario, revisa sus filas y confirma qué debe registrarse.</p>
     </div></div>
+    {puedeVer && permisos.puede("piezas.ver") && <p><Link to="/importacion/curacion" className="underline">Ver la cola de curación</Link></p>}
 
     {puedeCargar && <form onSubmit={(e: FormEvent) => { e.preventDefault(); setError(null); subir.mutate(); }} className="glass-panel p-5 space-y-4">
       <div><label htmlFor="importacion-archivo" className="block font-semibold mb-1">Archivo Excel</label>
@@ -92,6 +94,8 @@ export function ImportacionPage() {
       </button>
       {subir.isPending && <p role="status" className="text-sm">Un inventario completo puede tardar varios minutos. Espera el resultado de la validación.</p>}
     </form>}
+
+    {puedeVer && <ReglasImportacion />}
 
     {permisos.puede("importacion.configurar") && <NuevaPlantillaForm onCreada={() => { void cache.invalidateQueries({ queryKey: ["plantillas-mapeo"] }); }} columnas={deteccion?.columnas.map((c) => c.columna) ?? []} />}
 
