@@ -54,6 +54,7 @@ export function ImportacionPage() {
     <div className="flex items-center gap-3"><Upload size={28} aria-hidden="true" /><div>
       <h1>Importación</h1><p className="text-sm text-gris-2">Carga una hoja del inventario, revisa sus filas y confirma qué debe registrarse.</p>
     </div></div>
+    {puedeVer && permisos.puede("piezas.ver") && <p><Link to="/importacion/curacion" className="underline">Ver la cola de curación</Link></p>}
 
     {puedeCargar && <form onSubmit={(e: FormEvent) => { e.preventDefault(); setError(null); subir.mutate(); }} className="glass-panel p-5 space-y-4">
       <div><label htmlFor="importacion-archivo" className="block font-semibold mb-1">Archivo Excel</label>

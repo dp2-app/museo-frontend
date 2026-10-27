@@ -5,6 +5,7 @@ import { RequirePermiso } from "./components/RequirePermiso";
 import { SECCIONES } from "./lib/secciones";
 import { AdministracionPage } from "./pages/AdministracionPage";
 import { AsistenteIAPage } from "./pages/AsistenteIAPage";
+import { CuracionImportacionPage } from "./pages/CuracionImportacionPage";
 import { CargaDetailPage } from "./pages/CargaDetailPage";
 import { ConsultasReportesPage } from "./pages/ConsultasReportesPage";
 import { ImportacionPage } from "./pages/ImportacionPage";
@@ -68,6 +69,14 @@ export default function App() {
           element={
             <RequirePermiso permisos={permisosDe("/importacion")}>
               <ImportacionPage />
+            </RequirePermiso>
+          }
+        />
+        <Route
+          path="/importacion/curacion"
+          element={
+            <RequirePermiso permisos={["importacion.ver"]}>
+              <CuracionImportacionPage />
             </RequirePermiso>
           }
         />
