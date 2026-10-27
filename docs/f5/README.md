@@ -45,7 +45,9 @@ reglas y umbral con persistencia (RF-58), carga de un Excel, enviar/quitar/volve
 con el pendiente en la cola (RF-36, RF-40), las reglas que guarda cada carga (RF-39) y la cancelación con motivo. Crea datos:
 corre una vez por base; deja las reglas con sus valores por defecto. Variables: `F5_EMAIL` y `F5_PASSWORD` (un administrador
 local), y opcionales `F5_WEB`, `F5_DATOS`, `F5_EVIDENCIA` y `F5_PLAYWRIGHT_MODULE`. Los Excel están en `tests/fixtures/f5/`.
-Todavía no cubre la cola de curación en pantalla ni validar un pendiente (#32 y #33).
+También recorre la cola de curación en pantalla y valida el pendiente con nota (#32 y #33). Son 10 controles `OK`.
+
+![Pendiente validado](evidencias/f5-e2e-curacion-validada.png)
 
 ## Verificación
 
