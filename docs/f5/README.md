@@ -38,6 +38,15 @@ Evidencia: `docs/f5/evidencias/reglas-importacion.png`. En el navegador, contra 
 (0,60, `importacion.aprobar`), rechazo local de 0,10, guardado de 0,75 con una regla apagada, y persistencia tras recargar,
 sin respuestas 4xx ni errores de página.
 
+## Prueba automática de F5 (#36)
+
+`npm run test:f5` (`tests/f5.e2e.cjs`, Playwright) recorre contra el backend real y una base local **vacía** (nunca Supabase):
+reglas y umbral con persistencia (RF-58), carga de un Excel, enviar/quitar/volver a enviar una fila a curación y aprobar el lote
+con el pendiente en la cola (RF-36, RF-40), las reglas que guarda cada carga (RF-39) y la cancelación con motivo. Crea datos:
+corre una vez por base; deja las reglas con sus valores por defecto. Variables: `F5_EMAIL` y `F5_PASSWORD` (un administrador
+local), y opcionales `F5_WEB`, `F5_DATOS`, `F5_EVIDENCIA` y `F5_PLAYWRIGHT_MODULE`. Los Excel están en `tests/fixtures/f5/`.
+Todavía no cubre la cola de curación en pantalla ni validar un pendiente (#32 y #33).
+
 ## Verificación
 
 - `npm run build` y `npm run lint` (solo las dos advertencias previas).
