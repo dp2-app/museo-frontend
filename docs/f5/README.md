@@ -22,3 +22,14 @@ Contrato: `museo-backend/docs/openapi.yaml` (rutas `/datos/v1/importacion/*`).
 - `npm run build` y `npm run lint` (solo las dos advertencias previas).
 - Contra el backend local con la migración `0107` (sin Supabase): el recorrido de importación del PR #28 sigue funcionando
   tras integrar `main` con este flujo.
+
+## Cola de curación (#32)
+
+Ruta `/importacion/curacion` (`CuracionImportacionPage`), enlazada desde Importación para quien tiene `importacion.ver` y `piezas.ver`.
+Lista `GET /datos/v1/importacion/curacion` con filtro por estado (pendientes por defecto) y paginación de 50. Cada fila muestra la pieza
+(enlace a su ficha), el archivo y la fila de origen (enlace a la carga), los motivos y el estado. La validación con nota es el issue #33.
+
+Verificado contra el backend local con `0107`: se cargó `lote1.xlsx`, se envió una fila a curación, se aprobó la carga y la cola mostró
+la fila marcada («Quien revisó el lote la marcó para curación») y la fila sin título («Título / Denominación es obligatorio»), sin errores 4xx.
+
+![Cola de curación](evidencias/cola-de-curacion.png)
