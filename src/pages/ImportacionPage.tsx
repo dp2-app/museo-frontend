@@ -5,6 +5,7 @@ import { Upload } from "lucide-react";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { detectarExcel, ESTADOS_CARGA, subirExcel, validarArchivoExcel, valorLegible } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
+import { ReglasImportacion } from "../components/f5/ReglasImportacion";
 import type { CargaExcel, DeteccionExcel, DestinoImportacion, PlantillaMapeo } from "../types";
 
 export function ImportacionPage() {
@@ -92,6 +93,8 @@ export function ImportacionPage() {
       </button>
       {subir.isPending && <p role="status" className="text-sm">Un inventario completo puede tardar varios minutos. Espera el resultado de la validación.</p>}
     </form>}
+
+    {puedeVer && <ReglasImportacion />}
 
     {permisos.puede("importacion.configurar") && <NuevaPlantillaForm onCreada={() => { void cache.invalidateQueries({ queryKey: ["plantillas-mapeo"] }); }} columnas={deteccion?.columnas.map((c) => c.columna) ?? []} />}
 
