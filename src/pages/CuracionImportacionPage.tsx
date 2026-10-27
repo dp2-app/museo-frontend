@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { usePermisos } from "../hooks/usePermisos";
@@ -11,12 +11,27 @@ const TAMANO = 50;
 
 export function CuracionImportacionPage() {
   const permisos = usePermisos();
+  const cache = useQueryClient();
+  const puedeCurar = permisos.puede("importacion.curar");
+  const [validando, setValidando] = useState<string | null>(null);
+  const [nota, setNota] = useState("");
+  const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
   const [estado, setEstado] = useState<"" | "pendiente" | "validado">("pendiente");
   const [pagina, setPagina] = useState(1);
   const cola = useQuery({
     queryKey: ["curacion-importacion", estado, pagina],
     queryFn: async () => (await datosApi.get<PaginaCuracion>("/importacion/curacion",
       { params: { estado: estado || undefined, pagina, tamano: TAMANO } })).data,
+  });
+  const validar = useMutation({
+    mutationFn: async (id: string) =>
+      (await datosApi.post<CuracionImportacion>(`/importacion/curacion/${id}/validar`, { nota: nota.trim() || null })).data,
+    onSuccess: () => {
+      setValidando(null); setNota(""); setError(""); setAviso("Registro validado.");
+      void cache.invalidateQueries({ queryKey: ["curacion-importacion"] });
+    },
+    onError: (e) => setError(extraerMensajeError(e)),
   });
   const total = cola.data?.total ?? 0;
   const paginas = Math.max(1, Math.ceil(total / TAMANO));
@@ -41,6 +56,8 @@ export function CuracionImportacionPage() {
         <p className="text-sm" aria-live="polite">{cola.isSuccess ? `${total} registro(s)` : ""}</p>
       </div>
 
+      {aviso && <p role="status">{aviso}</p>}
+      {error && <p role="alert">{error}</p>}
       {cola.isLoading && <p>Cargando la cola…</p>}
       {cola.isError && <p role="alert">{extraerMensajeError(cola.error)}</p>}
       {cola.isSuccess && total === 0 && <p className="glass-panel p-5">No hay registros {estado === "pendiente" ? "pendientes" : estado === "validado" ? "validados" : ""} en la cola.</p>}
@@ -54,6 +71,7 @@ export function CuracionImportacionPage() {
               <th scope="col" className="p-4">Origen</th>
               <th scope="col" className="p-4">Motivos</th>
               <th scope="col" className="p-4">Estado</th>
+              {puedeCurar && <th scope="col" className="p-4">Acción</th>}
             </tr></thead>
             <tbody>
               {cola.data.items.map((c) => (
@@ -71,6 +89,24 @@ export function CuracionImportacionPage() {
                     {c.validadoEn && <p>{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
                     {c.nota && <p>{c.nota}</p>}
                   </td>
+                  {puedeCurar && (
+                    <td className="p-4">
+                      {c.estado === "pendiente" && validando !== c.id && (
+                        <button className="btn-glass" onClick={() => { setValidando(c.id); setNota(""); setError(""); setAviso(""); }}>Validar</button>
+                      )}
+                      {validando === c.id && (
+                        <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); setError(""); validar.mutate(c.id); }}>
+                          <label className="form-label">Nota (opcional)
+                            <textarea className="glass-input block w-full mt-1" rows={2} value={nota} onChange={(e) => setNota(e.target.value)} />
+                          </label>
+                          <div className="flex gap-3">
+                            <button className="btn-primary" disabled={validar.isPending}>Confirmar validación</button>
+                            <button type="button" className="btn-glass" onClick={() => setValidando(null)}>Cancelar</button>
+                          </div>
+                        </form>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
