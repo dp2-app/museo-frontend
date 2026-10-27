@@ -106,6 +106,22 @@ async function subir(archivo) {
   assert.equal(enCola.length, 1, 'La fila marcada debe estar en la cola de curación');
   ok('RF-36, RF-40: aprobar crea el pendiente de curación con el motivo de la revisión');
 
+  // RF-40: la cola de curación se ve en pantalla y el pendiente se valida con nota
+  await page.goto(web + '/importacion');
+  await page.getByRole('link', { name: 'Ver la cola de curación' }).click();
+  await page.getByRole('heading', { name: 'Cola de curación' }).waitFor();
+  const filaCola = page.locator('tbody tr', { hasText: 'Quien revisó el lote la marcó para curación' });
+  await filaCola.waitFor();
+  await filaCola.getByRole('button', { name: 'Validar' }).click();
+  await page.locator('textarea').fill('Revisado en la prueba automática');
+  await page.getByRole('button', { name: 'Confirmar validación' }).click();
+  await page.getByText('Registro validado.').waitFor();
+  await shot('03b-curacion-validada');
+  const validados = await api('/importacion/curacion?estado=validado');
+  const validado = validados.items.find(i => i.cargaId === carga1 && i.motivos.some(m => m.codigo === 'marcada_por_revision'));
+  assert.ok(validado && validado.nota === 'Revisado en la prueba automática' && validado.validadoEn, 'El pendiente debe quedar validado con nota y fecha');
+  ok('RF-40: la cola de curación se muestra y validar guarda quién, cuándo y la nota');
+
   // RF-39 y RF-58: cada carga conserva las reglas con que se concilió
   await page.goto(web + '/importacion');
   panel = await abrirPanelReglas();

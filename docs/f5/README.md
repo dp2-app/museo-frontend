@@ -73,3 +73,12 @@ aparece la columna de acción (el backend responde 403 de todos modos).
 Verificado contra el backend local: se validó un pendiente con nota, la cola de pendientes bajó de 2 a 1 y el filtro «Validados» mostró fecha y nota, sin errores 4xx.
 
 ![Validar un pendiente](evidencias/validar-curacion.png)
+## Bitácora con reglas aplicadas (#34)
+
+El detalle de cada carga muestra «Reglas con que se concilió esta carga» (`reglasAplicadas` de la carga, RF-39): las reglas de duplicado
+activas, con su etiqueta, y la similitud mínima de ese momento. Así una carga vieja conserva las reglas con que se revisó aunque luego se
+cambien en Importación. Las etiquetas se leen de `GET /datos/v1/importacion/reglas`; si no están disponibles se muestra la clave.
+
+Verificado contra el backend local: tras cargar `lote2.xlsx` el detalle lista las cuatro reglas y «similitud mínima 0.60», sin errores 4xx.
+
+![Reglas aplicadas](evidencias/reglas-aplicadas.png)
