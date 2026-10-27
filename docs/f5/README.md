@@ -8,7 +8,7 @@ Contrato: `museo-backend/docs/openapi.yaml` (rutas `/datos/v1/importacion/*`).
 | Issue | Alcance | Estado |
 |---|---|---|
 | #22 | Importación sobre `/datos/v1` y tipos del contrato v3 | Hecho en `main` (PR #28, `datosApi`); este flujo agrega solo los tipos de F5 |
-| #23 | Revisión del lote: resumen, candidatos, cambios, aprobar/rechazar/cancelar (RF-32, RF-33, RF-34, RF-36) | Cubierta por el PR #28; falta «enviar a curación» por fila |
+| #23 | Revisión del lote: resumen, candidatos, cambios, aprobar/rechazar/cancelar (RF-32, RF-33, RF-34, RF-36) | Cubierta por el PR #28; «enviar a curación» por fila en #31 (`feat/31-enviar-fila-a-curacion`) |
 | #24 | Bitácora de cargas con reglas aplicadas y datos de origen en la ficha (RF-37, RF-39) | Pendiente |
 | #25 | Reglas de duplicado, umbral y aprobador (RF-58) | Pendiente |
 | #26 | Cola de curación (RF-40, deseable) | Pendiente |
@@ -16,6 +16,14 @@ Contrato: `museo-backend/docs/openapi.yaml` (rutas `/datos/v1/importacion/*`).
 ## Tipos de F5 (`src/types/index.ts`)
 
 `CargaExcel.reglasAplicadas`, `ReglasImportacion` / `ReglaDuplicado` y `CuracionImportacion`, según `openapi.yaml`.
+
+## Enviar una fila a curación (#31)
+
+En el detalle de una carga en revisión, cada fila tiene «Enviar a curación» / «Quitar de curación»
+(`PATCH …/filas/{id}` con `curacionPendiente`). La fila marcada muestra «Irá a la cola de curación al aprobar la carga».
+Evidencia: `docs/f5/evidencias/enviar-a-curacion.png`. Probado en el navegador contra el backend local: marcar, quitar,
+volver a marcar, revisar las filas, aprobar la carga y comprobar en `GET /datos/v1/importacion/curacion` el pendiente con el
+motivo `marcada_por_revision`; sin respuestas 4xx ni errores de página.
 
 ## Verificación
 
