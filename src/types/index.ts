@@ -112,37 +112,62 @@ export interface PlantillaMapeo {
 export interface CargaExcel {
   id: string;
   archivoNombre: string;
+  hojaNombre: string | null;
+  usuarioId: string;
   plantillaMapeoId: string | null;
-  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada";
+  estado: "en_revision" | "pendiente_aprobacion" | "aprobada" | "rechazada" | "cancelada";
   totalFilas: number;
   filasNuevas: number;
   filasActualizacion: number;
   filasDuplicadas: number;
   filasConflicto: number;
   filasRechazadas: number;
+  filasConError: number;
   iniciadaEn: string;
   aprobadaEn: string | null;
+  motivoRechazo: string | null;
+  puedeAprobar?: boolean | null;
 }
 
 export interface IncidenciaFila {
-  campo: string;
+  campo: string | null;
+  codigo?: string;
   mensaje: string;
   columna?: string | null;
-  valorOriginal?: string | null;
+  valorOriginal?: unknown;
 }
 
 export interface FilaImportacion {
   id: string;
   numeroFila: number;
   datosOriginales: Record<string, unknown>;
-  datosNormalizados: Record<string, unknown> | null;
+  datosNormalizados: {
+    mapeados?: Record<string, unknown>;
+    columnas?: Record<string, string>;
+    advertencias?: IncidenciaFila[];
+  } | null;
   clasificacion: "nuevo" | "actualizacion" | "duplicado" | "conflicto";
   piezaCoincidenteId: string | null;
   estado: "pendiente" | "aprobado" | "rechazado";
   motivoRechazo: string | null;
   errores: IncidenciaFila[];
-  advertencias: IncidenciaFila[];
+  camposNoMapeados: Record<string, unknown>;
+  identificadores: { tipo: string; valor: string }[];
+  candidatos: {
+    regla: string; explicacion: string; piezaId?: string; piezaDenominacion?: string; filaNumero?: number;
+  }[];
+  curacionPendiente: boolean;
+  piezaResultanteId: string | null;
+  cambios: { campo: string; etiqueta: string; valorActual: unknown; valorNuevo: unknown }[];
 }
+
+export interface DeteccionExcel {
+  hoja: string;
+  hojas: string[];
+  columnas: { columna: string; destinoSugerido: string | null; muestra: unknown[]; vacias: number; total: number }[];
+}
+
+export interface DestinoImportacion { clave: string; etiqueta: string; }
 
 export interface FilaImportacionPagina {
   items: FilaImportacion[];
@@ -165,6 +190,41 @@ export interface ReporteCalidadDatos {
   sugerenciasPendientes: { ria01: number; ria02: number };
   piezasElegiblesParaRia01: number;
   ria01Configurado: boolean;
+}
+
+// --- F10 · RIA-05: armado de salas (POST /ia/salas/sugerir) ---
+
+export interface AlertaSala {
+  codigo: "ficha_no_aprobada" | "conservacion" | "en_prestamo";
+  mensaje: string;
+}
+
+export interface PiezaSala {
+  posicion: number;
+  piezaId: string;
+  puntaje: number;
+  codigo: string | null;
+  denominacion: string | null;
+  tipoBien: string | null;
+  materiales: string | null;
+  procedencia: string | null;
+  autor: string | null;
+  ubicacion: string | null;
+  estadoFicha: string;
+  alertas: AlertaSala[];
+}
+
+export interface SalaSugerida {
+  sugerenciaId: string;
+  pedido: string;
+  cantidad: number;
+  mensaje: string;
+  fueraDeTema: boolean;
+  pocasPiezas: boolean;
+  busqueda: "hibrida" | "texto";
+  modeloUsado: string;
+  estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
+  piezas: PiezaSala[];
 }
 
 export interface SugerenciaIA {
@@ -292,4 +352,39 @@ export interface VisibilidadCampo {
   rolId: string;
   rol: string;
   visible: boolean;
+}
+
+// --- F10 · RIA-05: estado del índice de salas (GET /ia/salas/indice) ---
+
+export interface EjecucionIndice {
+  origen: "programada" | "manual";
+  iniciadaEn: string;
+  terminadaEn: string | null;
+  piezasRevisadas: number | null;
+  indexadas: number | null;
+  conEmbedding: number | null;
+  corte: "cuota_diaria" | "cupo_diario" | "error" | null;
+  detalle: string | null;
+}
+
+export interface EstadoIndiceSalas {
+  proveedor: string;
+  proveedorDisponible: boolean;
+  piezasElegibles: number;
+  conTexto: number;
+  conEmbeddingAlDia: number;
+  conEmbeddingDesactualizado: number;
+  sinDescripcion: number;
+  sinEmbedding: number;
+  enCurso: boolean;
+  ultimaEjecucion: EjecucionIndice | null;
+  cuotaDiaria: number | null;
+  cupoDiarioIndexado: number | null;
+  indexadoHoy: number;
+  reservaConsultas: number;
+  automatico: boolean;
+  horaProgramada: string;
+  zonaHoraria: string;
+  proximaEjecucion: string;
+  atrasada: boolean;
 }

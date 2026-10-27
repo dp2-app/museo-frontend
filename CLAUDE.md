@@ -231,3 +231,17 @@ Pantallas sobre el contrato v3 (requiere museo-backend#41). Detalle, pruebas y c
 - Validar mientras se escribe es `POST /codigos/validar` en modo `manual`; la regla final siempre es del backend. Una corrección se valida sin pieza ni régimen (lo mismo que revisa `corregir_codigo`).
 - Una pieza nueva sin régimen toma el primer régimen activo de inventario por `orden`: la pantalla de regímenes lo marca y propone el orden siguiente al mayor.
 - Verificación: `npm run build`, `npm run lint` y `npm run test:f1` (Playwright, backend real local, cuentas en `F1_ACCOUNT_FILE`).
+
+## F10 · Armar sala (RIA-05), autorizado por el líder (25/10/2026)
+
+Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`); la pestaña «Calidad de datos» conserva lo anterior (RIA-01/RIA-02, sin adaptar aún al contrato v3).
+
+- `POST /ia/salas/sugerir` `{pedido, cantidad}` (10–30) devuelve `SalaSugerida`: mensaje breve de la IA, ranking con puntaje y alertas (`ficha_no_aprobada`, `conservacion`, `en_prestamo`). Se muestra tal cual: el frontend no reordena, no filtra ni completa nada.
+- El curador marca piezas (por defecto todas) y `POST /ia/salas/{sugerenciaId}/exportar` `{piezaIds}` descarga el Excel. El botón se habilita con `reportes.exportar`; el backend vuelve a validar.
+- Sin IA configurada el backend responde 503 y se muestra su mensaje: nunca se simula una respuesta (DA-006).
+- Con `ia.ejecutar_lote`, arriba aparece `EstadoIndiceSalas`: piezas con búsqueda por significado al día, pendientes, uso de hoy contra el cupo diario (con el 7 % reservado para consultas), última y próxima indexación diaria (`GET /ia/salas/indice`, se refresca cada 15 s mientras corre) y el botón «Indexar ahora» (`POST /ia/salas/indexar`).
+- Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-05) y `DA-015`. Verificado con `npm run build`, `npm run lint` (dos advertencias previas) y en el navegador contra el backend local (escritorio y móvil; sin claves de IA solo se probó el estado 503).
+
+## F2/F6 autorizado y validado (27/10/2026)
+
+El usuario autorizó frontend F2 y F6 completo, con notificación previa a cambios y actualización de conocimiento. Ver docs/f2-f6/README.md y ../Base-de-conocimiento/flujos/F2-F6-implementacion-2026-10-27.md. Colección, ficha y ubicación/movimientos usan v3 (campos/listas/etiquetas, version, baja POST con motivo). No restaurar tipos/endpoints legados en estas páginas. FormularioFicha admite edicion/etiquetasActuales opcionales sin alterar la vista previa. Pruebas de navegador contra API/PostgreSQL local real; no usar producción. N10 sigue abierta. Se conserva acceso a extracción de observaciones F10 sin cambiar su backend.

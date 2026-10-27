@@ -11,8 +11,9 @@ import { TiposCodigo } from "../components/f1/TiposCodigo";
 import { Regimenes } from "../components/f1/Regimenes";
 import { Propietarios } from "../components/f1/Propietarios";
 import { usePermisos } from "../hooks/usePermisos";
+import { PiezasBaja } from "../components/Colecciones";
 
-type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "tipos-codigo" | "regimenes" | "propietarios" | "usuarios" | "roles" | "bitacora";
+type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "tipos-codigo" | "regimenes" | "propietarios" | "usuarios" | "roles" | "bitacora" | "piezas-baja";
 
 interface Seccion {
   clave: Pestana;
@@ -30,6 +31,7 @@ const GRUPOS: { titulo: string; secciones: Seccion[] }[] = [
       { clave: "catalogos", etiqueta: "Listas de valores", Icono: List, permiso: "config.listas" },
       { clave: "institucion", etiqueta: "Institución", Icono: Landmark, permiso: "config.institucion.ver" },
       { clave: "vista-previa", etiqueta: "Vista previa", Icono: Eye, permiso: "piezas.ver" },
+      { clave: "piezas-baja", etiqueta: "Piezas dadas de baja", Icono: History, permiso: "piezas.restaurar" },
     ],
   },
   {
@@ -106,6 +108,7 @@ export function AdministracionPage() {
             {pestana === "tipos-codigo" && <TiposCodigo />}
             {pestana === "regimenes" && <Regimenes />}
             {pestana === "propietarios" && <Propietarios />}
+            {pestana === "piezas-baja" && <PiezasBaja />}
             {pestana === "usuarios" && <Usuarios />}
             {pestana === "roles" && <RolesPermisos />}
             {pestana === "bitacora" && <Bitacora />}

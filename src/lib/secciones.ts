@@ -37,6 +37,7 @@ export const PERMISOS_ADMINISTRACION = [
   "config.campos.ver", "config.listas", "config.institucion.ver",
   "config.codigos_tenencia",
   "usuarios.ver", "roles.ver", "auditoria.ver",
+  "piezas.restaurar",
 ];
 
 export const SECCIONES: Seccion[] = [
