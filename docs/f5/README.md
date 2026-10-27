@@ -22,3 +22,13 @@ Contrato: `museo-backend/docs/openapi.yaml` (rutas `/datos/v1/importacion/*`).
 - `npm run build` y `npm run lint` (solo las dos advertencias previas).
 - Contra el backend local con la migración `0107` (sin Supabase): el recorrido de importación del PR #28 sigue funcionando
   tras integrar `main` con este flujo.
+
+## Bitácora con reglas aplicadas (#34)
+
+El detalle de cada carga muestra «Reglas con que se concilió esta carga» (`reglasAplicadas` de la carga, RF-39): las reglas de duplicado
+activas, con su etiqueta, y la similitud mínima de ese momento. Así una carga vieja conserva las reglas con que se revisó aunque luego se
+cambien en Importación. Las etiquetas se leen de `GET /datos/v1/importacion/reglas`; si no están disponibles se muestra la clave.
+
+Verificado contra el backend local: tras cargar `lote2.xlsx` el detalle lista las cuatro reglas y «similitud mínima 0.60», sin errores 4xx.
+
+![Reglas aplicadas](evidencias/reglas-aplicadas.png)
