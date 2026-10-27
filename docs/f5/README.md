@@ -33,3 +33,13 @@ Verificado contra el backend local con `0107`: se cargó `lote1.xlsx`, se envió
 la fila marcada («Quien revisó el lote la marcó para curación») y la fila sin título («Título / Denominación es obligatorio»), sin errores 4xx.
 
 ![Cola de curación](evidencias/cola-de-curacion.png)
+
+## Validar un pendiente (#33)
+
+En la cola, quien tiene `importacion.curar` ve el botón «Validar» en cada pendiente: abre una nota opcional y «Confirmar validación» llama a
+`POST /datos/v1/importacion/curacion/{id}/validar`. El backend guarda quién y cuándo; la cola muestra la fecha y la nota. Sin ese permiso no
+aparece la columna de acción (el backend responde 403 de todos modos).
+
+Verificado contra el backend local: se validó un pendiente con nota, la cola de pendientes bajó de 2 a 1 y el filtro «Validados» mostró fecha y nota, sin errores 4xx.
+
+![Validar un pendiente](evidencias/validar-curacion.png)
