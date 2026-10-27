@@ -1,302 +1,38 @@
-import { useState, type FormEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { IconoRetablo } from "../components/IconoRetablo";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { FormularioFicha } from "../components/f0/FormularioFicha";
+import { Colecciones, type ColeccionFicha } from "../components/Colecciones";
+import { ErrorConsulta, Panel } from "../components/FichaComun";
+import { useRecurso } from "../lib/recursosFicha";
+import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
+import { AltaComplementos, type Complementos } from "../components/IdentificacionFicha";
 import { usePermisos } from "../hooks/usePermisos";
-import { api, extraerMensajeError } from "../lib/api";
-import type { Coleccion, Pagina, Pieza } from "../types";
-
-function GestionarColecciones() {
-  const queryClient = useQueryClient();
-  const [abierto, setAbierto] = useState(false);
-  const [nombre, setNombre] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const { data } = useQuery({
-    queryKey: ["colecciones"],
-    queryFn: async () => (await api.get<Pagina<Coleccion>>("/colecciones", { params: { pageSize: 100 } })).data,
-  });
-
-  const crear = useMutation({
-    mutationFn: async (nombreNuevo: string) => (await api.post("/colecciones", { nombre: nombreNuevo })).data,
-    onSuccess: () => {
-      setNombre("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["colecciones"] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  return (
-    <div className="glass-panel-sm">
-      <button
-        type="button"
-        onClick={() => setAbierto((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-azul"
-      >
-        Gestionar colecciones (RF-010)
-        {abierto ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
-      </button>
-      {abierto && (
-        <div className="px-4 pb-4 space-y-3 border-t border-linea pt-3">
-          <form
-            onSubmit={(e: FormEvent) => {
-              e.preventDefault();
-              if (nombre.trim()) crear.mutate(nombre.trim());
-            }}
-            className="flex gap-2 max-w-md"
-          >
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre de la nueva colección" className="glass-input" />
-            <button type="submit" disabled={crear.isPending} className="btn-primary shrink-0">
-              Crear
-            </button>
-          </form>
-          {error && <p className="text-sm text-rojo">{error}</p>}
-          <div className="flex flex-wrap gap-2">
-            {data?.items.map((c) => (
-              <span key={c.id} className="chip">
-                {c.nombre}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PiezasDadasDeBaja() {
-  const queryClient = useQueryClient();
-  const [abierto, setAbierto] = useState(false);
-  const [restaurando, setRestaurando] = useState<string | null>(null);
-  const [motivo, setMotivo] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const { data } = useQuery({
-    queryKey: ["piezas-eliminadas"],
-    queryFn: async () => (await api.get<Pieza[]>("/piezas/eliminadas")).data,
-    enabled: abierto,
-  });
-
-  const restaurar = useMutation({
-    mutationFn: async (id: string) => (await api.post<Pieza>(`/piezas/${id}/restaurar`, { motivo: motivo.trim() })).data,
-    onSuccess: () => {
-      setRestaurando(null);
-      setMotivo("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["piezas-eliminadas"] });
-      queryClient.invalidateQueries({ queryKey: ["piezas"] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  return (
-    <div className="glass-panel-sm">
-      <button
-        type="button"
-        onClick={() => setAbierto((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-azul"
-      >
-        Piezas dadas de baja (RF-013)
-        {abierto ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
-      </button>
-      {abierto && (
-        <div className="px-4 pb-4 space-y-3 border-t border-linea pt-3">
-          {error && <p className="text-sm text-rojo">{error}</p>}
-          <ul className="space-y-2 text-sm">
-            {data?.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-ink-800">{p.denominacion || "(sin denominación)"}</span>
-                {restaurando === p.id ? (
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e: FormEvent) => {
-                      e.preventDefault();
-                      if (motivo.trim()) restaurar.mutate(p.id);
-                    }}
-                  >
-                    <input
-                      value={motivo}
-                      onChange={(e) => setMotivo(e.target.value)}
-                      placeholder="Motivo de la restauración"
-                      className="glass-input"
-                      required
-                    />
-                    <button type="submit" disabled={restaurar.isPending} className="btn-primary shrink-0">
-                      Confirmar
-                    </button>
-                  </form>
-                ) : (
-                  <button type="button" onClick={() => setRestaurando(p.id)} className="btn-danger-text">
-                    Restaurar
-                  </button>
-                )}
-              </li>
-            ))}
-            {data?.length === 0 && <li className="text-ink-400">No hay piezas dadas de baja.</li>}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
+import { api } from "../lib/api";
+import { nombreFicha, type Ficha } from "../lib/ficha";
+import type { Pagina } from "../types";
 
 export function PiezasPage() {
-  const { puede } = usePermisos();
-  const queryClient = useQueryClient();
-  const [codigo, setCodigo] = useState("");
-  const [coleccionId, setColeccionId] = useState("");
-  const [soloIncompletas, setSoloIncompletas] = useState(false);
-
-  const { data: colecciones } = useQuery({
-    queryKey: ["colecciones"],
-    queryFn: async () => (await api.get<Pagina<Coleccion>>("/colecciones", { params: { pageSize: 100 } })).data,
-  });
-
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["piezas", codigo, coleccionId, soloIncompletas],
-    queryFn: async () =>
-      (
-        await api.get<Pagina<Pieza>>("/piezas", {
-          params: {
-            pageSize: 50,
-            codigo: codigo || undefined,
-            coleccionId: coleccionId || undefined,
-            soloIncompletas: soloIncompletas || undefined,
-          },
-        })
-      ).data,
-  });
-
-  const [nuevaDenominacion, setNuevaDenominacion] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const crear = useMutation({
-    mutationFn: async (denominacion: string) => (await api.post<Pieza>("/piezas", { denominacion })).data,
-    onSuccess: () => {
-      setNuevaDenominacion("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["piezas"] });
-    },
-    onError: (err) => setError(extraerMensajeError(err)),
-  });
-
-  function onBuscar(e: FormEvent) {
-    e.preventDefault();
-    refetch();
-  }
-
-  function onCrear(e: FormEvent) {
-    e.preventDefault();
-    if (nuevaDenominacion.trim()) crear.mutate(nuevaDenominacion.trim());
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2.5">
-        <IconoRetablo size={28} className="text-azul" />
-        <div>
-          <h1>Colección</h1>
-          <p className="text-sm text-gris-2">RF-031/RF-032 · búsqueda por código, colección y filtros combinados.</p>
-        </div>
-      </div>
-
-      <GestionarColecciones />
-      {puede("piezas.restaurar") && <PiezasDadasDeBaja />}
-
-      <form onSubmit={onBuscar} className="glass-panel-sm flex flex-wrap gap-3 items-end p-4">
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide text-ink-400 mb-1">Código</label>
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} className="glass-input" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide text-ink-400 mb-1">Colección</label>
-          <select
-            value={coleccionId}
-            onChange={(e) => setColeccionId(e.target.value)}
-            className="glass-input min-w-[10rem]"
-          >
-            <option value="">Todas</option>
-            {colecciones?.items.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <label className="flex items-center gap-1.5 text-sm text-ink-600 pb-2">
-          <input
-            type="checkbox"
-            checked={soloIncompletas}
-            onChange={(e) => setSoloIncompletas(e.target.checked)}
-            className="accent-clay-600"
-          />
-          Solo incompletas
-        </label>
-        <button type="submit" className="btn-primary">
-          Buscar
-        </button>
-      </form>
-
-      <form onSubmit={onCrear} className="flex gap-2 max-w-lg">
-        <input
-          value={nuevaDenominacion}
-          onChange={(e) => setNuevaDenominacion(e.target.value)}
-          placeholder="Denominación de la nueva pieza (RF-006)"
-          className="glass-input"
-        />
-        <button type="submit" disabled={crear.isPending} className="btn-primary shrink-0">
-          Registrar
-        </button>
-      </form>
-      {error && <p className="text-sm text-clay-700">{error}</p>}
-
-      {isLoading ? (
-        <p className="text-sm text-ink-400">Buscando...</p>
-      ) : (
-        <div className="glass-panel overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-ink-400 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Denominación</th>
-                  <th className="px-5 py-3 font-medium">Disponibilidad</th>
-                  <th className="px-5 py-3 font-medium">Info. completa</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/50">
-                {data?.items.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/40 transition">
-                    <td className="px-5 py-3 font-medium text-ink-800">{p.denominacion || "(sin denominación)"}</td>
-                    <td className="px-5 py-3 text-ink-600">{p.disponibilidad}</td>
-                    <td className="px-5 py-3">
-                      {p.informacionCompleta ? (
-                        <span className="chip !bg-emerald-100/80 !border-emerald-200 !text-emerald-800">Completa</span>
-                      ) : (
-                        <span className="chip">Incompleta</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <Link to={`/coleccion/${p.id}`} className="btn-danger-text">
-                        Ver ficha →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {data?.items.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-5 py-4 text-ink-400">
-                      No se encontraron piezas con estos criterios.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <p className="px-5 py-3 text-xs text-ink-400 border-t border-white/50">{data?.total ?? 0} resultado(s)</p>
-        </div>
-      )}
-    </div>
-  );
+  const { puede } = usePermisos(); const navegar = useNavigate(); const cache = useQueryClient();
+  const [nueva, setNueva] = useState(false); const [complementos, setComplementos] = useState<Complementos>({ codigos: [] });
+  const [q, setQ] = useState(""); const [codigo, setCodigo] = useState(""); const [coleccion, setColeccion] = useState(""); const [estado, setEstado] = useState(""); const [incompletas, setIncompletas] = useState(false);
+  const [pagina, setPagina] = useState(1); const [filtros, setFiltros] = useState<Record<string, unknown>>({});
+  const piezas = useRecurso<Pagina<Ficha>>("piezas", "/piezas", true, { ...filtros, pagina, tamano: 20 });
+  const colecciones = useRecurso<ColeccionFicha[]>("colecciones", "/colecciones");
+  return <div className="space-y-6"><h1>Colección</h1><p>Registra piezas y completa las fichas del inventario.</p>
+    {puede("colecciones.gestionar") && <details><summary className="cursor-pointer font-semibold">Gestionar colecciones</summary><Colecciones /></details>}
+    <button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button>
+    {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={setComplementos} /><FormularioFicha onGuardar={async (datos) => { const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
+    <form className="glass-panel p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={(e) => { e.preventDefault(); setPagina(1); setFiltros({ q: q || undefined, codigo: codigo || undefined, coleccionId: coleccion || undefined, estadoFicha: estado || undefined, soloIncompletas: incompletas }); }}>
+      <label>Texto de la ficha<input className="glass-input" value={q} onChange={(e) => setQ(e.target.value)} /></label>
+      <label>Código<input className="glass-input" value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label>
+      <label>Colección<select aria-label="Colección" className="glass-input" value={coleccion} onChange={(e) => setColeccion(e.target.value)}><option value="">Todas</option>{colecciones.data?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
+      <label>Estado de ficha<select aria-label="Estado de ficha" className="glass-input" value={estado} onChange={(e) => setEstado(e.target.value)}><option value="">Todos</option><option value="borrador">Borrador</option><option value="en_revision">En revisión</option><option value="aprobada">Aprobada</option><option value="rechazada">Rechazada</option></select></label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={incompletas} onChange={(e) => setIncompletas(e.target.checked)} />Solo incompletas</label><button className="btn-primary">Buscar</button>
+    </form><ErrorConsulta error={piezas.error || colecciones.error} />{piezas.isPending && <p>Cargando piezas…</p>}
+    <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr><th className="p-4">Pieza / códigos</th><th className="p-4">Colección</th><th className="p-4">Ficha</th><th className="p-4">Información</th></tr></thead>
+      <tbody>{piezas.data?.items.map((p) => <tr key={p.id} className="border-t border-linea"><td className="p-4"><Link className="text-azul underline font-semibold" to={`/coleccion/${p.id}`}>{nombreFicha(p)}</Link><p>{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</p></td><td className="p-4">{p.etiquetas.coleccion_id || "Sin colección"}</td><td className="p-4"><ChipEstadoFicha estado={p.estadoFicha} /></td><td className="p-4">{p.incompleta ? "Por completar" : "Completa"}</td></tr>)}</tbody></table>
+      {piezas.data?.total === 0 && <p className="p-4">No se encontraron piezas.</p>}
+    </div><div className="flex flex-wrap gap-3 items-center"><button className="btn-glass" disabled={pagina === 1 || piezas.isFetching} onClick={() => setPagina(pagina - 1)}>Anterior</button><p>Página {pagina} · {piezas.data?.total ?? 0} piezas</p><button className="btn-glass" disabled={!piezas.data || pagina * 20 >= piezas.data.total || piezas.isFetching} onClick={() => setPagina(pagina + 1)}>Siguiente</button></div>
+  </div>;
 }

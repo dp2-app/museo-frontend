@@ -36,6 +36,7 @@ export interface Seccion {
 export const PERMISOS_ADMINISTRACION = [
   "config.campos.ver", "config.listas", "config.institucion.ver",
   "usuarios.ver", "roles.ver", "auditoria.ver",
+  "piezas.restaurar",
 ];
 
 export const SECCIONES: Seccion[] = [

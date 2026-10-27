@@ -8,8 +8,9 @@ import { ListasValores } from "../components/f0/ListasValores";
 import { Institucion } from "../components/f0/Institucion";
 import { VistaPreviaFicha } from "../components/f0/FormularioFicha";
 import { usePermisos } from "../hooks/usePermisos";
+import { PiezasBaja } from "../components/Colecciones";
 
-type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "usuarios" | "roles" | "bitacora";
+type Pestana = "campos" | "catalogos" | "institucion" | "vista-previa" | "usuarios" | "roles" | "bitacora" | "piezas-baja";
 
 interface Seccion {
   clave: Pestana;
@@ -27,6 +28,7 @@ const GRUPOS: { titulo: string; secciones: Seccion[] }[] = [
       { clave: "catalogos", etiqueta: "Listas de valores", Icono: List, permiso: "config.listas" },
       { clave: "institucion", etiqueta: "Institución", Icono: Landmark, permiso: "config.institucion.ver" },
       { clave: "vista-previa", etiqueta: "Vista previa", Icono: Eye, permiso: "piezas.ver" },
+      { clave: "piezas-baja", etiqueta: "Piezas dadas de baja", Icono: History, permiso: "piezas.restaurar" },
     ],
   },
   {
@@ -90,6 +92,7 @@ export function AdministracionPage() {
             {pestana === "catalogos" && <ListasValores />}
             {pestana === "institucion" && <Institucion />}
             {pestana === "vista-previa" && <VistaPreviaFicha />}
+            {pestana === "piezas-baja" && <PiezasBaja />}
             {pestana === "usuarios" && <Usuarios />}
             {pestana === "roles" && <RolesPermisos />}
             {pestana === "bitacora" && <Bitacora />}

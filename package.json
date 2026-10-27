@@ -11,7 +11,13 @@
     "test:f0": "node tests/f0.e2e.cjs",
     "test:f9": "node tests/f9.e2e.cjs",
     "test:f0:grupos": "node tests/f0-grupos.e2e.cjs",
-    "test:importacion": "node tests/importacion.e2e.cjs"
+    "test:importacion": "node tests/importacion.e2e.cjs",
+    "test:f2-f6": "node tests/f2-f6.e2e.cjs",
+    "test:f2-f6:acceso": "node tests/f2-f6-acceso.e2e.cjs",
+    "test:unit": "node --experimental-strip-types --test tests/ficha.unit.test.mjs",
+    "test:f2-f6:limites": "node tests/f2-f6-limites.e2e.cjs",
+    "test:f2-f6:importados": "node tests/f2-f6-importados.e2e.cjs",
+    "test:pantallas": "node tests/pantallas-diagnostico.e2e.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
