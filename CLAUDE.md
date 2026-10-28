@@ -234,3 +234,10 @@ Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`); l
 ## F2/F6 autorizado y validado (27/10/2026)
 
 El usuario autorizó frontend F2 y F6 completo, con notificación previa a cambios y actualización de conocimiento. Ver docs/f2-f6/README.md y ../Base-de-conocimiento/flujos/F2-F6-implementacion-2026-10-27.md. Colección, ficha y ubicación/movimientos usan v3 (campos/listas/etiquetas, version, baja POST con motivo). No restaurar tipos/endpoints legados en estas páginas. FormularioFicha admite edicion/etiquetasActuales opcionales sin alterar la vista previa. Pruebas de navegador contra API/PostgreSQL local real; no usar producción. N10 sigue abierta. Se conserva acceso a extracción de observaciones F10 sin cambiar su backend.
+
+## F8 · Consultas y reportes sobre v3 (28/10/2026)
+
+`ConsultasReportesPage` usa el contrato v3 (requiere museo-backend#57): filtros comunes de F7 para búsqueda y reportes
+(`components/f8/`, `hooks/useOpcionesFiltro.ts`, `lib/reportes.ts`), pestañas Inventario, Por estado, Por ubicación e
+Información incompleta (con % por colección), Excel por `datosApi` y catálogo completo solo con `reportes.exportar_total`.
+Se muestra lo que arma el backend, sin recalcular. PDF: impresión del navegador mientras P36 siga abierta. Detalle en `docs/f8/README.md`.
