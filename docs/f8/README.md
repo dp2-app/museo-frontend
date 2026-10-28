@@ -1,6 +1,6 @@
 # F8 · Consultas y reportes (frontend)
 
-Pantalla `/consultas-y-reportes` (`src/pages/ConsultasReportesPage.tsx`) sobre el contrato v3. Requiere museo-backend#57.
+Pantalla `/consultas-y-reportes` (`src/pages/ConsultasReportesPage.tsx`) sobre el contrato v3. Requiere museo-backend#59.
 
 - **Filtros comunes** (`components/f8/FiltrosReporte.tsx`): los mismos de `GET /piezas` (F7): texto, código, colección,
   ubicación, estado de la pieza, estado de conservación, material, autor, época, estado de ficha (solo con

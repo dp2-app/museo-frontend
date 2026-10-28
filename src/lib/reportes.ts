@@ -1,6 +1,6 @@
 import { datosApi } from "./api";
 
-// F8 · Contrato de GET /api/v1/reportes/* (museo-backend#57). Todos aceptan los filtros de GET /piezas (F7)
+// F8 · Contrato de GET /api/v1/reportes/* (museo-backend#59). Todos aceptan los filtros de GET /piezas (F7)
 // y devuelven lo que aplicaron de verdad: quien no ve fichas sin aprobar recibe `estadoFicha: "aprobada"`.
 
 export interface FiltrosConsulta {
