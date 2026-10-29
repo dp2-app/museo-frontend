@@ -155,10 +155,10 @@ export function CargaDetailPage() {
         <label><input type="checkbox" checked={soloErrores} onChange={(e) => { setSoloErrores(e.target.checked); setPagina(1); }} /> Solo filas con errores</label>
       </div>
       {filasQuery.isFetching && <p role="status">Cargando filas…</p>}{filasQuery.isError && <p role="alert">{extraerMensajeError(filasQuery.error)}</p>}
-      <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr>{["Fila", "Pieza y datos", "Clasificación", "Revisión", "Acciones"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+      <div className="glass-panel overflow-x-auto"><table className="tabla-tarjetas w-full text-sm text-left"><thead><tr>{["Fila", "Pieza y datos", "Clasificación", "Revisión", "Acciones"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
         <tbody>{filas?.items.map((fila) => <tr key={fila.id} className="border-t border-ink-100 align-top" data-fila={fila.numeroFila}>
-          <td className="p-4">{fila.numeroFila}</td>
-          <td className="p-4 min-w-64 max-w-xl"><strong>{valorLegible(Object.entries(fila.datosOriginales).find(([k]) => /t[ií]tulo|denominaci[oó]n/i.test(k))?.[1])}</strong>
+          <td className="p-4" data-label="Fila">{fila.numeroFila}</td>
+          <td className="p-4 min-w-64 max-w-xl" data-label="Pieza y datos"><strong>{valorLegible(Object.entries(fila.datosOriginales).find(([k]) => /t[ií]tulo|denominaci[oó]n/i.test(k))?.[1])}</strong>
             <p className="text-ink-500">{fila.identificadores.slice(0, 3).map((c) => c.valor).join(" · ")}</p>
             <details className="mt-2"><summary className="cursor-pointer">Ver datos y cambios</summary>
               <dl className="max-h-80 overflow-auto space-y-2 mt-2">{Object.entries(fila.datosOriginales).map(([k, v]) => <div key={k}><dt className="font-semibold">{k}</dt><dd className="whitespace-pre-wrap break-words">{valorLegible(v)}</dd></div>)}</dl>
@@ -169,9 +169,9 @@ export function CargaDetailPage() {
             {fila.datosNormalizados?.advertencias?.map((e, i) => <p key={i} className="mt-2">Pendiente de revisión: {e.columna ?? e.campo}: {e.mensaje}</p>)}
             {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
           </td>
-          <td className="p-4">{CLASIFICACIONES[fila.clasificacion]}</td>
-          <td className="p-4">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
-          <td className="p-4 min-w-36">{abierta && puedeRevisar && <div className="flex flex-col items-start gap-3">
+          <td className="p-4" data-label="Clasificación">{CLASIFICACIONES[fila.clasificacion]}</td>
+          <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
+          <td className="p-4 min-w-36" data-label="Acciones">{abierta && puedeRevisar && <div className="flex flex-col items-start gap-3">
             <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || fila.estado === "aprobado"} className="text-emerald-700 underline disabled:opacity-40" onClick={() => revisarFila.mutate({ id: fila.id, datos: { estado: "aprobado" } })}>Marcar revisada</button>
             <button disabled={ocupado} className="underline" onClick={() => setEdicion(fila)}>Corregir fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} className="underline" onClick={() => abrirCierre("fila", fila.id)}>Rechazar fila</button>
