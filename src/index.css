@@ -141,6 +141,19 @@
   .f0-value-list { @apply rounded-card border border-linea bg-white; }
 }
 
+/* F5 (museo-frontend#49, RNF-01): bajo 768 px cada fila de la tabla es una tarjeta y cada celda
+   muestra su encabezado (data-label), así las acciones quedan a la vista sin desplazar la tabla. */
+@layer components {
+  @media (max-width: 767px) {
+    .tabla-apilable thead { @apply sr-only; }
+    .tabla-apilable, .tabla-apilable tbody, .tabla-apilable tr, .tabla-apilable td { @apply block w-full; }
+    .tabla-apilable tr { @apply py-2; }
+    .tabla-apilable td { @apply px-4 py-2; }
+    .tabla-apilable td:empty { @apply hidden; }
+    .tabla-apilable td[data-label]::before { content: attr(data-label); @apply form-label; }
+  }
+}
+
 /* La lista de grupos mantiene una barra visible y deja fija la acción de creación. */
 .f0-grupos-scroll { scrollbar-width: auto; scrollbar-color: theme("colors.gris-1") theme("colors.fondo-suave"); scrollbar-gutter: stable; }
 .f0-grupos-scroll::-webkit-scrollbar { width: 8px; }
