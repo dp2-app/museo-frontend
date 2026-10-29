@@ -84,3 +84,12 @@ cambien en Importación. Las etiquetas se leen de `GET /datos/v1/importacion/reg
 Verificado contra el backend local: tras cargar `lote2.xlsx` el detalle lista las cuatro reglas y «similitud mínima 0.60», sin errores 4xx.
 
 ![Reglas aplicadas](evidencias/reglas-aplicadas.png)
+
+## Tablas en el celular (#49, hallazgo H04 de QA)
+
+El detalle de la carga y la cola de curación usan la clase `tabla-tarjetas` (`src/index.css`): por debajo de 768 px cada fila pasa a tarjeta,
+con el rótulo de cada celda (`data-label`) y las acciones debajo, sin deslizar la tabla. En escritorio no cambia nada.
+Verificado a 375 px con Playwright: «Marcar revisada» y «Validar» quedan dentro de la pantalla y `scrollWidth` es 375; la prueba
+`npm run test:f5` sigue pasando 10 de 10.
+
+![Cola en el celular](evidencias/movil-cola-de-curacion.png)
