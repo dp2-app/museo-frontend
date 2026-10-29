@@ -64,7 +64,7 @@ export function CuracionImportacionPage() {
 
       {cola.isSuccess && total > 0 && (
         <div className="glass-panel overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="tabla-apilable w-full text-sm text-left">
             <caption className="sr-only">Registros de la cola de curación</caption>
             <thead><tr>
               <th scope="col" className="p-4">Pieza</th>
@@ -76,21 +76,21 @@ export function CuracionImportacionPage() {
             <tbody>
               {cola.data.items.map((c) => (
                 <tr key={c.id} className="border-t border-linea align-top">
-                  <td className="p-4">
+                  <td className="p-4" data-label="Pieza">
                     {permisos.puede("piezas.ver")
                       ? <Link className="underline" to={`/coleccion/${c.piezaId}`}>{c.piezaDenominacion ?? "Sin denominación"}</Link>
                       : (c.piezaDenominacion ?? "Sin denominación")}
                   </td>
-                  <td className="p-4">{c.archivoNombre}, fila {c.filaNumero}<br />
+                  <td className="p-4" data-label="Origen">{c.archivoNombre}, fila {c.filaNumero}<br />
                     <Link className="underline" to={`/importacion/${c.cargaId}`}>Ver carga</Link></td>
-                  <td className="p-4"><ul className="list-disc pl-4">{c.motivos.map((m) => <li key={m.codigo}>{m.mensaje}</li>)}</ul></td>
-                  <td className="p-4">
+                  <td className="p-4" data-label="Motivos"><ul className="list-disc pl-4">{c.motivos.map((m) => <li key={m.codigo}>{m.mensaje}</li>)}</ul></td>
+                  <td className="p-4" data-label="Estado">
                     {c.estado === "pendiente" ? "Pendiente" : "Validado"}
                     {c.validadoEn && <p>{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
                     {c.nota && <p>{c.nota}</p>}
                   </td>
                   {puedeCurar && (
-                    <td className="p-4">
+                    <td className="p-4" data-label="Acción">
                       {c.estado === "pendiente" && validando !== c.id && (
                         <button className="btn-glass" onClick={() => { setValidando(c.id); setNota(""); setError(""); setAviso(""); }}>Validar</button>
                       )}
