@@ -111,7 +111,7 @@ Esto es solo UX: la autorización real la valida el backend (401/403) en cada en
   QR real** (librería `qrcode`, no un patrón simulado — apunta a la ficha de la
   pieza) con botón de impresión (`window.print()`), formulario de traslado e
   historial, todo contra los endpoints reales de `museo-backend`.
-- **Importación**: sin cambios funcionales, solo re-estilizada.
+- **Importación**: sobre la API de datos `/datos/v1/importacion/*` mediante `datosApi` (selección de hoja, revisión del lote, aprobar/rechazar/cancelar). F5 agrega reglas de duplicado, bitácora con reglas aplicadas y cola de curación (ver `docs/f5/README.md`).
 - **Consultas y reportes** (`ConsultasReportesPage`, nueva, HU-14 a HU-16):
   búsqueda multifacética solo sobre piezas `estadoFicha=aprobada`; AND lo
   resuelve el backend en una consulta; **OR se resuelve en el cliente** (una

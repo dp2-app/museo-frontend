@@ -127,6 +127,38 @@ export interface CargaExcel {
   aprobadaEn: string | null;
   motivoRechazo: string | null;
   puedeAprobar?: boolean | null;
+  /** Reglas de duplicado con que se concilió la carga (RF-58, RF-39). */
+  reglasAplicadas?: { activas?: string[]; similitudMinima?: number };
+}
+
+export interface ReglaDuplicado {
+  clave: string;
+  etiqueta: string;
+  activa: boolean;
+  /** false para la regla del mismo código (RF-32), que siempre rige. */
+  configurable: boolean;
+}
+
+export interface ReglasImportacion {
+  reglas: ReglaDuplicado[];
+  similitudMinima: number;
+  requiereAprobacion: boolean;
+  permisoAprobador: string;
+}
+
+export interface CuracionImportacion {
+  id: string;
+  estado: "pendiente" | "validado";
+  piezaId: string;
+  piezaDenominacion: string | null;
+  cargaId: string;
+  archivoNombre: string;
+  filaNumero: number;
+  motivos: { codigo: string; mensaje: string }[];
+  creadoEn: string;
+  validadoPor: string | null;
+  validadoEn: string | null;
+  nota: string | null;
 }
 
 export interface IncidenciaFila {
