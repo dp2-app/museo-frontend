@@ -7,6 +7,7 @@ import { ErrorConsulta, Panel } from "../components/FichaComun";
 import { useRecurso } from "../lib/recursosFicha";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { AltaComplementos, type Complementos } from "../components/IdentificacionFicha";
+import { AccesosF1 } from "../components/f1/PendienteCodigoI";
 import { usePermisos } from "../hooks/usePermisos";
 import { api } from "../lib/api";
 import { nombreFicha, type Ficha } from "../lib/ficha";
@@ -20,6 +21,7 @@ export function PiezasPage() {
   const piezas = useRecurso<Pagina<Ficha>>("piezas", "/piezas", true, { ...filtros, pagina, tamano: 20 });
   const colecciones = useRecurso<ColeccionFicha[]>("colecciones", "/colecciones");
   return <div className="space-y-6"><h1>Colección</h1><p>Registra piezas y completa las fichas del inventario.</p>
+    <AccesosF1 />
     {puede("colecciones.gestionar") && <details><summary className="cursor-pointer font-semibold">Gestionar colecciones</summary><Colecciones /></details>}
     <button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button>
     {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={setComplementos} /><FormularioFicha onGuardar={async (datos) => { const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}

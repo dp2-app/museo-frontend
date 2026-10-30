@@ -1,0 +1,21 @@
+{
+  "comprobaciones": [
+    "Grupo «Códigos y tenencia» en Administración con los tipos sembrados y sus reglas",
+    "El código I se edita (correlativo) pero no ofrece desactivarse (D7)",
+    "Crear un tipo con formato: un patrón inválido se rechaza junto a su campo (RF-55)",
+    "Clave repetida: error del servidor junto a la clave",
+    "D8: exigir «único» con valores repetidos se rechaza y se explica junto a la regla",
+    "Crear un régimen y fijar qué códigos admite; el comodato no admite el I y Propiedad sigue por defecto (RF-56, RN-03)",
+    "Registrar un propietario o contraparte y encontrarlo por nombre o documento (RN-06)",
+    "Registrar un préstamo temporal: aparece en la lista y no crea pieza (RN-04, T06)",
+    "Pendientes de código I: aparece la pieza en propiedad sin I; no las que tienen I ni las de comodato (T10, T11)",
+    "Validación en vivo: un I ya asignado escrito de otra forma se detecta como duplicado antes de guardar (D1, T04)",
+    "Asignar el I con el correlativo sugerido: queda bloqueado y la pieza sale de pendientes (D4, RF-04, T10)",
+    "Corregir el I por excepción exige motivo de 10+ caracteres y queda guardado y auditado (RF-05, T08, T09)",
+    "catalogador: las acciones de F1 se muestran según sus permisos y la API rechaza el resto (403)",
+    "consulta: las acciones de F1 se muestran según sus permisos y la API rechaza el resto (403)",
+    "Móvil (390 px): navegación por selector y sin desborde horizontal",
+    "Sin errores de JavaScript durante la prueba"
+  ],
+  "errores": []
+}
