@@ -1,108 +1,59 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { FileDown, Printer, Search } from "lucide-react";
-import { api } from "../lib/api";
-import type { Coleccion, Pagina, Pieza, ValorVocabulario } from "../types";
+import { Database, FileDown, Printer, Search } from "lucide-react";
+import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
+import { ErrorConsulta } from "../components/FichaComun";
+import { FiltrosReporte } from "../components/f8/FiltrosReporte";
+import { CuerpoReporte, Encabezado } from "../components/f8/VistaReporte";
+import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
+import { nombresDeOpciones, useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
+import { usePermisos } from "../hooks/usePermisos";
+import { extraerMensajeError } from "../lib/api";
+import { nombreFicha, type Ficha } from "../lib/ficha";
+import { useRecurso } from "../lib/recursosFicha";
+import { descargarExcel, parametros, totalDe, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta } from "../lib/reportes";
+import type { Pagina } from "../types";
 
-type Modo = "AND" | "OR";
+type Pestana = "busqueda" | ClaveReporte;
+const TAMANO = 20;
 
-interface Filtros {
-  codigo: string;
-  coleccionId: string;
-  categoriaId: string;
-  autor: string;
-  material: string;
-  estadoConservacionId: string;
-}
-
-const FILTROS_VACIOS: Filtros = {
-  codigo: "",
-  coleccionId: "",
-  categoriaId: "",
-  autor: "",
-  material: "",
-  estadoConservacionId: "",
-};
-
-/** HU-15: AND siempre lo resuelve el backend en una sola consulta (RF-031/032).
- * OR no existe como semántica SQL en /piezas hoy, así que se resuelve en el
- * cliente: una consulta real por cada filtro activo (siempre con
- * estadoFicha=aprobada, HU-05) y unión por id — más llamadas, pero ningún
- * dato inventado ni simulado. */
-async function buscarPiezas(filtros: Filtros, modo: Modo): Promise<Pieza[]> {
-  const entradas = Object.entries(filtros).filter(([, v]) => v.trim() !== "");
-  const base: Record<string, string | number> = { estado_ficha: "aprobada", page_size: 200 };
-
-  if (modo === "AND" || entradas.length <= 1) {
-    const params: Record<string, string | number> = { ...base };
-    for (const [clave, valor] of entradas) params[clave] = valor;
-    const { data } = await api.get<Pagina<Pieza>>("/piezas", { params });
-    return data.items;
-  }
-
-  const resultadosPorFiltro = await Promise.all(
-    entradas.map(async ([clave, valor]) => {
-      const { data } = await api.get<Pagina<Pieza>>("/piezas", { params: { ...base, [clave]: valor } });
-      return data.items;
-    }),
-  );
-  const porId = new Map<string, Pieza>();
-  for (const lista of resultadosPorFiltro) for (const p of lista) porId.set(p.id, p);
-  return [...porId.values()];
-}
-
-// Consultas y reportes (HU-14 a HU-16): búsqueda avanzada de solo lectura
-// sobre el catálogo APROBADO (a diferencia de Colección, pantalla de
-// trabajo). Roles: Administrador, Gestor de colecciones, Consulta interna.
+// F8 · Consultas y reportes (RF-45..RF-49) sobre el contrato v3. La búsqueda y los reportes usan los mismos filtros
+// de GET /piezas (F7); el backend aplica la visibilidad por rol y solo fichas aprobadas a quien no ve las demás.
+// La autorización real la valida el backend: los botones solo se ocultan por permiso para no ofrecer un 403.
 export function ConsultasReportesPage() {
-  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
-  const [modo, setModo] = useState<Modo>("AND");
-  const [exportando, setExportando] = useState(false);
+  const { puede, sesion } = usePermisos();
+  const camposOcultos = sesion?.camposOcultos ?? [];
+  const opciones = useOpcionesFiltro();
+  const catalogo = useCatalogoFicha();
+  const etiquetas = Object.fromEntries((catalogo.data ?? []).map((c) => [c.clave, c.etiqueta]));
+  const [filtros, setFiltros] = useState<FiltrosConsulta>({});
+  const [pestana, setPestana] = useState<Pestana>("busqueda");
+  const [pagina, setPagina] = useState(1);
+  const [mensaje, setMensaje] = useState("");
+  const [descargando, setDescargando] = useState(false);
+  const params = parametros(filtros);
 
-  const { data: colecciones } = useQuery({
-    queryKey: ["colecciones"],
-    queryFn: async () => (await api.get<Pagina<Coleccion>>("/colecciones", { params: { pageSize: 100 } })).data,
-  });
-  const { data: categorias } = useQuery({
-    queryKey: ["vocabularios", "categoria", "todos"],
-    queryFn: async () =>
-      (await api.get<ValorVocabulario[]>("/vocabularios/categoria", { params: { incluirInactivos: true } })).data,
-  });
-  const { data: estadosConservacion } = useQuery({
-    queryKey: ["vocabularios", "estado_conservacion", "todos"],
-    queryFn: async () =>
-      (await api.get<ValorVocabulario[]>("/vocabularios/estado_conservacion", { params: { incluirInactivos: true } })).data,
-  });
+  const pestanas: [Pestana, string][] = [
+    ["busqueda", "Búsqueda"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
+    ...(camposOcultos.includes("ubicacion_actual_id") ? [] : [["por-ubicacion", "Por ubicación"] as [Pestana, string]]),
+    ["informacion-incompleta", "Información incompleta"],
+  ];
+  const busqueda = useRecurso<Pagina<Ficha>>("f8-busqueda", "/piezas", pestana === "busqueda", { ...params, pagina, tamano: TAMANO });
+  const reporte = useRecurso<EncabezadoReporte>("f8-reporte", `/reportes/${pestana}`, pestana !== "busqueda", params);
 
-  const resultados = useQuery({
-    queryKey: ["consultas-reportes", filtros, modo],
-    queryFn: () => buscarPiezas(filtros, modo),
-  });
-
-  function actualizar<K extends keyof Filtros>(campo: K, valor: string) {
-    setFiltros((f) => ({ ...f, [campo]: valor }));
-  }
-
-  async function exportarExcel() {
-    setExportando(true);
+  async function exportar(ruta: string, nombre: string, conFiltros = true) {
+    setDescargando(true);
+    setMensaje("");
     try {
-      const entradas = Object.entries(filtros).filter(([, v]) => v.trim() !== "");
-      const params: Record<string, string> = { estado_ficha: "aprobada" };
-      for (const [clave, valor] of entradas) params[clave] = valor;
-      const { data } = await api.get("/reportes/exportar", { params, responseType: "blob" });
-      const url = URL.createObjectURL(data);
-      const enlace = document.createElement("a");
-      enlace.href = url;
-      enlace.download = "piezas.xlsx";
-      enlace.click();
-      URL.revokeObjectURL(url);
+      const filas = await descargarExcel(ruta, conFiltros ? params : {}, nombre);
+      setMensaje(`Exportación lista: ${filas} pieza(s).`);
+    } catch (error) {
+      setMensaje(extraerMensajeError(error));
     } finally {
-      setExportando(false);
+      setDescargando(false);
     }
   }
-
-  const nombreColeccion = (id: string | null) => colecciones?.items.find((c) => c.id === id)?.nombre ?? "—";
+  const hoy = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -110,162 +61,92 @@ export function ConsultasReportesPage() {
         <Search size={28} className="text-azul" aria-hidden="true" />
         <div>
           <h1>Consultas y reportes</h1>
-          <p className="text-sm text-gris-2">
-            HU-14 a HU-16 · búsqueda avanzada de solo lectura sobre el catálogo aprobado.
-          </p>
+          <p className="text-sm text-gris-2">Busca con filtros combinados, genera reportes y expórtalos sin los campos restringidos para tu rol.</p>
         </div>
       </div>
 
-      <div className="glass-panel-sm p-4 space-y-4 print:hidden">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="form-label" htmlFor="f-codigo">
-              Código de inventario
-            </label>
-            <input id="f-codigo" className="glass-input" value={filtros.codigo} onChange={(e) => actualizar("codigo", e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label" htmlFor="f-coleccion">
-              Colección
-            </label>
-            <select id="f-coleccion" className="glass-input min-w-[10rem]" value={filtros.coleccionId} onChange={(e) => actualizar("coleccionId", e.target.value)}>
-              <option value="">Todas</option>
-              {colecciones?.items.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="form-label" htmlFor="f-autor">
-              Autor
-            </label>
-            <input id="f-autor" className="glass-input" value={filtros.autor} onChange={(e) => actualizar("autor", e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label" htmlFor="f-material">
-              Material/tipología
-            </label>
-            <input id="f-material" className="glass-input" value={filtros.material} onChange={(e) => actualizar("material", e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label" htmlFor="f-categoria">
-              Categoría
-            </label>
-            <select id="f-categoria" className="glass-input min-w-[10rem]" value={filtros.categoriaId} onChange={(e) => actualizar("categoriaId", e.target.value)}>
-              <option value="">Todas</option>
-              {categorias?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.valor}{c.activo ? "" : " (inactivo)"}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="form-label" htmlFor="f-estado-conservacion">
-              Estado de conservación
-            </label>
-            <select
-              id="f-estado-conservacion"
-              className="glass-input min-w-[10rem]"
-              value={filtros.estadoConservacionId}
-              onChange={(e) => actualizar("estadoConservacionId", e.target.value)}
-            >
-              <option value="">Todos</option>
-              {estadosConservacion?.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.valor}{e.activo ? "" : " (inactivo)"}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")}
+                      onAplicar={(f) => { setFiltros(f); setPagina(1); }} />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-linea">
-          <fieldset className="flex items-center gap-3 text-sm">
-            <legend className="form-label !mb-0 mr-1">Combinar filtros</legend>
-            <label className="flex items-center gap-1.5">
-              <input type="radio" name="modo" checked={modo === "AND"} onChange={() => setModo("AND")} /> Y (AND)
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input type="radio" name="modo" checked={modo === "OR"} onChange={() => setModo("OR")} /> O (OR)
-            </label>
-          </fieldset>
-          <output className="text-sm text-gris-2">
-            {resultados.isFetching ? "Buscando..." : `${resultados.data?.length ?? 0} resultado(s)`}
-          </output>
-          <div className="flex gap-2">
-            <button type="button" onClick={exportarExcel} disabled={exportando} className="btn-glass !py-1.5 !px-3 !text-sm">
-              <FileDown size={16} aria-hidden="true" /> Exportar Excel
-            </button>
-            <button type="button" onClick={() => window.print()} className="btn-glass !py-1.5 !px-3 !text-sm">
-              <Printer size={16} aria-hidden="true" /> Exportar PDF
-            </button>
-          </div>
-        </div>
+      <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
+        {pestanas.map(([clave, etiqueta]) => (
+          <button key={clave} role="tab" aria-selected={pestana === clave} onClick={() => { setPestana(clave); setMensaje(""); }}
+                  className={`px-4 py-2 -mb-px text-sm font-semibold border-b-2 transition ${
+                    pestana === clave ? "border-rojo text-azul" : "border-transparent text-gris-2 hover:text-azul"}`}>
+            {etiqueta}
+          </button>
+        ))}
       </div>
 
-      <div className="glass-panel overflow-hidden print:hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave">
-              <tr>
-                <th className="px-5 py-3 font-semibold">Denominación</th>
-                <th className="px-5 py-3 font-semibold">Colección</th>
-                <th className="px-5 py-3 font-semibold">Autor</th>
-                <th className="px-5 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linea">
-              {resultados.data?.map((p) => (
-                <tr key={p.id} className="hover:bg-fondo-suave transition">
-                  <td className="px-5 py-3 font-medium text-texto">{p.denominacion || "(sin denominación)"}</td>
-                  <td className="px-5 py-3 text-gris-2">{nombreColeccion(p.coleccionId)}</td>
-                  <td className="px-5 py-3 text-gris-2">{p.autor || "—"}</td>
-                  <td className="px-5 py-3 text-right">
-                    <Link to={`/coleccion/${p.id}`} className="btn-danger-text">
-                      Ver ficha →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {resultados.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-5 py-4 text-gris-2">
-                    No se encontraron piezas aprobadas con estos criterios.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex flex-wrap gap-2 items-center print:hidden">
+        {puede("reportes.exportar") && (
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando}
+                  onClick={() => pestana === "busqueda"
+                    ? exportar("/exportaciones/piezas.xlsx", `piezas_${hoy}.xlsx`)
+                    : exportar(`/exportaciones/reportes/${pestana}.xlsx`, `${pestana}_${hoy}.xlsx`)}>
+            <FileDown size={16} aria-hidden="true" /> Exportar Excel
+          </button>
+        )}
+        {pestana !== "busqueda" && (
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" onClick={() => window.print()}>
+            <Printer size={16} aria-hidden="true" /> Imprimir o guardar como PDF
+          </button>
+        )}
+        {puede("reportes.exportar_total") && (
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando}
+                  title="Todas las piezas con todos los campos que tu rol ve; no aplica los filtros (RF-49)"
+                  onClick={() => exportar("/exportaciones/catalogo-completo.xlsx", `catalogo_completo_${hoy}.xlsx`, false)}>
+            <Database size={16} aria-hidden="true" /> Exportar catálogo completo
+          </button>
+        )}
+        {descargando && <span className="text-sm text-gris-2">Preparando el archivo…</span>}
+        {mensaje && <p role="status" className="text-sm">{mensaje}</p>}
       </div>
 
-      {/* Vista imprimible (HU-16 "PDF"): el navegador genera el PDF real vía
-          "Guardar como PDF" en el diálogo de impresión — sin librería de
-          generación en el servidor (mismo criterio ya documentado para
-          CSV/Excel real vs. HTML imprimible en el prototipo hermano). */}
-      <div className="hidden print:block">
-        <h1 className="text-azul">Catálogo — Museo "Luis Repetto Málaga"</h1>
-        <table className="w-full text-sm mt-4 border-collapse">
-          <thead>
-            <tr>
-              <th className="text-left border-b border-azul py-1">Denominación</th>
-              <th className="text-left border-b border-azul py-1">Colección</th>
-              <th className="text-left border-b border-azul py-1">Autor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultados.data?.map((p) => (
-              <tr key={p.id}>
-                <td className="py-1">{p.denominacion || "—"}</td>
-                <td className="py-1">{nombreColeccion(p.coleccionId)}</td>
-                <td className="py-1">{p.autor || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div role="tabpanel" className="glass-panel p-4 space-y-4">
+        {pestana === "busqueda" ? (
+          <>
+            <ErrorConsulta error={busqueda.error} />
+            {busqueda.isPending && <p>Buscando…</p>}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave">
+                  <tr><th className="px-4 py-2">Pieza</th><th className="px-4 py-2">Códigos</th><th className="px-4 py-2">Colección</th>
+                    <th className="px-4 py-2">Ficha</th><th className="px-4 py-2">Información</th></tr>
+                </thead>
+                <tbody className="divide-y divide-linea">
+                  {busqueda.data?.items.map((p) => (
+                    <tr key={p.id}>
+                      <td className="px-4 py-2"><Link className="text-azul underline font-semibold" to={`/coleccion/${p.id}`}>{nombreFicha(p)}</Link></td>
+                      <td className="px-4 py-2">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</td>
+                      <td className="px-4 py-2">{p.etiquetas.coleccion_id || "—"}</td>
+                      <td className="px-4 py-2"><ChipEstadoFicha estado={p.estadoFicha} /></td>
+                      <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {busqueda.data?.total === 0 && <p className="p-4 text-gris-2">Ninguna pieza cumple los filtros.</p>}
+            </div>
+            <div className="flex flex-wrap gap-3 items-center">
+              <button className="btn-glass" disabled={pagina === 1 || busqueda.isFetching} onClick={() => setPagina(pagina - 1)}>Anterior</button>
+              <p>Página {pagina} · {busqueda.data?.total ?? 0} piezas</p>
+              <button className="btn-glass" disabled={!busqueda.data || pagina * TAMANO >= busqueda.data.total || busqueda.isFetching}
+                      onClick={() => setPagina(pagina + 1)}>Siguiente</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <ErrorConsulta error={reporte.error} />
+            {reporte.isPending && <p>Generando el reporte…</p>}
+            {reporte.data && (
+              <>
+                <Encabezado reporte={reporte.data} total={totalDe(pestana, reporte.data)} nombres={nombresDeOpciones(opciones)} />
+                <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} />
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
