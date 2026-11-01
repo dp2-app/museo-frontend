@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Bot } from "lucide-react";
+import { ArmarSala } from "../components/f10/ArmarSala";
 import { api, extraerMensajeError } from "../lib/api";
 import type { Coleccion, Pagina, Pieza, ReporteCalidadDatos, SugerenciaIA, ValorVocabulario } from "../types";
 
@@ -127,6 +128,44 @@ function BusquedaAsistida() {
 // búsqueda asistida honesta de arriba. Roles: Administrador, Gestor de
 // colecciones, Catalogador/practicante.
 export function AsistenteIAPage() {
+  const [pestana, setPestana] = useState<"sala" | "calidad">("sala");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2.5">
+        <Bot size={28} className="text-azul" aria-hidden="true" />
+        <div>
+          <h1>Asistente IA</h1>
+          <p className="text-sm text-gris-2 max-w-2xl">
+            La IA propone y una persona decide (DA-006): ninguna sugerencia se aplica ni se guarda en la ficha sin que
+            alguien la acepte explícitamente.
+          </p>
+        </div>
+      </div>
+
+      <div role="tablist" aria-label="Funciones del asistente" className="flex gap-2 border-b border-linea">
+        {([["sala", "Armar sala"], ["calidad", "Calidad de datos"]] as const).map(([clave, etiqueta]) => (
+          <button
+            key={clave}
+            role="tab"
+            aria-selected={pestana === clave}
+            onClick={() => setPestana(clave)}
+            className={`px-4 py-2 -mb-px text-sm font-semibold border-b-2 transition ${
+              pestana === clave ? "border-rojo text-azul" : "border-transparent text-gris-2 hover:text-azul"
+            }`}
+          >
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel">{pestana === "sala" ? <ArmarSala /> : <CalidadDeDatos />}</div>
+    </div>
+  );
+}
+
+// RIA-01/RIA-02 y KPIs de calidad de datos, con el botón "Fusionar" (HU-21) y la búsqueda asistida.
+function CalidadDeDatos() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
@@ -184,16 +223,9 @@ export function AsistenteIAPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2.5">
-        <Bot size={28} className="text-azul" aria-hidden="true" />
-        <div>
-          <h1>Asistente IA</h1>
-          <p className="text-sm text-gris-2 max-w-2xl">
-            Un solo lugar para ver qué tan completo está el catálogo y ejecutar RIA-01/RIA-02 sobre él. RN-009: ninguna
-            sugerencia se aplica sin que un usuario de catalogación la acepte explícitamente.
-          </p>
-        </div>
-      </div>
+      <p className="text-sm text-gris-2 max-w-2xl">
+        Qué tan completo está el catálogo y la cola de RIA-01/RIA-02 para revisar.
+      </p>
 
       {reporte && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -222,7 +254,7 @@ export function AsistenteIAPage() {
           </button>
           {reporte?.ria01Configurado === false && (
             <p className="text-xs text-gris-2 mt-1.5">
-              RIA-01 no está configurado (falta GEMMA_API_KEY/GEMMA_API_URL en el backend).
+              RIA-01 no está configurado (falta GROQ_API_KEY en el backend).
             </p>
           )}
         </div>

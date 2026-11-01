@@ -45,11 +45,12 @@ src/
 
 ## Notas de diseño
 
+F2 y F6 ya usan el contrato v3. Ver [recorridos y pruebas](docs/f2-f6/README.md). Rutas vigentes: `/coleccion`, `/coleccion/:id` y `/ubicacion-y-movimientos`; las antiguas rutas de piezas redirigen a Colección.
+
 La importación usa la API de datos `/datos/v1`. La [guía de importación y sus validaciones](docs/importacion/README.md) explica la configuración del formato habitual, la revisión y la aprobación de ambas hojas del inventario.
 
 - El wire format de la API es camelCase (ver `app/schemas/base.py` en el backend);
   los tipos en `src/types/index.ts` lo reflejan exactamente.
-- Las fotografías se referencian por URL (ya subida a Cloudinary); esta interfaz no
-  sube el binario directamente todavía — es un punto de extensión pendiente.
+- Las fotografías se suben desde el navegador cuando Cloudinary está configurado o se registran por URL autorizada. Documentos por URL. Ver límites de validación local en la guía F2/F6.
 - `AuthContext` decodifica el JWT en el cliente solo para leer `rol` y expiración;
   la autorización real siempre se valida en el backend.
