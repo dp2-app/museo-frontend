@@ -84,3 +84,8 @@ cambien en Importación. Las etiquetas se leen de `GET /datos/v1/importacion/reg
 Verificado contra el backend local: tras cargar `lote2.xlsx` el detalle lista las cuatro reglas y «similitud mínima 0.60», sin errores 4xx.
 
 ![Reglas aplicadas](evidencias/reglas-aplicadas.png)
+
+## Tablas en el celular (#49)
+
+Bajo 768 px las tablas del detalle de la carga y de la cola de curación (clase `tabla-apilable` en `src/index.css`) muestran cada fila como tarjeta, con el encabezado de cada celda (`data-label`) y las acciones debajo. A 375 px ningún botón queda fuera de la pantalla (`scrollWidth` = 375); en escritorio la tabla no cambia.
+
