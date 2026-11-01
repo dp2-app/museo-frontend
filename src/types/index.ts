@@ -126,6 +126,12 @@ export interface CargaExcel {
   iniciadaEn: string;
   aprobadaEn: string | null;
   motivoRechazo: string | null;
+  /** Cuándo y quién rechazó o canceló la carga (RF-39, museo-backend#62). */
+  rechazadaEn?: string | null;
+  rechazadaPor?: string | null;
+  usuarioNombre?: string | null;
+  aprobadaPorNombre?: string | null;
+  rechazadaPorNombre?: string | null;
   puedeAprobar?: boolean | null;
   /** Reglas de duplicado con que se concilió la carga (RF-58, RF-39). */
   reglasAplicadas?: { activas?: string[]; similitudMinima?: number };

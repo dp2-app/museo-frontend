@@ -6,6 +6,8 @@ import { CLASIFICACIONES, ESTADOS_CARGA, prepararRevision, subirExcel, validarAr
 import { usePermisos } from "../hooks/usePermisos";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
 
+const fecha = (iso: string) => new Date(iso).toLocaleString("es-PE");
+
 interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; curacionPendiente?: boolean; }
 
 export function CargaDetailPage() {
@@ -99,6 +101,9 @@ export function CargaDetailPage() {
     <header><Link to="/importacion" className="text-clay-700 underline">Volver a importación</Link>
       <h1 className="mt-2 break-words">{carga.archivoNombre}</h1><p>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></p>
       <p>{carga.totalFilas} filas · {carga.filasConError} con errores · {carga.filasRechazadas} rechazadas</p>
+      <p data-bitacora-personas>Cargada{carga.usuarioNombre && <> por {carga.usuarioNombre}</>} el {fecha(carga.iniciadaEn)}
+        {carga.aprobadaEn && <> · aprobada{carga.aprobadaPorNombre && <> por {carga.aprobadaPorNombre}</>} el {fecha(carga.aprobadaEn)}</>}
+        {carga.rechazadaEn && <> · {carga.estado === "cancelada" ? "cancelada" : "rechazada"}{carga.rechazadaPorNombre && <> por {carga.rechazadaPorNombre}</>} el {fecha(carga.rechazadaEn)}</>}</p>
       {carga.motivoRechazo && <p>Motivo: {carga.motivoRechazo}</p>}
       {carga.reglasAplicadas && <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
         {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>}
