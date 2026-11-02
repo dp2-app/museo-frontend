@@ -144,8 +144,10 @@ export function CargaDetailPage() {
         {carga.aprobadaEn && <> · aprobada{carga.aprobadaPorNombre && <> por {carga.aprobadaPorNombre}</>} el {fecha(carga.aprobadaEn)}</>}
         {carga.rechazadaEn && <> · {carga.estado === "cancelada" ? "cancelada" : "rechazada"}{carga.rechazadaPorNombre && <> por {carga.rechazadaPorNombre}</>} el {fecha(carga.rechazadaEn)}</>}</p>
       {carga.motivoRechazo && <p>Motivo: {carga.motivoRechazo}</p>}
-      {carga.reglasAplicadas && <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
-        {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>}
+      {carga.reglasAplicadas && (carga.reglasAplicadas.activas || carga.reglasAplicadas.similitudMinima != null
+        ? <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
+          {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>
+        : <p data-reglas-aplicadas>Esta carga es anterior al registro de reglas de duplicado: no se guardó con qué reglas se concilió.</p>)}
     </header>
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
     {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
