@@ -158,6 +158,7 @@ async function confirmarCierre(accion, motivo) {
       await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Aprobar carga completa' && !b.disabled));
       const respuestaAprobacion = page.waitForResponse(r => r.url() === datos + `/importacion/cargas/${carga.id}/aprobar` && r.request().method() === 'POST', { timeout: 600000 });
       await aprobar.click();
+      await page.getByRole('form', { name: 'Confirmar aprobación de la carga', exact: true }).getByRole('button', { name: 'Confirmar aprobación', exact: true }).click();
       console.log('Aplicando ' + hoja + ': ' + total + ' filas mediante aprobación real');
       const resultado = await respuestaAprobacion;
       assert.equal(resultado.status(), 200, await resultado.text());

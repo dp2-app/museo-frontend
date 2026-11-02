@@ -89,3 +89,19 @@ Verificado contra el backend local: tras cargar `lote2.xlsx` el detalle lista la
 
 Bajo 768 px las tablas del detalle de la carga y de la cola de curación (clase `tabla-apilable` en `src/index.css`) muestran cada fila como tarjeta, con el encabezado de cada celda (`data-label`) y las acciones debajo. A 375 px ningún botón queda fuera de la pantalla (`scrollWidth` = 375); en escritorio la tabla no cambia.
 
+
+## Mejoras del recorrido de revisión (2/11/2026)
+
+Salen de un recorrido completo del flujo con cuatro roles, en escritorio y celular, contra el backend de `main` y una base local (no se probó en el sitio desplegado).
+
+- **Aprobar pide confirmación.** «Aprobar carga completa» abre un resumen (piezas nuevas, actualizaciones, posibles duplicados que se registrarán como piezas distintas, filas rechazadas) y recién «Confirmar aprobación» llama a `POST …/aprobar`.
+- **Un posible duplicado no se revisa a ciegas.** «Marcar revisada» abre, junto a la fila, el aviso de que se registrará como pieza nueva; hay que confirmar con «Registrar como pieza distinta» (la regla D7 de `flujos/F5.md` no cambia).
+- **Aviso de código ausente.** Si ninguna fila mostrada trae código del museo, la pantalla lo dice antes de aprobar (las piezas quedarían pendientes de código I).
+- **Paneles junto a la fila.** Rechazar, corregir y confirmar un duplicado se abren debajo de su fila, uno a la vez, con el número de fila en el título.
+- **Acciones con estado visible.** Las acciones deshabilitadas se ven deshabilitadas; el reporte de errores solo se ofrece si hay errores; los avisos no repiten el nombre del campo y explican que la pieza entra a curación.
+- **Curación.** La cola avisa si la pieza sigue sin denominación y aclara que validar no corrige la ficha.
+- **Historial de cargas.** Muestra fecha, quién cargó y el motivo de una carga rechazada o cancelada; filtro por estado y «Mostrar más».
+- **Reglas.** Los permisos se listan con su descripción; un rol de solo lectura ve todas las casillas deshabilitadas.
+- **Otros.** Singular y plural en los contadores (`src/lib/texto.ts`), selector de archivo en español, texto secundario y botón principal con contraste AA (axe sin hallazgos en las tres pantallas) y una nota sobre la diferencia entre rechazar y cancelar una carga.
+
+Pruebas: `npm run test:f5` (actualizada: confirmación de aprobación y aviso de código) pasa 10 de 10; `tests/importacion.e2e.cjs` se actualizó para el paso de confirmación, pero no se ejecutó (necesita los archivos de `IMPORTACION_*`).

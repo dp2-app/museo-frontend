@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { usePermisos } from "../hooks/usePermisos";
+import { contar } from "../lib/texto";
 import type { CuracionImportacion } from "../types";
 
 interface PaginaCuracion { items: CuracionImportacion[]; total: number; }
@@ -37,7 +38,7 @@ export function CuracionImportacionPage() {
   const paginas = Math.max(1, Math.ceil(total / TAMANO));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 f5-importacion">
       <header>
         <Link to="/importacion" className="text-azul underline">Volver a importación</Link>
         <h1 className="font-display text-2xl font-bold mt-2">Cola de curación</h1>
@@ -45,7 +46,7 @@ export function CuracionImportacionPage() {
       </header>
 
       <div className="glass-panel p-4 flex flex-wrap items-end gap-4">
-        <label className="form-label">Estado
+        <label className="form-label text-texto">Estado
           <select className="glass-input block mt-1" value={estado}
             onChange={(e) => { setEstado(e.target.value as typeof estado); setPagina(1); }}>
             <option value="pendiente">Pendientes</option>
@@ -53,7 +54,7 @@ export function CuracionImportacionPage() {
             <option value="">Todos</option>
           </select>
         </label>
-        <p className="text-sm" aria-live="polite">{cola.isSuccess ? `${total} registro(s)` : ""}</p>
+        <p className="text-sm" aria-live="polite">{cola.isSuccess ? contar(total, "registro", "registros") : ""}</p>
       </div>
 
       {aviso && <p role="status">{aviso}</p>}
@@ -86,6 +87,7 @@ export function CuracionImportacionPage() {
                   <td className="p-4" data-label="Motivos"><ul className="list-disc pl-4">{c.motivos.map((m) => <li key={m.codigo}>{m.mensaje}</li>)}</ul></td>
                   <td className="p-4" data-label="Estado">
                     {c.estado === "pendiente" ? "Pendiente" : "Validado"}
+                    {c.estado === "pendiente" && !c.piezaDenominacion && <p className="mt-2 font-semibold">La pieza sigue sin denominación: ábrela y complétala antes de validar.</p>}
                     {c.validadoEn && <p>{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
                     {c.nota && <p>{c.nota}</p>}
                   </td>
@@ -96,7 +98,8 @@ export function CuracionImportacionPage() {
                       )}
                       {validando === c.id && (
                         <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); setError(""); validar.mutate(c.id); }}>
-                          <label className="form-label">Nota (opcional)
+                          <p className="text-sm">Validar deja constancia de que revisaste este registro; no corrige la ficha de la pieza.</p>
+                          <label className="form-label text-texto">Nota (opcional)
                             <textarea className="glass-input block w-full mt-1" rows={2} value={nota} onChange={(e) => setNota(e.target.value)} />
                           </label>
                           <div className="flex gap-3">

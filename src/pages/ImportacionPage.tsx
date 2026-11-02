@@ -5,6 +5,7 @@ import { Upload } from "lucide-react";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { detectarExcel, ESTADOS_CARGA, subirExcel, validarArchivoExcel, valorLegible } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
+import { contar } from "../lib/texto";
 import { ReglasImportacion } from "../components/f5/ReglasImportacion";
 import type { CargaExcel, DeteccionExcel, DestinoImportacion, PlantillaMapeo } from "../types";
 
@@ -18,6 +19,8 @@ export function ImportacionPage() {
   const [deteccion, setDeteccion] = useState<DeteccionExcel | null>(null);
   const [plantilla, setPlantilla] = useState("");
   const solicitud = useRef(0);
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [visibles, setVisibles] = useState(20);
   const puedeCargar = permisos.puede("importacion.cargar");
   const puedeVer = permisos.puede("importacion.ver");
   const cargas = useQuery({ queryKey: ["cargas"], enabled: puedeVer,
@@ -25,6 +28,7 @@ export function ImportacionPage() {
   const plantillas = useQuery({ queryKey: ["plantillas-mapeo"], enabled: puedeVer,
     queryFn: async () => (await datosApi.get<PlantillaMapeo[]>("/importacion/plantillas")).data });
 
+  const filtradas = (cargas.data ?? []).filter((c) => !filtroEstado || c.estado === filtroEstado);
   const detectar = useMutation({
     mutationFn: ({ file, sheet }: { file: File; sheet?: string; numero: number }) => detectarExcel(file, sheet),
     onSuccess: (data, variables) => {
@@ -50,17 +54,21 @@ export function ImportacionPage() {
     if (archivo) detectar.mutate({ file: archivo, sheet, numero: ++solicitud.current });
   }
 
-  return <div className="space-y-6">
+  return <div className="space-y-6 f5-importacion">
     <div className="flex items-center gap-3"><Upload size={28} aria-hidden="true" /><div>
-      <h1>Importación</h1><p className="text-sm text-gris-2">Carga una hoja del inventario, revisa sus filas y confirma qué debe registrarse.</p>
+      <h1>Importación</h1><p className="text-sm text-texto">Carga una hoja del inventario, revisa sus filas y confirma qué debe registrarse.</p>
     </div></div>
     {puedeVer && permisos.puede("piezas.ver") && <p><Link to="/importacion/curacion" className="underline">Ver la cola de curación</Link></p>}
 
     {puedeCargar && <form onSubmit={(e: FormEvent) => { e.preventDefault(); setError(null); subir.mutate(); }} className="glass-panel p-5 space-y-4">
       <div><label htmlFor="importacion-archivo" className="block font-semibold mb-1">Archivo Excel</label>
-        <input id="importacion-archivo" type="file" accept=".xlsx" required disabled={subir.isPending}
-          onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className="block max-w-full" />
-        <p className="text-sm text-ink-500 mt-1">Formato .xlsx sin contraseña, hasta 25 MB. Cada carga corresponde a una hoja.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input id="importacion-archivo" type="file" accept=".xlsx" required disabled={subir.isPending}
+            onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className="sr-only peer" />
+          <label htmlFor="importacion-archivo" className="btn-glass cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-foco peer-disabled:opacity-40 peer-disabled:cursor-not-allowed">Elegir archivo</label>
+          <span className="break-all" aria-live="polite">{archivo ? archivo.name : "Ningún archivo seleccionado"}</span>
+        </div>
+        <p className="text-sm text-texto mt-1">Formato .xlsx sin contraseña, hasta 25 MB. Cada carga corresponde a una hoja.</p>
       </div>
       {detectar.isPending && <p role="status">Leyendo las hojas del archivo…</p>}
       {deteccion && <div className="grid gap-4 md:grid-cols-2">
@@ -68,14 +76,14 @@ export function ImportacionPage() {
           <select id="importacion-hoja" value={hoja} onChange={(e) => seleccionarHoja(e.target.value)} disabled={subir.isPending || detectar.isPending} className="glass-input w-full">
             {deteccion.hojas.map((name) => <option key={name}>{name}</option>)}
           </select>
-          <p className="text-sm text-ink-500 mt-1">Selecciona Inventario o AJB para el archivo preparado. Las hojas de consulta se conservan sin importarlas como piezas.</p>
+          <p className="text-sm text-texto mt-1">Selecciona Inventario o AJB para el archivo preparado. Las hojas de consulta se conservan sin importarlas como piezas.</p>
         </div>
         <div><label htmlFor="importacion-formato" className="block font-semibold mb-1">Formato de columnas</label>
           <select id="importacion-formato" value={plantilla} onChange={(e) => setPlantilla(e.target.value)} disabled={subir.isPending || plantillas.isLoading} className="glass-input w-full">
             <option value="">Reconocer encabezados automáticamente</option>
             {plantillas.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
-          <p className="text-sm text-ink-500 mt-1">Para el Excel preparado, elige «Inventario MATP (formato habitual)».</p>
+          <p className="text-sm text-texto mt-1">Para el Excel preparado, elige «Inventario MATP (formato habitual)».</p>
         </div>
       </div>}
       {deteccion && !detectar.isPending && <div className="text-sm space-y-2">
@@ -103,15 +111,23 @@ export function ImportacionPage() {
       <h2 className="section-title">Historial de cargas</h2>
       {cargas.isLoading && <p role="status">Cargando historial…</p>}
       {cargas.isError && <p role="alert">{extraerMensajeError(cargas.error)}</p>}
+      <label className="block">Filtrar por estado
+        <select className="glass-input block mt-1" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setVisibles(20); }}>
+          <option value="">Todas</option>{Object.entries(ESTADOS_CARGA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select></label>
       <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left">
-        <thead><tr>{["Archivo y hoja", "Estado", "Nuevas", "Actualizaciones", "Posibles duplicados", ""].map((h, i) => <th key={i} className="px-4 py-3">{h}</th>)}</tr></thead>
-        <tbody>{cargas.data?.map((c) => <tr key={c.id} className="border-t border-ink-100">
-          <td className="px-4 py-3">{c.archivoNombre}<span className="block text-ink-500">{c.hojaNombre}</span></td>
-          <td className="px-4 py-3">{ESTADOS_CARGA[c.estado]}</td><td className="px-4 py-3">{c.filasNuevas}</td>
+        <thead><tr>{["Archivo y hoja", "Cargada", "Estado", "Nuevas", "Actualizaciones", "Posibles duplicados", ""].map((h, i) => <th key={i} className="px-4 py-3">{h}</th>)}</tr></thead>
+        <tbody>{filtradas.slice(0, visibles).map((c) => <tr key={c.id} className="border-t border-ink-100">
+          <td className="px-4 py-3">{c.archivoNombre}<span className="block text-texto">{c.hojaNombre}</span></td>
+          <td className="px-4 py-3">{new Date(c.iniciadaEn).toLocaleString("es-PE")}{c.usuarioNombre && <span className="block text-texto">por {c.usuarioNombre}</span>}</td>
+          <td className="px-4 py-3">{ESTADOS_CARGA[c.estado]}{(c.estado === "rechazada" || c.estado === "cancelada") && c.motivoRechazo && <span className="block text-texto">Motivo: {c.motivoRechazo}</span>}</td><td className="px-4 py-3">{c.filasNuevas}</td>
           <td className="px-4 py-3">{c.filasActualizacion}</td><td className="px-4 py-3">{c.filasDuplicadas}</td>
           <td className="px-4 py-3"><Link to={`/importacion/${c.id}`} className="text-clay-700 underline">Revisar carga</Link></td>
         </tr>)}</tbody>
-      </table>{cargas.data?.length === 0 && <p className="p-4">Aún no hay cargas.</p>}</div>
+      </table>{cargas.data?.length === 0 && <p className="p-4">Aún no hay cargas.</p>}
+        {cargas.data && cargas.data.length > 0 && filtradas.length === 0 && <p className="p-4">No hay cargas con ese estado.</p>}</div>
+      {filtradas.length > visibles && <div className="flex items-center gap-3"><p>Mostrando {visibles} de {contar(filtradas.length, "carga", "cargas")}.</p>
+        <button type="button" className="btn-glass" onClick={() => setVisibles((v) => v + 20)}>Mostrar más</button></div>}
     </section>}
   </div>;
 }
