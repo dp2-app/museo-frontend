@@ -220,6 +220,45 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
     assert.ok(JSON.stringify(auditoria).includes('Se tipeó mal'), 'La corrección queda en la auditoría con su motivo');
     ok('Corregir el I por excepción exige motivo de 10+ caracteres y queda guardado y auditado (RF-05, T08, T09)');
 
+    // ------------------------------------------------------------ Ficha de la pieza con los componentes de F1 (H01, front#43)
+    const enFicha = await pieza('Ficha ' + sfx);
+    await page.goto(web + '/coleccion/' + enFicha.id);
+    const agregar = page.getByRole('form', { name: 'Agregar código', exact: true });
+    await agregar.getByLabel('Tipo de código', { exact: true }).selectOption(tipoI.id);
+    await agregar.getByLabel('Valor', { exact: true }).fill(conI.replace('-', '0'));  // I012345: el mismo I sin separador (#91)
+    await agregar.locator('[data-codigo="duplicado"]').waitFor();
+    assert.ok(await agregar.getByRole('button', { name: 'Agregar código', exact: true }).isDisabled());
+    const nuevoI = `I-${10000 + Math.floor(Math.random() * 80000)}`;
+    await agregar.getByLabel('Valor', { exact: true }).fill(nuevoI);
+    await agregar.getByText('Código válido', { exact: false }).waitFor();
+    await agregar.getByRole('button', { name: 'Agregar código', exact: true }).click();
+    await page.getByRole('button', { name: 'Corregir ' + nuevoI, exact: true }).click();
+    const corregirFicha = page.getByRole('form', { name: 'Corregir ' + tipoI.nombre });
+    const corregidoFicha = nuevoI.replace(/\d+$/, (n) => String(Number(n) + 1));
+    await corregirFicha.getByLabel('Valor corregido', { exact: true }).fill(corregidoFicha);
+    await corregirFicha.getByLabel('Motivo de la corrección', { exact: true }).fill('Corrección desde la ficha de la pieza');
+    await corregirFicha.getByText('Código válido', { exact: false }).waitFor();
+    await corregirFicha.getByRole('button', { name: 'Guardar corrección', exact: true }).click();
+    await page.getByRole('button', { name: 'Corregir ' + corregidoFicha, exact: true }).waitFor();
+    // D5: con el I vigente no pasa a comodato; el error del backend se muestra junto al formulario
+    const regimenFicha = page.getByRole('form', { name: 'Cambiar régimen de tenencia', exact: true });
+    await regimenFicha.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    await regimenFicha.getByLabel('Contraparte', { exact: true }).selectOption(prop.id);
+    await regimenFicha.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+    await regimenFicha.getByRole('alert').waitFor();
+    await shot(page, '11-ficha-codigos-y-tenencia');
+    assert.notEqual((await api(`/piezas/${enFicha.id}`)).tenenciaVigente?.regimen, 'comodato');
+    // Sin I, la misma pieza nueva sí pasa a comodato (RF-09)
+    const sinIFicha = await pieza('Ficha sin I ' + sfx);
+    await page.goto(web + '/coleccion/' + sinIFicha.id);
+    const regimenSinI = page.getByRole('form', { name: 'Cambiar régimen de tenencia', exact: true });
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    await regimenSinI.getByLabel('Contraparte', { exact: true }).selectOption(prop.id);
+    await regimenSinI.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+    await page.getByText('Tenencia: ' + comodato.nombre, { exact: false }).waitFor();
+    assert.equal((await api(`/piezas/${sinIFicha.id}`)).tenenciaVigente.regimen, 'comodato');
+    ok('Ficha: valida el I en vivo (también sin separador), lo agrega, lo corrige por excepción y cambia el régimen respetando D5 (H01, RF-04, RF-05, RF-09)');
+
     // ------------------------------------------------------------ Permisos: catalogador y consulta (RNF-08)
     for (const quien of ['catalogador', 'consulta']) {
       const sesion = await api('/auth/sesion', 'GET', undefined, 200, quien);

@@ -1,9 +1,16 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { ubicacionesPlanas, type Ficha, type Ubicacion } from "../lib/ficha";
 import { usePermisos } from "../hooks/usePermisos";
 import { Aviso, ErrorConsulta } from "./FichaComun";
-import { useOperacion, useRecurso } from "../lib/recursosFicha";
+import { useRecurso } from "../lib/recursosFicha";
+import { useConsultaF0 } from "../hooks/useConsultaF0";
+import { puedeCorregir } from "../lib/f1";
+import type { Codigo } from "../types/f1";
+import { AgregarCodigo } from "./f1/CampoCodigo";
+import { CorregirCodigo } from "./f1/CorregirCodigo";
+import { CambiarRegimen } from "./f1/CambiarRegimen";
 
 interface Tipo { id: string; clave: string; nombre: string; }
 interface Regimen extends Tipo { ingresaInventarioPermanente: boolean; requiereContraparte: boolean; requiereFechas: boolean; }
@@ -35,12 +42,24 @@ export function AltaComplementos({ onChange }: { onChange: (v: Complementos) => 
     {veUbicacion && <label className="block">Ubicación inicial<select aria-label="Ubicación inicial" className="glass-input" value={datos.ubicacionInicialId ?? ""} onChange={(e) => cambiar({ ...datos, ubicacionInicialId: e.target.value || undefined })}><option value="">Sin asignar</option>{ubicacionesPlanas(ubicaciones.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.etiqueta}</option>)}</select></label>}
   </details>;
 }
+/** Identificadores y tenencia de la ficha (H01, museo-frontend#43): usa los componentes de F1 para validar en vivo,
+ * sugerir el correlativo, corregir por excepción (RF-05) y cambiar el régimen (RF-09). Las reglas son del backend. */
 export function CodigosFicha({ pieza }: { pieza: Ficha }) {
-  const { puede } = usePermisos(); const tipos = useRecurso<Tipo[]>("tipos-codigo", "/tipos-codigo", puede("codigos.gestionar"));
-  const [tipo, setTipo] = useState(""); const [valor, setValor] = useState(""); const op = useOperacion();
-  return <div className="space-y-3"><h3 className="font-semibold">Identificadores</h3><ul>{pieza.codigos.map((c) => <li key={c.id}>{c.tipoNombre}: {c.valor}{c.bloqueado && " · protegido"}</li>)}</ul>{pieza.codigos.length === 0 && <p>Sin códigos registrados.</p>}
-    {!puede("codigos.gestionar") && <button className="btn-glass" disabled title="Tu rol solo puede consultar los códigos">Registrar código</button>}
+  const { puede } = usePermisos(); const cache = useQueryClient();
+  const codigos = useConsultaF0({ queryKey: ["f1", "codigos-pieza", pieza.id], queryFn: async () => (await api.get<Codigo[]>(`/piezas/${pieza.id}/codigos`)).data });
+  const [corrigiendo, setCorrigiendo] = useState<string | null>(null); const [mensaje, setMensaje] = useState("");
+  const listo = async (texto: string) => { setMensaje(texto); setCorrigiendo(null); await cache.invalidateQueries(); };
+  const lista = codigos.data ?? pieza.codigos.map((c) => ({ ...c, tipoCodigoId: "", valorNormalizado: "" }) as Codigo);
+  return <div className="space-y-3"><h3 className="font-semibold">Identificadores</h3>
+    <ul className="space-y-2">{lista.map((c) => <li key={c.id}><div className="flex flex-wrap items-center gap-2">
+      <span>{c.tipoNombre}: <span className="font-mono">{c.valor}</span>{c.bloqueado && " · protegido"}</span>
+      {codigos.data && puedeCorregir(c, puede) && corrigiendo !== c.id && <button type="button" className="btn-glass" onClick={() => { setMensaje(""); setCorrigiendo(c.id); }}>Corregir {c.valor}</button>}</div>
+      {corrigiendo === c.id && <CorregirCodigo piezaId={pieza.id} codigo={c} alCancelar={() => setCorrigiendo(null)} alTerminar={() => listo("Código corregido.")} />}</li>)}</ul>
+    {lista.length === 0 && <p>Sin códigos registrados.</p>}
+    {!puede("codigos.gestionar") && <button className="btn-glass" disabled title="Tu rol solo puede consultar los códigos">Agregar código</button>}
+    <Aviso mensaje={mensaje} /><ErrorConsulta error={codigos.error} />
+    <AgregarCodigo piezaId={pieza.id} alGuardar={() => listo("Código agregado.")} />
     <p>Tenencia: {pieza.tenenciaVigente?.regimenNombre || "Sin registro"}{pieza.tenenciaVigente?.restringidoPublicacion && " · publicación restringida"}</p>
-    <Aviso mensaje={op.mensaje} /><ErrorConsulta error={tipos.error} />{puede("codigos.gestionar") && <form className="flex flex-wrap gap-3" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => { await api.post(`/piezas/${pieza.id}/codigos`, { tipoCodigoId: tipo, valor: valor.trim() }); setValor(""); }); }}><label>Tipo de identificador<select aria-label="Tipo de identificador" className="glass-input" required value={tipo} onChange={(e) => setTipo(e.target.value)}><option value="">Seleccionar…</option>{tipos.data?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></label><label>Nuevo código<input className="glass-input" required value={valor} onChange={(e) => setValor(e.target.value)} /></label><button className="btn-glass" disabled={op.pendiente || !valor.trim()}>Registrar código</button></form>}
+    <CambiarRegimen piezaId={pieza.id} regimenActual={pieza.tenenciaVigente?.regimen} alGuardar={() => listo("Régimen de tenencia actualizado.")} />
   </div>;
 }

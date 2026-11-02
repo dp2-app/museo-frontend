@@ -30,6 +30,8 @@ La ficha de la pieza es de F2 ([frontend #17](https://github.com/dp2-app/museo-f
 
 Los tipos están en `src/types/f1.ts` (archivo propio, para no chocar con los de otros flujos).
 
+**Montados en la ficha (01/11/2026, H01, museo-frontend#43).** La sección *Identificadores* de la ficha (`CodigosFicha`, en `components/IdentificacionFicha.tsx`) ya no hace un `POST` directo. Lista los códigos con `GET /piezas/{id}/codigos`, agrega con `AgregarCodigo`, corrige con `CorregirCodigo` (un botón *Corregir &lt;valor&gt;* por código, según `puedeCorregir`) y cambia el régimen con `CambiarRegimen` (`components/f1/CambiarRegimen.tsx`, RF-09: `POST /piezas/{id}/tenencias`). Si la pieza tiene un código que el régimen nuevo no admite, el backend responde 409 `regimen_incompatible` (D5) y el error se muestra en el formulario. El alta (`AltaComplementos`) sigue igual. `test:f1` agrega la comprobación 17.
+
 **Validar una corrección.** `validar_codigos` no sabe qué código se corrige: con `piezaId` respondería «la pieza ya tiene un código de ese tipo». `CorregirCodigo` valida sin pieza ni régimen, igual que `corregir_codigo` del backend (solo formato y unicidad). Si solo cambia la forma de escribir el mismo código (`I-1` → `I-0001`), el normalizado coincide y no lo trata como duplicado.
 
 ## Pruebas · 21/10/2026
