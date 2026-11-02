@@ -31,7 +31,10 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, onAplic
       {seleccion("estadoPiezaId", "Estado de la pieza", deLista(opciones.estadoPieza))}
       {seleccion("estadoConservacionId", "Estado de conservación", deLista(opciones.estadoConservacion))}
       {seleccion("materialId", "Material", deLista(opciones.material))}
+      {seleccion("tipoBienId", "Tipo de bien", deLista(opciones.tipoBien))}
+      {seleccion("clasificacionId", "Clasificación", deLista(opciones.clasificacion))}
       {texto("autor", "Autor")}
+      {texto("procedencia", "Procedencia")}
       {texto("epoca", "Época")}
       {veNoAprobadas && seleccion("estadoFicha", "Estado de ficha", [
         { id: "borrador", nombre: "Borrador" }, { id: "en_revision", nombre: "En revisión" },

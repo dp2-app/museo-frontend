@@ -5,7 +5,8 @@ import { datosApi } from "./api";
 
 export interface FiltrosConsulta {
   q?: string; codigo?: string; coleccionId?: string; ubicacionId?: string; estadoConservacionId?: string;
-  estadoPiezaId?: string; materialId?: string; autor?: string; epoca?: string; estadoFicha?: string; soloIncompletas?: boolean;
+  estadoPiezaId?: string; materialId?: string; tipoBienId?: string; clasificacionId?: string; autor?: string; procedencia?: string;
+  epoca?: string; estadoFicha?: string; soloIncompletas?: boolean;
 }
 
 export interface EncabezadoReporte {
@@ -32,12 +33,14 @@ export type ClaveReporte = "inventario" | "por-estado" | "por-ubicacion" | "info
 /** Campo de la ficha que protege cada filtro: si el rol no lo ve, el backend rechaza el filtro (403). */
 export const CAMPO_DE_FILTRO: Partial<Record<keyof FiltrosConsulta, string>> = {
   coleccionId: "coleccion_id", ubicacionId: "ubicacion_actual_id", estadoConservacionId: "estado_conservacion_id",
-  estadoPiezaId: "estado_pieza_id", materialId: "materiales", autor: "autor", epoca: "epoca_texto",
+  estadoPiezaId: "estado_pieza_id", materialId: "materiales", tipoBienId: "tipo_bien_id", clasificacionId: "clasificacion_id",
+  autor: "autor", procedencia: "procedencia", epoca: "epoca_texto",
 };
 
 export const ETIQUETA_FILTRO: Record<string, string> = {
   q: "Texto", codigo: "Código", coleccionId: "Colección", ubicacionId: "Ubicación", estadoConservacionId: "Estado de conservación",
-  estadoPiezaId: "Estado de la pieza", materialId: "Material", autor: "Autor", epoca: "Época", estadoFicha: "Estado de ficha",
+  estadoPiezaId: "Estado de la pieza", materialId: "Material", tipoBienId: "Tipo de bien", clasificacionId: "Clasificación",
+  autor: "Autor", procedencia: "Procedencia", epoca: "Época", estadoFicha: "Estado de ficha",
   soloIncompletas: "Solo incompletas",
 };
 
