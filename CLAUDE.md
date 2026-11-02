@@ -242,6 +242,10 @@ Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`); l
 - Con `ia.ejecutar_lote`, arriba aparece `EstadoIndiceSalas`: piezas con búsqueda por significado al día, pendientes, uso de hoy contra el cupo diario (con el 7 % reservado para consultas), última y próxima indexación diaria (`GET /ia/salas/indice`, se refresca cada 15 s mientras corre) y el botón «Indexar ahora» (`POST /ia/salas/indexar`).
 - Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-05) y `DA-015`. Verificado con `npm run build`, `npm run lint` (dos advertencias previas) y en el navegador contra el backend local (escritorio y móvil; sin claves de IA solo se probó el estado 503).
 
+## F7 · filtros de Colección (2/11/2026)
+
+La pantalla Colección reutiliza `FiltrosReporte` (F8): texto, código, colección, ubicación, estados, material, tipo de bien, clasificación, autor, procedencia y época. No dupliques otro formulario de filtros: agrega el campo al componente y a `lib/reportes.ts`. Detalle en `docs/f7/README.md`; reglas del texto (sin tildes, por palabras) en `museo-backend/CLAUDE.md`. Prueba: `npm run test:f7`.
+
 ## F2/F6 autorizado y validado (27/10/2026)
 
 El usuario autorizó frontend F2 y F6 completo, con notificación previa a cambios y actualización de conocimiento. Ver docs/f2-f6/README.md y ../Base-de-conocimiento/flujos/F2-F6-implementacion-2026-10-27.md. Colección, ficha y ubicación/movimientos usan v3 (campos/listas/etiquetas, version, baja POST con motivo). No restaurar tipos/endpoints legados en estas páginas. FormularioFicha admite edicion/etiquetasActuales opcionales sin alterar la vista previa. Pruebas de navegador contra API/PostgreSQL local real; no usar producción. N10 sigue abierta. Se conserva acceso a extracción de observaciones F10 sin cambiar su backend.
