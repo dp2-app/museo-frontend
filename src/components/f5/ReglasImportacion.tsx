@@ -13,7 +13,7 @@ const UMBRAL_MAX = 1;
 export function ReglasImportacion() {
   const reglas = useQuery({ queryKey: ["reglas-importacion"],
     queryFn: async () => (await datosApi.get<Reglas>("/importacion/reglas")).data });
-  if (reglas.isPending) return <p className="text-sm text-gris-2">Cargando reglas de importación…</p>;
+  if (reglas.isPending) return <p className="text-sm text-texto">Cargando reglas de importación…</p>;
   if (reglas.isError) return <p role="alert" className="text-sm">No se pudieron cargar las reglas: {extraerMensajeError(reglas.error)}</p>;
   return <FormularioReglas reglas={reglas.data} />;
 }
@@ -44,6 +44,7 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
 
   const numero = Number(umbral);
   const umbralValido = Number.isFinite(numero) && numero >= UMBRAL_MIN && numero <= UMBRAL_MAX;
+  const etiquetas = new Map((permisos.data ?? []).map((p) => [p.clave, p.descripcion ? `${p.descripcion} (${p.clave})` : p.clave]));
   const opcionesAprobador = (permisos.data ?? []).map((p) => p.clave);
   if (aprobador && !opcionesAprobador.includes(aprobador)) opcionesAprobador.push(aprobador);
 
@@ -66,8 +67,8 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
         <legend className="form-label">Criterios para marcar un posible duplicado</legend>
         {reglas.reglas.map((r) => <label key={r.clave} className="flex items-start gap-2">
           <input type="checkbox" className="mt-1" checked={r.configurable ? activas.includes(r.clave) : true}
-            disabled={!r.configurable} onChange={() => alternar(r.clave)} />
-          <span>{r.etiqueta}{!r.configurable && <span className="text-sm text-gris-2"> (siempre activa: es la regla de RF-32)</span>}</span>
+            disabled={!r.configurable || !puedeEditar} onChange={() => alternar(r.clave)} />
+          <span>{r.etiqueta}{!r.configurable && <span className="text-sm text-texto"> (siempre activa: es la regla de RF-32)</span>}</span>
         </label>)}
       </fieldset>
 
@@ -83,18 +84,18 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
         {puedeEditar && puedeListarPermisos
           ? <select id="reglas-aprobador" className="glass-input" value={aprobador} disabled={guardar.isPending || permisos.isPending}
               onChange={(e) => setAprobador(e.target.value)}>
-              {opcionesAprobador.map((clave) => <option key={clave} value={clave}>{clave}</option>)}
+              {opcionesAprobador.map((clave) => <option key={clave} value={clave}>{etiquetas.get(clave) ?? clave}</option>)}
             </select>
           : <p id="reglas-aprobador"><code>{reglas.permisoAprobador}</code></p>}
-        <p className="mt-1 text-sm text-gris-2">Quien tenga este permiso puede aprobar, también una carga que subió. Aprobar sigue siendo una acción explícita (RN-08).</p>
+        <p className="mt-1 text-sm text-texto">Quien tenga este permiso puede aprobar, también una carga que subió. Aprobar sigue siendo una acción explícita (RN-08).</p>
       </div>
 
-      {reglas.requiereAprobacion && <p className="text-sm text-gris-2">Toda carga requiere aprobación antes de tocar el catálogo. Esta condición no se puede apagar.</p>}
+      {reglas.requiereAprobacion && <p className="text-sm text-texto">Toda carga requiere aprobación antes de tocar el catálogo. Esta condición no se puede apagar.</p>}
       {error && <p role="alert" className="text-sm">{error}</p>}
       {aviso && <p role="status" className="text-sm">{aviso}</p>}
       {puedeEditar
         ? <button type="submit" className="btn-primary" disabled={guardar.isPending}>{guardar.isPending ? "Guardando…" : "Guardar reglas"}</button>
-        : <p className="text-sm text-gris-2">Solo quien tenga permiso para configurar la importación puede cambiar estas reglas.</p>}
+        : <p className="text-sm text-texto">Solo quien tenga permiso para configurar la importación puede cambiar estas reglas.</p>}
     </form>
   </details>;
 }

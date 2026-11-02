@@ -94,10 +94,24 @@ async function subir(archivo) {
   ok('RF-40: enviar, quitar y volver a enviar una fila a curación');
   for (let i = 0; i < filas; i++) {
     const b = page.locator('tr[data-fila]').nth(i).getByRole('button', { name: 'Marcar revisada' });
-    if (await b.isEnabled()) { await b.click(); await page.waitForTimeout(500); }
+    if (await b.isEnabled()) {
+      await b.click();
+      // Un posible duplicado pide confirmar que se registrará como pieza distinta
+      const distinta = page.getByRole('button', { name: 'Registrar como pieza distinta' });
+      await distinta.waitFor({ timeout: 1000 }).then(() => distinta.click()).catch(() => {});
+      await page.waitForTimeout(500);
+    }
   }
   await page.waitForFunction(() => document.body.innerText.includes('0 filas pendientes de revisión'), null, { timeout: 15000 });
+  // Aprobar no actúa con un solo clic: muestra primero el resumen de lo que se registrará
+  assert.equal(await page.getByRole('button', { name: 'Descargar reporte de errores' }).count(), 0, 'Sin errores no se ofrece el reporte de errores');
+  await page.getByText(/Ninguna de las filas mostradas trae código del museo/).waitFor();
   await page.getByRole('button', { name: 'Aprobar carga completa' }).click();
+  const confirmacion = page.getByRole('form', { name: 'Confirmar aprobación de la carga' });
+  await confirmacion.getByText('Piezas nuevas que se registrarán:').waitFor();
+  assert.equal((await api('/importacion/cargas/' + carga1)).estado, 'en_revision', 'Antes de confirmar no se toca el catálogo');
+  await shot('02b-confirmar-aprobacion');
+  await confirmacion.getByRole('button', { name: 'Confirmar aprobación' }).click();
   await page.getByText(/aprobada/i).first().waitFor({ timeout: 20000 });
   await shot('03-carga-aprobada');
   assert.equal((await api('/importacion/cargas/' + carga1)).estado, 'aprobada');
