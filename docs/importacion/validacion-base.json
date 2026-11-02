@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "counts": {
+    "piezas": 7759,
+    "codigos_externos": 13835,
+    "piezas_valores_lista": 11698,
+    "tenencias": 7759,
+    "historial_movimientos": 7759,
+    "origenes_importacion": 7759
+  },
+  "batches": [
+    {
+      "hoja_nombre": "AJB",
+      "total_filas": 3379,
+      "estado": "aprobada",
+      "filas_con_error": 0,
+      "filas": 3379,
+      "sin_aprobar": 0,
+      "advertencias": 0
+    },
+    {
+      "hoja_nombre": "Inventario",
+      "total_filas": 4380,
+      "estado": "aprobada",
+      "filas_con_error": 0,
+      "filas": 4380,
+      "sin_aprobar": 0,
+      "advertencias": 0
+    }
+  ],
+  "equivalent_to_previously_validated_import": {
+    "piezas": true,
+    "codigos_externos": true,
+    "piezas_valores_lista": true,
+    "tenencias": true,
+    "historial_movimientos": true,
+    "origenes_importacion": true
+  },
+  "differences": {},
+  "code_counts": {
+    "coleccion": 1546,
+    "pucp": 749,
+    "otro": 1685,
+    "propietario_rn": 2041,
+    "inscripcion_rn": 3434,
+    "I": 4380
+  },
+  "xlsx_sha256": "3f960bdfc365b199ef2aea13afaf0f5f37e39a63ffdde301fe84e8ac648cc15b",
+  "shared_database_modified": false
+}

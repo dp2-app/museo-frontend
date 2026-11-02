@@ -5,11 +5,14 @@ import { RequirePermiso } from "./components/RequirePermiso";
 import { SECCIONES } from "./lib/secciones";
 import { AdministracionPage } from "./pages/AdministracionPage";
 import { AsistenteIAPage } from "./pages/AsistenteIAPage";
+import { CuracionImportacionPage } from "./pages/CuracionImportacionPage";
 import { CargaDetailPage } from "./pages/CargaDetailPage";
 import { ConsultasReportesPage } from "./pages/ConsultasReportesPage";
 import { ImportacionPage } from "./pages/ImportacionPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PanelPrincipalPage } from "./pages/PanelPrincipalPage";
+import { PendientesCodigoIPage } from "./pages/PendientesCodigoIPage";
+import { PrestamosTemporalesPage } from "./pages/PrestamosTemporalesPage";
 import { PiezaDetailPage } from "./pages/PiezaDetailPage";
 import { PiezasPage } from "./pages/PiezasPage";
 import { UbicacionMovimientosPage } from "./pages/UbicacionMovimientosPage";
@@ -37,6 +40,24 @@ export default function App() {
           element={
             <RequirePermiso permisos={permisosDe("/coleccion")}>
               <PiezasPage />
+            </RequirePermiso>
+          }
+        />
+        {/* F1 · pendientes de código I (RF-06). Antes de /coleccion/:piezaId para que no la capture. */}
+        <Route
+          path="/coleccion/pendientes-codigo-i"
+          element={
+            <RequirePermiso permisos={permisosDe("/coleccion")}>
+              <PendientesCodigoIPage />
+            </RequirePermiso>
+          }
+        />
+        {/* F1 · préstamos temporales (RN-04): no son piezas; los ve quien ve tenencias. */}
+        <Route
+          path="/coleccion/prestamos-temporales"
+          element={
+            <RequirePermiso permisos={["tenencias.ver"]}>
+              <PrestamosTemporalesPage />
             </RequirePermiso>
           }
         />
@@ -68,6 +89,14 @@ export default function App() {
           element={
             <RequirePermiso permisos={permisosDe("/importacion")}>
               <ImportacionPage />
+            </RequirePermiso>
+          }
+        />
+        <Route
+          path="/importacion/curacion"
+          element={
+            <RequirePermiso permisos={["importacion.ver"]}>
+              <CuracionImportacionPage />
             </RequirePermiso>
           }
         />

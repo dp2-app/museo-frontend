@@ -6,6 +6,7 @@ import { api, erroresPorCampo } from "../../lib/api";
 import { usePermisos } from "../../hooks/usePermisos";
 import type { CampoFicha, TipoLista } from "../../types";
 import { ErrorCampo, ErrorOperacion, EstadoConsulta, Etiqueta } from "./Comun";
+import { SelectorGrupo } from "./SelectorGrupo";
 
 const vacio = { clave: "", etiqueta: "", tipo: "texto", tipoListaId: "", multivalor: false, obligatorio: false, orden: 0, grupo: "Catalogación", ayuda: "", activo: true };
 const nombresTipo: Record<string, string> = { texto: "Texto", numero: "Número", fecha: "Fecha", lista: "Lista", referencia: "Referencia" };
@@ -33,14 +34,14 @@ export function CamposFicha() {
   const guardar = useMutation({
     mutationFn: async () => seleccionado
       ? api.patch(`/config/campos-ficha/${seleccionado.id}`, {
-          etiqueta: form.etiqueta, obligatorio: form.obligatorio, orden: form.orden, grupo: form.grupo,
+          etiqueta: form.etiqueta, obligatorio: form.obligatorio, orden: form.orden, grupo: form.grupo.trim(),
           ayuda: form.ayuda || null, ...(!seleccionado.esBase ? { activo: form.activo } : {}),
         })
       : api.post("/config/campos-ficha", {
           clave: form.clave, etiqueta: form.etiqueta, tipo: form.tipo,
           tipoListaId: form.tipo === "lista" ? form.tipoListaId || null : null,
           multivalor: form.tipo === "lista" && form.multivalor, obligatorio: form.obligatorio,
-          orden: form.orden, grupo: form.grupo, ayuda: form.ayuda || null,
+          orden: form.orden, grupo: form.grupo.trim(), ayuda: form.ayuda || null,
         }),
     onSuccess: () => {
       setAviso(seleccionado ? "Campo actualizado. La vista previa ya usa esta configuración." : "Campo creado. Ya está disponible en la vista previa.");
@@ -73,7 +74,7 @@ export function CamposFicha() {
         <div><Etiqueta htmlFor="f0-clave">Clave</Etiqueta><input id="f0-clave" className="glass-input" required disabled={Boolean(seleccionado)} value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })} aria-invalid={Boolean(errores.clave)} aria-describedby="f0-clave-ayuda f0-clave-error" /><p id="f0-clave-ayuda" className="mt-1 text-sm">Identificador del campo, por ejemplo: marca_taller.</p><ErrorCampo id="f0-clave-error" mensaje={errores.clave} /></div>
         <div><Etiqueta htmlFor="f0-etiqueta">Etiqueta</Etiqueta><input id="f0-etiqueta" className="glass-input" required value={form.etiqueta} onChange={(e) => setForm({ ...form, etiqueta: e.target.value })} aria-invalid={Boolean(errores.etiqueta)} aria-describedby="f0-etiqueta-error" /><ErrorCampo id="f0-etiqueta-error" mensaje={errores.etiqueta} /></div>
         <div><Etiqueta htmlFor="f0-tipo">Tipo de campo</Etiqueta><select id="f0-tipo" className="glass-input" disabled={Boolean(seleccionado)} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value, multivalor: false, tipoListaId: "" })}>{Object.entries(nombresTipo).filter(([k]) => k !== "referencia" || Boolean(seleccionado)).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select><ErrorCampo id="f0-tipo-error" mensaje={errores.tipo} /></div>
-        <div><Etiqueta htmlFor="f0-grupo">Grupo</Etiqueta><input id="f0-grupo" className="glass-input" required value={form.grupo} onChange={(e) => setForm({ ...form, grupo: e.target.value })} aria-invalid={Boolean(errores.grupo)} /><ErrorCampo id="f0-grupo-error" mensaje={errores.grupo} /></div>
+        <SelectorGrupo key={seleccionado?.id ?? "nuevo"} grupo={form.grupo} grupos={ordenados.map((campo) => campo.grupo)} cambiar={(grupo) => setForm({ ...form, grupo })} error={errores.grupo} />
         <div><Etiqueta htmlFor="f0-orden">Orden</Etiqueta><input id="f0-orden" className="glass-input" type="number" required value={form.orden} onChange={(e) => setForm({ ...form, orden: Number(e.target.value) })} /><ErrorCampo id="f0-orden-error" mensaje={errores.orden} /></div>
         {form.tipo === "lista" && <div><Etiqueta htmlFor="f0-lista">Lista asociada</Etiqueta><select id="f0-lista" className="glass-input" required disabled={Boolean(seleccionado)} value={form.tipoListaId} onChange={(e) => setForm({ ...form, tipoListaId: e.target.value })}><option value="">Seleccionar lista…</option>{listas.data?.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}</select><ErrorCampo id="f0-lista-error" mensaje={errores.tipoListaId} /></div>}
         <div className="md:col-span-2"><Etiqueta htmlFor="f0-ayuda">Texto de ayuda</Etiqueta><textarea id="f0-ayuda" className="glass-input" value={form.ayuda} onChange={(e) => setForm({ ...form, ayuda: e.target.value })} /></div>
