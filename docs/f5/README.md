@@ -105,3 +105,9 @@ Salen de un recorrido completo del flujo con cuatro roles, en escritorio y celul
 - **Otros.** Singular y plural en los contadores (`src/lib/texto.ts`), selector de archivo en español, texto secundario y botón principal con contraste AA (axe sin hallazgos en las tres pantallas) y una nota sobre la diferencia entre rechazar y cancelar una carga.
 
 Pruebas: `npm run test:f5` (actualizada: confirmación de aprobación y aviso de código) pasa 10 de 10; `tests/importacion.e2e.cjs` se actualizó para el paso de confirmación, pero no se ejecutó (necesita los archivos de `IMPORTACION_*`).
+
+## Hallazgos del sitio desplegado (2/11/2026)
+
+- **Enlaces directos:** `vercel.json` manda todas las rutas a `index.html`; sin esa regla recargar o abrir `/login` o `/importacion` daba el 404 de Vercel.
+- **Cargas anteriores a F5:** el detalle dice «Esta carga es anterior al registro de reglas de duplicado» en vez de «ninguna regla activa» cuando la carga no guardó sus reglas.
+- **Servidor dormido:** el login avisa a los 4 s que el servidor está despertando y que puede tardar hasta un minuto.

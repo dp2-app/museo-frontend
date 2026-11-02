@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { extraerMensajeError } from "../lib/api";
@@ -11,6 +11,14 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [lento, setLento] = useState(false);
+
+  // El servidor gratuito se duerme tras un rato sin uso y la primera respuesta puede tardar cerca de un minuto.
+  useEffect(() => {
+    if (!cargando) return;
+    const aviso = setTimeout(() => setLento(true), 4000);
+    return () => clearTimeout(aviso);
+  }, [cargando]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -24,6 +32,7 @@ export function LoginPage() {
       setError(extraerMensajeError(err) || "Email o contraseña incorrectos");
     } finally {
       setCargando(false);
+      setLento(false);
     }
   }
 
@@ -71,6 +80,7 @@ export function LoginPage() {
         <button type="submit" disabled={cargando} className="btn-primary w-full py-2.5">
           {cargando ? "Ingresando..." : "Ingresar"}
         </button>
+        {lento && <p role="status" className="text-sm">El servidor estaba inactivo y está despertando. Puede tardar hasta un minuto: espera sin recargar la página.</p>}
       </form>
     </div>
   );
