@@ -228,7 +228,10 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
       if (!tiene('piezas.ver')) { await p.waitForURL(web + '/'); await p.context().close(); continue; }
       await p.getByRole('heading', { name: 'Pendientes de código I', exact: true }).waitFor();
       await p.getByRole('status').filter({ hasText: /pendiente/ }).first().waitFor();
-      assert.equal(await p.getByRole('button', { name: /^Asignar código I a / }).count() > 0, tiene('codigos.gestionar'), quien + ': asignar según codigos.gestionar');
+      // El botón depende también del catálogo de tipos, que puede llegar después de la lista: se espera, no se cuenta al vuelo.
+      const asignarI = p.getByRole('button', { name: /^Asignar código I a / });
+      if (tiene('codigos.gestionar')) await asignarI.first().waitFor();
+      else assert.equal(await asignarI.count(), 0, quien + ': asignar según codigos.gestionar');
       await p.goto(web + '/coleccion/prestamos-temporales');
       if (tiene('tenencias.ver')) {
         await p.getByRole('heading', { name: 'Préstamos temporales', exact: true }).waitFor();
@@ -237,7 +240,7 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
       } else await p.waitForURL(web + '/');
       await p.goto(web + '/administracion');
       // Mismo criterio que PERMISOS_ADMINISTRACION (src/lib/secciones.ts): Administración es configuración.
-      const admin = ['config.codigos_tenencia', 'config.campos.ver', 'config.listas', 'config.institucion.ver', 'usuarios.ver', 'roles.ver', 'auditoria.ver'].some(tiene);
+      const admin = ['config.codigos_tenencia', 'propietarios.ver', 'config.campos.ver', 'config.listas', 'config.institucion.ver', 'usuarios.ver', 'roles.ver', 'auditoria.ver'].some(tiene);
       if (admin) {
         await p.getByRole('heading', { name: 'Administración', exact: true }).waitFor();
         assert.equal(await p.getByRole('button', { name: 'Tipos de código', exact: true }).count(), tiene('config.codigos_tenencia') ? 1 : 0);

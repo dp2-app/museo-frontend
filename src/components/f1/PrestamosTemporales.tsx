@@ -41,7 +41,7 @@ export function PrestamosTemporales() {
 
   return <section className="space-y-5" aria-label="Préstamos temporales">
     <div className="flex flex-wrap items-start justify-end gap-3">
-      {puede && <button type="button" className="btn-primary" onClick={() => { registrar.reset(); setAviso(""); setAbierto(true); }}><Plus size={20} aria-hidden="true" />Registrar préstamo</button>}
+      {puede && <button type="button" className="btn-primary bg-rojo-oscuro" onClick={() => { registrar.reset(); setAviso(""); setAbierto(true); }}><Plus size={20} aria-hidden="true" />Registrar préstamo</button>}
     </div>
     <p className="f0-notice"><Info size={20} className="shrink-0 mt-0.5" aria-hidden="true" />
       <span>No forman parte del inventario ni reciben código I. Si el bien se queda en el museo, regístralo como pieza y cambia su régimen desde la ficha.</span></p>
@@ -85,7 +85,7 @@ export function PrestamosTemporales() {
       </div>
       <label className="flex items-center gap-2"><input type="checkbox" checked={form.restringidoPublicacion} onChange={(e) => setForm({ ...form, restringidoPublicacion: e.target.checked })} />Restringido para publicación (RN-07)</label>
       <div className="flex flex-wrap gap-3">
-        <button className="btn-primary" disabled={registrar.isPending || !regimen}>{registrar.isPending ? "Registrando…" : "Registrar préstamo"}</button>
+        <button className="btn-primary bg-rojo-oscuro" disabled={registrar.isPending || !regimen}>{registrar.isPending ? "Registrando…" : "Registrar préstamo"}</button>
         <button type="button" className="btn-glass" onClick={() => setAbierto(false)}>Cancelar</button>
       </div>
     </form>}

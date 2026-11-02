@@ -49,7 +49,7 @@ export function CorregirCodigo({ piezaId, codigo, alTerminar, alCancelar }: { pi
       <p id={`${id}-motivo-ayuda`} className="mt-1 text-sm text-texto/70">Mínimo {MOTIVO_MINIMO} caracteres ({motivo.trim().length}/{MOTIVO_MINIMO}).</p>
       <ErrorCampo id={`${id}-motivo-error`} mensaje={campos.motivo} /></div>
     <div className="flex flex-wrap gap-3">
-      <button className="btn-primary" disabled={corregir.isPending || !cambio || motivoCorto || errores.length > 0}>{corregir.isPending ? "Guardando…" : "Guardar corrección"}</button>
+      <button className="btn-primary bg-rojo-oscuro" disabled={corregir.isPending || !cambio || motivoCorto || errores.length > 0}>{corregir.isPending ? "Guardando…" : "Guardar corrección"}</button>
       <button type="button" className="btn-glass" onClick={alCancelar}>Cancelar</button>
     </div>
   </form>;

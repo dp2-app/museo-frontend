@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useConsultaF0 } from "./useConsultaF0";
 import { api } from "../lib/api";
 import { usePermisos } from "./usePermisos";
 import type { ValidacionCodigos } from "../types/f1";
 
-/** Valor con un retraso: evita una validación por tecla. */
+/** Valor con un retraso: evita una validación por tecla. Compara por contenido (JSON), no por identidad:
+ * quien llama arma un objeto nuevo en cada render y eso redibujaba el formulario cada 400 ms (ASZ-H02, #59). */
 function useRetrasado<T>(valor: T, ms = 400) {
-  const [retrasado, setRetrasado] = useState(valor);
-  useEffect(() => { const t = setTimeout(() => setRetrasado(valor), ms); return () => clearTimeout(t); }, [valor, ms]);
-  return retrasado;
+  const clave = JSON.stringify(valor);
+  const [retrasado, setRetrasado] = useState(clave);
+  useEffect(() => { const t = setTimeout(() => setRetrasado(clave), ms); return () => clearTimeout(t); }, [clave, ms]);
+  return useMemo(() => JSON.parse(retrasado) as T, [retrasado]);
 }
 
 /** F1-D1: valida un código sin guardarlo (`POST /codigos/validar`, modo manual) mientras se escribe.
