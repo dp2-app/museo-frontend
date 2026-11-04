@@ -32,6 +32,8 @@ export function ConsultasReportesPage() {
   const [mensaje, setMensaje] = useState("");
   const [descargando, setDescargando] = useState(false);
   const params = parametros(filtros);
+  const verUbicacion = !camposOcultos.includes("ubicacion_actual_id");
+  const verEstado = !camposOcultos.includes("estado_pieza_id");
 
   const pestanas: [Pestana, string][] = [
     ["busqueda", "Búsqueda"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
@@ -65,8 +67,8 @@ export function ConsultasReportesPage() {
         </div>
       </div>
 
-      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")}
-                      onAplicar={(f) => { setFiltros(f); setPagina(1); }} />
+      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
+                      onAplicar={(f) => { setFiltros(f); setPagina(1); setMensaje(""); }} />
 
       <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
         {pestanas.map(([clave, etiqueta]) => (
@@ -112,6 +114,7 @@ export function ConsultasReportesPage() {
               <table className="w-full text-sm text-left">
                 <thead className="text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave">
                   <tr><th className="px-4 py-2">Pieza</th><th className="px-4 py-2">Códigos</th><th className="px-4 py-2">Colección</th>
+                    {verUbicacion && <th className="px-4 py-2">Ubicación</th>}{verEstado && <th className="px-4 py-2">Estado</th>}
                     <th className="px-4 py-2">Ficha</th><th className="px-4 py-2">Información</th></tr>
                 </thead>
                 <tbody className="divide-y divide-linea">
@@ -120,6 +123,8 @@ export function ConsultasReportesPage() {
                       <td className="px-4 py-2"><Link className="text-azul underline font-semibold" to={`/coleccion/${p.id}`}>{nombreFicha(p)}</Link></td>
                       <td className="px-4 py-2">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</td>
                       <td className="px-4 py-2">{p.etiquetas.coleccion_id || "—"}</td>
+                      {verUbicacion && <td className="px-4 py-2">{p.etiquetas.ubicacion_actual_id || "—"}</td>}
+                      {verEstado && <td className="px-4 py-2">{p.etiquetas.estado_pieza_id || "—"}</td>}
                       <td className="px-4 py-2"><ChipEstadoFicha estado={p.estadoFicha} /></td>
                       <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>
                     </tr>
