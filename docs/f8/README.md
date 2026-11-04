@@ -17,6 +17,14 @@ Pantalla `/consultas-y-reportes` (`src/pages/ConsultasReportesPage.tsx`) sobre e
 - Se retiró la combinación «O (OR)» del cliente: hacía varias consultas con parámetros legados que ya no existen. El backend
   combina los filtros con Y (RF-43).
 
+## Indicadores (P37, 04/11/2026)
+
+Pestaña «Indicadores»: fichas completas, con fotografía, con ubicación, con código I, fichas en revisión y piezas en mal estado de conservación,
+cada una con el porcentaje (o la cantidad), el cambio frente a la línea base y a la semana anterior, la decisión que apoya y el enlace
+«Ver piezas». La tabla por colección enlaza, en cada porcentaje, a las piezas de esa colección a las que les falta lo que mide la columna.
+Todo viene de `GET /reportes/indicadores`; el frontend solo resta dos porcentajes ya calculados para mostrar el cambio. Búsqueda y
+reportes ganan los filtros «Sin fotografía», «Sin ubicación» y «Pendientes de código I». Plan: `Base-de-conocimiento/flujos/F8.md`.
+
 ## Verificación (28/10/2026)
 
 `npm run build` y `npm run lint` (solo la advertencia previa de `AuthContext`). En el navegador (Playwright) contra el
@@ -30,3 +38,4 @@ vista de impresión y móvil (390 px), sin errores de consola. Nunca contra Supa
 | `f8-impresion.png` | Vista de impresión (guardar como PDF) |
 | `f8-movil.png` | Inventario en móvil |
 | `f8-encabezado.png` | Encabezado con el logo, el nombre y la dirección de la institución (RF-59) |
+| `f8-indicadores.png` | Pestaña Indicadores con la tabla por colección (04/11) |

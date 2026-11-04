@@ -4,15 +4,16 @@ import { CAMPO_DE_FILTRO, parametros, type FiltrosConsulta } from "../../lib/rep
 import type { ValorLista } from "../../types";
 
 interface Props {
-  opciones: OpcionesFiltro; camposOcultos: string[]; veNoAprobadas: boolean; aplicados: FiltrosConsulta; onAplicar: (filtros: FiltrosConsulta) => void;
+  opciones: OpcionesFiltro; camposOcultos: string[]; veNoAprobadas: boolean; aplicados: FiltrosConsulta; inicial?: FiltrosConsulta; onAplicar: (filtros: FiltrosConsulta) => void;
 }
 
 /** Los mismos filtros de la búsqueda (F7) para la búsqueda y para todos los reportes. Un filtro sobre un campo oculto para el rol no se muestra. */
-export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicados, onAplicar }: Props) {
-  const [f, setF] = useState<FiltrosConsulta>({});
+export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicados, inicial, onAplicar }: Props) {
+  const [f, setF] = useState<FiltrosConsulta>(inicial ?? {});
   const [abierto, setAbierto] = useState(false);
   const activos = Object.keys(parametros(aplicados)).length;
-  const sinAplicar = JSON.stringify(parametros(f)) !== JSON.stringify(parametros(aplicados));
+  const firma = (x: FiltrosConsulta) => JSON.stringify(Object.entries(parametros(x)).sort());
+  const sinAplicar = firma(f) !== firma(aplicados);
   const visible = (clave: keyof FiltrosConsulta) => !CAMPO_DE_FILTRO[clave] || !camposOcultos.includes(CAMPO_DE_FILTRO[clave]!);
   const cambiar = (clave: keyof FiltrosConsulta, valor: string | boolean) => setF((previo) => ({ ...previo, [clave]: valor }));
   const texto = (clave: keyof FiltrosConsulta, etiqueta: string) => visible(clave) && (
@@ -22,6 +23,8 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicad
       <select className="glass-input" value={String(f[clave] ?? "")} onChange={(e) => cambiar(clave, e.target.value)}>
         <option value="">Todos</option>{valores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
       </select></label>);
+  const casilla = (clave: keyof FiltrosConsulta, etiqueta: string) => visible(clave) && (
+    <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(f[clave])} onChange={(e) => cambiar(clave, e.target.checked)} />{etiqueta}</label>);
   const deLista = (valores: ValorLista[]) => valores.map((v) => ({ id: v.id, nombre: v.activo ? v.etiqueta : `${v.etiqueta} (inactivo)` }));
 
   return (
@@ -48,10 +51,12 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicad
       {veNoAprobadas && seleccion("estadoFicha", "Estado de ficha", [
         { id: "borrador", nombre: "Borrador" }, { id: "en_revision", nombre: "En revisión" },
         { id: "aprobada", nombre: "Aprobada" }, { id: "rechazada", nombre: "Rechazada" }])}
-      <label className="flex items-center gap-2 text-sm self-end pb-2">
-        <input type="checkbox" checked={Boolean(f.soloIncompletas)} onChange={(e) => cambiar("soloIncompletas", e.target.checked)} />
-        Solo incompletas
-      </label>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm self-end pb-2 sm:col-span-2">
+        {casilla("soloIncompletas", "Solo incompletas")}
+        {casilla("sinFotografia", "Sin fotografía")}
+        {casilla("sinUbicacion", "Sin ubicación")}
+        {casilla("sinCodigoPrincipal", "Pendientes de código I")}
+      </div>
       <div className="flex flex-wrap items-center gap-2 self-end">
         <button className="btn-primary">Aplicar filtros</button>
         <button type="button" className="btn-glass" onClick={() => { setF({}); onAplicar({}); }}>Limpiar</button>

@@ -31,12 +31,13 @@ export function ConsultasReportesPage() {
   const [pagina, setPagina] = useState(1);
   const [mensaje, setMensaje] = useState("");
   const [descargando, setDescargando] = useState(false);
+  const [versionFormulario, setVersionFormulario] = useState(0);
   const params = parametros(filtros);
   const verUbicacion = !camposOcultos.includes("ubicacion_actual_id");
   const verEstado = !camposOcultos.includes("estado_pieza_id");
 
   const pestanas: [Pestana, string][] = [
-    ["busqueda", "Búsqueda"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
+    ["busqueda", "Búsqueda"], ["indicadores", "Indicadores"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
     ...(camposOcultos.includes("ubicacion_actual_id") ? [] : [["por-ubicacion", "Por ubicación"] as [Pestana, string]]),
     ["informacion-incompleta", "Información incompleta"],
   ];
@@ -55,6 +56,14 @@ export function ConsultasReportesPage() {
       setDescargando(false);
     }
   }
+  /** Desde un indicador: abre la búsqueda con los filtros vigentes más el que lista lo que falta. */
+  function verPiezas(filtro: FiltrosConsulta) {
+    setFiltros({ ...filtros, ...filtro });
+    setPagina(1);
+    setMensaje("");
+    setPestana("busqueda");
+    setVersionFormulario((v) => v + 1);
+  }
   const hoy = new Date().toISOString().slice(0, 10);
 
   return (
@@ -67,7 +76,7 @@ export function ConsultasReportesPage() {
         </div>
       </div>
 
-      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
+      <FiltrosReporte key={versionFormulario} inicial={filtros} opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
                       onAplicar={(f) => { setFiltros(f); setPagina(1); setMensaje(""); }} />
 
       <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
@@ -147,7 +156,7 @@ export function ConsultasReportesPage() {
             {reporte.data && (
               <>
                 <Encabezado reporte={reporte.data} total={totalDe(pestana, reporte.data)} nombres={nombresDeOpciones(opciones)} />
-                <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} />
+                <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} onVerPiezas={verPiezas} />
               </>
             )}
           </>

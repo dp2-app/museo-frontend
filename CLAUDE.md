@@ -256,3 +256,5 @@ El usuario autorizó frontend F2 y F6 completo, con notificación previa a cambi
 (`components/f8/`, `hooks/useOpcionesFiltro.ts`, `lib/reportes.ts`), pestañas Inventario, Por estado, Por ubicación e
 Información incompleta (con % por colección), Excel por `datosApi` y catálogo completo solo con `reportes.exportar_total`.
 Se muestra lo que arma el backend, sin recalcular. PDF: impresión del navegador mientras P36 siga abierta. Detalle en `docs/f8/README.md`.
+La pestaña **Indicadores** (P37, requiere museo-backend#124) muestra tarjetas y una tabla por colección (`components/f8/Indicadores.tsx`); cada una trae el `filtro` de F7 que lista lo que falta
+y «Ver piezas» lo aplica en Búsqueda (`verPiezas` en la página; `FiltrosReporte` acepta `inicial` y se remonta con `key`). La comparación con la línea base solo llega para quien ve todo el catálogo.

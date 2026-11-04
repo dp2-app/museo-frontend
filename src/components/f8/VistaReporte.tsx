@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
-  ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type ReporteIncompletos, type ReporteInventario,
-  type ReportePorEstado, type ReporteUbicacion,
+  ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta, type ReporteIncompletos, type ReporteIndicadores,
+  type ReporteInventario, type ReportePorEstado, type ReporteUbicacion,
 } from "../../lib/reportes";
+import { Indicadores } from "./Indicadores";
 
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
 const FALTANTE: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
@@ -84,7 +85,10 @@ function PorUbicacion({ r }: { r: ReporteUbicacion }) {
 }
 
 /** Muestra el reporte tal cual lo arma el backend: no recalcula totales, porcentajes ni faltantes. */
-export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string> }) {
+export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
+  clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string>; onVerPiezas: (filtro: FiltrosConsulta) => void;
+}) {
+  if (clave === "indicadores") return <Indicadores reporte={datos as ReporteIndicadores} onVerPiezas={onVerPiezas} />;
   if (clave === "inventario") {
     const r = datos as ReporteInventario;
     return (
