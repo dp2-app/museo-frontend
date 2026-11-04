@@ -24,6 +24,7 @@ export interface ReporteUbicacion extends EncabezadoReporte {
 }
 export interface ReporteIncompletos extends EncabezadoReporte {
   totalPiezas: number; piezasIncompletas: number; porcentajeIncompleto: number;
+  porFaltante: { campo: string; total: number }[];
   porColeccion: { coleccionId: string | null; coleccion: string; totalPiezas: number; piezasIncompletas: number; porcentajeCompleto: number }[];
   detalle: { piezaId: string; denominacion: string | null; camposFaltantes: string[] }[];
 }

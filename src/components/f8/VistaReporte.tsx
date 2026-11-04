@@ -128,6 +128,14 @@ export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte
         </Tabla>
       </section>
       <section className="space-y-2">
+        <h3>Qué falta más</h3>
+        <Tabla columnas={["Campo faltante", "Piezas a las que les falta"]} vacio="No hay campos faltantes con estos filtros.">
+          {(r.porFaltante ?? []).map((f) => (
+            <tr key={f.campo}><td className="px-4 py-2">{etiquetas[f.campo] ?? FALTANTE[f.campo] ?? f.campo}</td><td className="px-4 py-2">{f.total}</td></tr>
+          ))}
+        </Tabla>
+      </section>
+      <section className="space-y-2">
         <h3>Piezas incompletas</h3>
         <Tabla columnas={["Pieza", "Le falta"]} vacio="No hay piezas incompletas con estos filtros.">
           {r.detalle.map((d) => (
