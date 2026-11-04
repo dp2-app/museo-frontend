@@ -48,7 +48,9 @@ export function CodigosFicha({ pieza }: { pieza: Ficha }) {
   const { puede } = usePermisos(); const cache = useQueryClient();
   const codigos = useConsultaF0({ queryKey: ["f1", "codigos-pieza", pieza.id], queryFn: async () => (await api.get<Codigo[]>(`/piezas/${pieza.id}/codigos`)).data });
   const [corrigiendo, setCorrigiendo] = useState<string | null>(null); const [mensaje, setMensaje] = useState("");
-  const listo = async (texto: string) => { setMensaje(texto); setCorrigiendo(null); await cache.invalidateQueries(); };
+  // Solo lo de F1 y lo de esta pieza (ficha, auditoría, códigos, tenencias); no toda la caché.
+  const listo = async (texto: string) => { setMensaje(texto); setCorrigiendo(null);
+    await cache.invalidateQueries({ predicate: (q) => q.queryKey[0] === "f1" || JSON.stringify(q.queryKey).includes(pieza.id) }); };
   const lista = codigos.data ?? pieza.codigos.map((c) => ({ ...c, tipoCodigoId: "", valorNormalizado: "" }) as Codigo);
   return <div className="space-y-3"><h3 className="font-semibold">Identificadores</h3>
     <ul className="space-y-2">{lista.map((c) => <li key={c.id}><div className="flex flex-wrap items-center gap-2">
@@ -60,6 +62,6 @@ export function CodigosFicha({ pieza }: { pieza: Ficha }) {
     <Aviso mensaje={mensaje} /><ErrorConsulta error={codigos.error} />
     <AgregarCodigo piezaId={pieza.id} alGuardar={() => listo("Código agregado.")} />
     <p>Tenencia: {pieza.tenenciaVigente?.regimenNombre || "Sin registro"}{pieza.tenenciaVigente?.restringidoPublicacion && " · publicación restringida"}</p>
-    <CambiarRegimen piezaId={pieza.id} regimenActual={pieza.tenenciaVigente?.regimen} alGuardar={() => listo("Régimen de tenencia actualizado.")} />
+    <CambiarRegimen piezaId={pieza.id} regimenActual={pieza.tenenciaVigente?.regimen} restringidoActual={pieza.tenenciaVigente?.restringidoPublicacion ?? false} alGuardar={() => listo("Régimen de tenencia actualizado.")} />
   </div>;
 }

@@ -257,6 +257,29 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
     await regimenSinI.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
     await page.getByText('Tenencia: ' + comodato.nombre, { exact: false }).waitFor();
     assert.equal((await api(`/piezas/${sinIFicha.id}`)).tenenciaVigente.regimen, 'comodato');
+    // RN-07: se restringe el comodato y, al cambiar solo la contraparte, la restricción se precarga y no se pierde
+    const otraContraparte = await api('/propietarios', 'POST', { tipoPersona: 'natural', nombre: 'Otro comodante E2E ' + sfx }, 201);
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    assert.equal(await regimenSinI.getByLabel('Contraparte', { exact: true }).inputValue(), prop.id, 'Con el mismo régimen se precarga la contraparte vigente');
+    await regimenSinI.getByLabel(/Publicación restringida/).check();
+    await regimenSinI.getByLabel('Condiciones contractuales', { exact: true }).fill('No fotografiar sin autorización del comodante');
+    const guardarTenencia = async () => {
+      const r = page.waitForResponse((x) => x.url().endsWith(`/piezas/${sinIFicha.id}/tenencias`) && x.request().method() === 'POST');
+      await regimenSinI.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+      assert.equal((await r).status(), 201);
+    };
+    await guardarTenencia();
+    await page.getByText('· publicación restringida', { exact: false }).waitFor();
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    assert.equal(await regimenSinI.getByLabel(/Publicación restringida/).isChecked(), true, 'La restricción vigente se precarga');
+    await regimenSinI.getByLabel('Contraparte', { exact: true }).selectOption(otraContraparte.id);
+    await guardarTenencia();
+    const tenencias = await api(`/piezas/${sinIFicha.id}/tenencias`);
+    const vigenteRn07 = tenencias.find((t) => t.vigente);
+    assert.equal(vigenteRn07.contraparte.id, otraContraparte.id);
+    assert.equal(vigenteRn07.restringidoPublicacion, true, 'RN-07: cambiar la contraparte no quita la restricción');
+    assert.equal(vigenteRn07.condicionesContractuales, 'No fotografiar sin autorización del comodante');
+    await shot(page, '12-ficha-comodato-restringido');
     ok('Ficha: valida el I en vivo (también sin separador), lo agrega, lo corrige por excepción y cambia el régimen respetando D5 (H01, RF-04, RF-05, RF-09)');
 
     // ------------------------------------------------------------ Permisos: catalogador y consulta (RNF-08)
