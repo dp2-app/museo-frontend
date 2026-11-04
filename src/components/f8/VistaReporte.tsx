@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type ReporteIncompletos, type ReporteInventario,
@@ -8,14 +8,24 @@ import {
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
 const FALTANTE: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
 
-/** RF-45: título, fecha, filtros aplicados y total, tal como los devuelve el backend. */
+/** RF-45 y RF-59: institución (nombre, logo y dirección), título, fecha, filtros aplicados y total, tal como los devuelve el backend. */
 export function Encabezado({ reporte, total, nombres }: { reporte: EncabezadoReporte; total: number; nombres: Record<string, string> }) {
   const filtros = Object.entries(reporte.filtros);
+  const { nombre, logoUrl, direccion } = reporte.institucion;
+  const [logoFallido, setLogoFallido] = useState<string | null>(null);
+  const logo = logoUrl && /^https?:\/\//i.test(logoUrl) && logoFallido !== logoUrl ? logoUrl : null;
   const valor = (clave: string, v: string | boolean) =>
     v === true ? "Sí" : clave === "estadoFicha" ? ESTADO_FICHA[String(v)] ?? String(v) : nombres[String(v)] ?? String(v);
   return (
     <header className="space-y-1">
-      <p className="text-sm text-gris-2">{reporte.institucion.nombre}</p>
+      <div className="flex items-center gap-3">
+        {logo && <img src={logo} alt="Logo de la institución" className="max-h-14 max-w-[8rem] object-contain" referrerPolicy="no-referrer"
+                      onError={() => setLogoFallido(logo)} />}
+        <div>
+          <p className="text-sm font-semibold text-gris-2">{nombre}</p>
+          {direccion && <p className="text-xs text-gris-2">{direccion}</p>}
+        </div>
+      </div>
       <h2 className="text-azul">{reporte.titulo}</h2>
       <p className="text-sm">Generado el {new Date(reporte.generadoEn).toLocaleString("es-PE")}</p>
       <p className="text-sm">
