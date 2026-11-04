@@ -65,7 +65,10 @@ export function PreguntarColeccion() {
     onError: (err) => setError(extraerMensajeError(err)),
   });
 
-  const buscable = consulta !== null && consulta.total !== null;
+  // Se puede buscar si el backend buscó, o si entendió un filtro ambiguo: en ese caso no busca (para no responder
+  // con todo el catálogo) y la búsqueda empieza cuando la persona elige una de las opciones.
+  const buscable = consulta !== null
+    && (consulta.total !== null || consulta.interpretacion.some((f) => f.estado === "ambiguo"));
   const filtros = useMemo(
     () => (consulta ? (editada ? filtrosDe(interpretacion, consulta.filtros) : consulta.filtros) : {}),
     [consulta, editada, interpretacion],
@@ -171,7 +174,7 @@ export function PreguntarColeccion() {
             </div>
           </div>
 
-          {buscable && (
+          {buscable && (total !== null || otraPagina.isFetching) && (
             <div className="glass-panel overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-linea">
                 <p className="text-sm text-gris-2">{total ?? "…"} piezas</p>
