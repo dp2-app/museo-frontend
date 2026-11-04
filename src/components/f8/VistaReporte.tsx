@@ -65,10 +65,10 @@ export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte
   if (clave === "inventario") {
     const r = datos as ReporteInventario;
     return (
-      <Tabla columnas={["Código principal", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
+      <Tabla columnas={["Código I", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
         {r.piezas.map((p) => (
           <tr key={p.id}>
-            <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código"}</td>
+            <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código I"}</td>
             <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${p.id}`}>{p.denominacion ?? "Sin denominación"}</Link></td>
             <td className="px-4 py-2">{p.coleccion ?? "—"}</td>
             <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>

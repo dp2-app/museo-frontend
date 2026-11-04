@@ -65,8 +65,8 @@ export function ConsultasReportesPage() {
         </div>
       </div>
 
-      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")}
-                      onAplicar={(f) => { setFiltros(f); setPagina(1); }} />
+      <FiltrosReporte opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
+                      onAplicar={(f) => { setFiltros(f); setPagina(1); setMensaje(""); }} />
 
       <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
         {pestanas.map(([clave, etiqueta]) => (
