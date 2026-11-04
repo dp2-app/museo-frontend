@@ -15,7 +15,7 @@ export interface EncabezadoReporte {
 }
 export interface ReporteInventario extends EncabezadoReporte {
   total: number;
-  piezas: { id: string; denominacion: string | null; codigoPrincipal: string | null; coleccion: string | null; incompleta: boolean }[];
+  piezas: { id: string; denominacion: string | null; codigoPrincipal: string | null; otrosCodigos: string[]; coleccion: string | null; incompleta: boolean }[];
 }
 export interface GrupoReporte { valorId: string | null; valor: string; total: number }
 export interface ReportePorEstado extends EncabezadoReporte { total: number; porEstadoPieza: GrupoReporte[]; porEstadoConservacion: GrupoReporte[] }

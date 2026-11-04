@@ -60,15 +60,39 @@ const Grupos = ({ titulo, grupos, columna }: { titulo: string; grupos: { clave: 
   </section>
 );
 
+/** Las ubicaciones tienen dos niveles (sede › ubicación): se agrupan por sede con su subtotal, sumando lo que ya trae el backend. */
+function PorUbicacion({ r }: { r: ReporteUbicacion }) {
+  const sedes = new Map<string, { total: number; filas: { clave: string; nombre: string; total: number }[] }>();
+  for (const u of r.porUbicacion) {
+    const [sede, ...resto] = u.ubicacion.split(" › ");
+    const grupo = sedes.get(sede) ?? { total: 0, filas: [] };
+    grupo.total += u.total;
+    grupo.filas.push({ clave: u.ubicacionId, nombre: resto.join(" › ") || sede, total: u.total });
+    sedes.set(sede, grupo);
+  }
+  const filas = [...sedes].flatMap(([sede, g]) => [
+    <tr key={`sede-${sede}`} className="bg-fondo-suave font-semibold"><td className="px-4 py-2">{sede}</td><td className="px-4 py-2">{g.total}</td></tr>,
+    ...g.filas.map((f) => <tr key={f.clave}><td className="pl-8 pr-4 py-2">{f.nombre}</td><td className="px-4 py-2">{f.total}</td></tr>),
+  ]);
+  if (r.sinUbicacion) filas.push(<tr key="sin" className="border-t-2 border-linea"><td className="px-4 py-2 text-gris-2">(sin ubicación)</td><td className="px-4 py-2">{r.sinUbicacion}</td></tr>);
+  return (
+    <section className="space-y-2">
+      <h3>Por ubicación</h3>
+      <Tabla columnas={["Sede › ubicación", "Piezas"]} vacio="No hay datos para este grupo o tu rol no ve este campo.">{filas}</Tabla>
+    </section>
+  );
+}
+
 /** Muestra el reporte tal cual lo arma el backend: no recalcula totales, porcentajes ni faltantes. */
 export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string> }) {
   if (clave === "inventario") {
     const r = datos as ReporteInventario;
     return (
-      <Tabla columnas={["Código I", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
+      <Tabla columnas={["Código I", "Otros códigos", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
         {r.piezas.map((p) => (
           <tr key={p.id}>
             <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código I"}</td>
+            <td className="px-4 py-2">{p.otrosCodigos?.join(" · ") || "—"}</td>
             <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${p.id}`}>{p.denominacion ?? "Sin denominación"}</Link></td>
             <td className="px-4 py-2">{p.coleccion ?? "—"}</td>
             <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>
@@ -87,12 +111,7 @@ export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte
       </div>
     );
   }
-  if (clave === "por-ubicacion") {
-    const r = datos as ReporteUbicacion;
-    return <Grupos titulo="Por ubicación" columna="Ubicación"
-                   grupos={[...r.porUbicacion.map((u) => ({ clave: u.ubicacionId, valor: u.ubicacion, total: u.total })),
-                            ...(r.sinUbicacion ? [{ clave: "-", valor: "(sin ubicación)", total: r.sinUbicacion }] : [])]} />;
-  }
+  if (clave === "por-ubicacion") return <PorUbicacion r={datos as ReporteUbicacion} />;
   const r = datos as ReporteIncompletos;
   return (
     <div className="space-y-6">
