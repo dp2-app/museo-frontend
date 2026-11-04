@@ -7,7 +7,7 @@ Pantalla `/consultas-y-reportes` (`src/pages/ConsultasReportesPage.tsx`) sobre e
   `piezas.ver_no_aprobadas`) y «solo incompletas». Un filtro sobre un campo oculto para el rol no se muestra.
 - **Pestañas**: Búsqueda (paginada), Inventario (RF-45), Por estado y Por ubicación (RF-46; la de ubicación no aparece si el
   rol no ve la ubicación) e Información incompleta con % por colección (RF-47).
-- Cada reporte muestra lo que devuelve el backend: institución, título, fecha, filtros aplicados y total. El frontend no
+- Cada reporte muestra lo que devuelve el backend: institución (nombre, logo y dirección, RF-59), título, fecha, filtros aplicados y total. El frontend no
   recalcula totales, porcentajes ni faltantes.
 - **Exportar Excel** (con `reportes.exportar`): `GET /datos/v1/exportaciones/piezas.xlsx` en la búsqueda y
   `GET /datos/v1/exportaciones/reportes/{reporte}.xlsx` en cada reporte (RF-48). **Exportar catálogo completo** solo con
@@ -29,3 +29,4 @@ vista de impresión y móvil (390 px), sin errores de consola. Nunca contra Supa
 | `f8-por-estado.png` | Subtotales por estado de la pieza y de conservación |
 | `f8-impresion.png` | Vista de impresión (guardar como PDF) |
 | `f8-movil.png` | Inventario en móvil |
+| `f8-encabezado.png` | Encabezado con el logo, el nombre y la dirección de la institución (RF-59) |
