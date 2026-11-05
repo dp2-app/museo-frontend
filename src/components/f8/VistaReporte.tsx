@@ -1,21 +1,32 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
-  ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type ReporteIncompletos, type ReporteInventario,
-  type ReportePorEstado, type ReporteUbicacion,
+  ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta, type ReporteIncompletos, type ReporteIndicadores,
+  type ReporteInventario, type ReportePorEstado, type ReporteUbicacion,
 } from "../../lib/reportes";
+import { Indicadores } from "./Indicadores";
 
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
 const FALTANTE: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
 
-/** RF-45: título, fecha, filtros aplicados y total, tal como los devuelve el backend. */
+/** RF-45 y RF-59: institución (nombre, logo y dirección), título, fecha, filtros aplicados y total, tal como los devuelve el backend. */
 export function Encabezado({ reporte, total, nombres }: { reporte: EncabezadoReporte; total: number; nombres: Record<string, string> }) {
   const filtros = Object.entries(reporte.filtros);
+  const { nombre, logoUrl, direccion } = reporte.institucion;
+  const [logoFallido, setLogoFallido] = useState<string | null>(null);
+  const logo = logoUrl && /^https?:\/\//i.test(logoUrl) && logoFallido !== logoUrl ? logoUrl : null;
   const valor = (clave: string, v: string | boolean) =>
     v === true ? "Sí" : clave === "estadoFicha" ? ESTADO_FICHA[String(v)] ?? String(v) : nombres[String(v)] ?? String(v);
   return (
     <header className="space-y-1">
-      <p className="text-sm text-gris-2">{reporte.institucion.nombre}</p>
+      <div className="flex items-center gap-3">
+        {logo && <img src={logo} alt="Logo de la institución" className="max-h-14 max-w-[8rem] object-contain" referrerPolicy="no-referrer"
+                      onError={() => setLogoFallido(logo)} />}
+        <div>
+          <p className="text-sm font-semibold text-gris-2">{nombre}</p>
+          {direccion && <p className="text-xs text-gris-2">{direccion}</p>}
+        </div>
+      </div>
       <h2 className="text-azul">{reporte.titulo}</h2>
       <p className="text-sm">Generado el {new Date(reporte.generadoEn).toLocaleString("es-PE")}</p>
       <p className="text-sm">
@@ -50,15 +61,42 @@ const Grupos = ({ titulo, grupos, columna }: { titulo: string; grupos: { clave: 
   </section>
 );
 
+/** Las ubicaciones tienen dos niveles (sede › ubicación): se agrupan por sede con su subtotal, sumando lo que ya trae el backend. */
+function PorUbicacion({ r }: { r: ReporteUbicacion }) {
+  const sedes = new Map<string, { total: number; filas: { clave: string; nombre: string; total: number }[] }>();
+  for (const u of r.porUbicacion) {
+    const [sede, ...resto] = u.ubicacion.split(" › ");
+    const grupo = sedes.get(sede) ?? { total: 0, filas: [] };
+    grupo.total += u.total;
+    grupo.filas.push({ clave: u.ubicacionId, nombre: resto.join(" › ") || sede, total: u.total });
+    sedes.set(sede, grupo);
+  }
+  const filas = [...sedes].flatMap(([sede, g]) => [
+    <tr key={`sede-${sede}`} className="bg-fondo-suave font-semibold"><td className="px-4 py-2">{sede}</td><td className="px-4 py-2">{g.total}</td></tr>,
+    ...g.filas.map((f) => <tr key={f.clave}><td className="pl-8 pr-4 py-2">{f.nombre}</td><td className="px-4 py-2">{f.total}</td></tr>),
+  ]);
+  if (r.sinUbicacion) filas.push(<tr key="sin" className="border-t-2 border-linea"><td className="px-4 py-2 text-gris-2">(sin ubicación)</td><td className="px-4 py-2">{r.sinUbicacion}</td></tr>);
+  return (
+    <section className="space-y-2">
+      <h3>Por ubicación</h3>
+      <Tabla columnas={["Sede › ubicación", "Piezas"]} vacio="No hay datos para este grupo o tu rol no ve este campo.">{filas}</Tabla>
+    </section>
+  );
+}
+
 /** Muestra el reporte tal cual lo arma el backend: no recalcula totales, porcentajes ni faltantes. */
-export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string> }) {
+export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
+  clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string>; onVerPiezas: (filtro: FiltrosConsulta) => void;
+}) {
+  if (clave === "indicadores") return <Indicadores reporte={datos as ReporteIndicadores} onVerPiezas={onVerPiezas} />;
   if (clave === "inventario") {
     const r = datos as ReporteInventario;
     return (
-      <Tabla columnas={["Código principal", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
+      <Tabla columnas={["Código I", "Otros códigos", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
         {r.piezas.map((p) => (
           <tr key={p.id}>
-            <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código"}</td>
+            <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código I"}</td>
+            <td className="px-4 py-2">{p.otrosCodigos?.join(" · ") || "—"}</td>
             <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${p.id}`}>{p.denominacion ?? "Sin denominación"}</Link></td>
             <td className="px-4 py-2">{p.coleccion ?? "—"}</td>
             <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>
@@ -77,12 +115,7 @@ export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte
       </div>
     );
   }
-  if (clave === "por-ubicacion") {
-    const r = datos as ReporteUbicacion;
-    return <Grupos titulo="Por ubicación" columna="Ubicación"
-                   grupos={[...r.porUbicacion.map((u) => ({ clave: u.ubicacionId, valor: u.ubicacion, total: u.total })),
-                            ...(r.sinUbicacion ? [{ clave: "-", valor: "(sin ubicación)", total: r.sinUbicacion }] : [])]} />;
-  }
+  if (clave === "por-ubicacion") return <PorUbicacion r={datos as ReporteUbicacion} />;
   const r = datos as ReporteIncompletos;
   return (
     <div className="space-y-6">
@@ -95,6 +128,14 @@ export function CuerpoReporte({ clave, datos, etiquetas }: { clave: ClaveReporte
               <td className="px-4 py-2">{g.coleccion}</td><td className="px-4 py-2">{g.totalPiezas}</td>
               <td className="px-4 py-2">{g.piezasIncompletas}</td><td className="px-4 py-2">{g.porcentajeCompleto} %</td>
             </tr>
+          ))}
+        </Tabla>
+      </section>
+      <section className="space-y-2">
+        <h3>Qué falta más</h3>
+        <Tabla columnas={["Campo faltante", "Piezas a las que les falta"]} vacio="No hay campos faltantes con estos filtros.">
+          {(r.porFaltante ?? []).map((f) => (
+            <tr key={f.campo}><td className="px-4 py-2">{etiquetas[f.campo] ?? FALTANTE[f.campo] ?? f.campo}</td><td className="px-4 py-2">{f.total}</td></tr>
           ))}
         </Tabla>
       </section>
