@@ -159,3 +159,29 @@
 .f0-grupos-scroll::-webkit-scrollbar { width: 8px; }
 .f0-grupos-scroll::-webkit-scrollbar-track { background: theme("colors.fondo-suave"); }
 .f0-grupos-scroll::-webkit-scrollbar-thumb { background: theme("colors.gris-1"); border-radius: theme("borderRadius.pill"); }
+
+/* Impresión / PDF de reportes: ancho completo, sin marcos y sin cortar filas. */
+@page {
+  size: A4 portrait;
+  margin: 14mm 12mm;
+}
+@media print {
+  html, body { background: #fff !important; font-size: 11pt; }
+  main { max-width: none !important; padding: 0 !important; overflow: visible !important; }
+  .glass-panel, .glass-panel-sm, .kpi-card {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .overflow-x-auto { overflow: visible !important; }
+  table { width: 100%; font-size: 10pt; }
+  thead { display: table-header-group; } /* repite el encabezado en cada hoja */
+  tr, img { break-inside: avoid; page-break-inside: avoid; }
+  th, td { padding-top: 4px !important; padding-bottom: 4px !important; }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  h2 { font-size: 18pt; }
+  h3 { font-size: 13pt; }
+  a { color: inherit !important; text-decoration: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
