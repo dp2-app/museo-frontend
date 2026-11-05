@@ -117,7 +117,9 @@ export function CargaDetailPage() {
     if (fila.clasificacion === "duplicado") { cerrarPaneles(); setDuplicadoFila(fila.id); setError(""); return; }
     revisarFila.mutate({ id: fila.id, datos: { estado: "aprobado" } });
   }
-  const sinCodigos = !!filas && filas.items.length > 0 && filas.items.every((f) => f.identificadores.length === 0);
+  // R3: el aviso es de la carga entera y lo calcula el backend; no depende de la página ni de los filtros que se vean.
+  const sinCodigos = !!carga?.advertencias?.some((a) => a.codigo === "sin_codigos_mapeados");
+  const avisoSinCodigos = "Ninguna fila de la carga trae código del museo reconocido. Si las apruebas, las piezas se crearán sin código y quedarán pendientes de código I. Si el archivo tiene una columna de código, vuelve a cargarlo con el formato de columnas que la reconozca.";
   function panelDeFila(fila: FilaImportacion): ReactNode {
     if (!abierta || !puedeRevisar) return null;
     if (edicion?.id === fila.id) return <EditorFila key={edicion.id} fila={edicion} ocupado={ocupado} guardar={(datos) => revisarFila.mutate({ id: edicion.id, datos })} cerrar={() => setEdicion(null)} />;
@@ -152,7 +154,7 @@ export function CargaDetailPage() {
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
     {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
     {filas && <p>{contar(filas.resumen.nuevo, "nueva", "nuevas")} · {contar(filas.resumen.actualizacion, "actualización", "actualizaciones")} · {contar(filas.resumen.duplicado, "posible duplicado", "posibles duplicados")} · {contar(filas.resumen.conflicto, "conflicto", "conflictos")}</p>}
-    {abierta && sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">Ninguna de las filas mostradas trae código del museo reconocido. Si las apruebas, las piezas se crearán sin código y quedarán pendientes de código I. Si el archivo tiene una columna de código, vuelve a cargarlo con el formato de columnas que la reconozca.</p>}
+    {abierta && sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
 
     <div className="flex flex-wrap gap-3">
       {carga.filasConError > 0 && <button className="btn-glass" onClick={() => reporte.mutate()} disabled={reporte.isPending}>Descargar reporte de errores</button>}
@@ -200,6 +202,7 @@ export function CargaDetailPage() {
         <li>Posibles duplicados que se registrarán como piezas distintas: <strong>{aprobadas.data.duplicados}</strong></li>
         <li>Filas rechazadas (no se registran): <strong>{carga.filasRechazadas}</strong></li>
       </ul>}
+      {sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
       <p>Las filas con advertencias o marcadas para curación entran a la cola de curación. Esta acción modifica el catálogo y no se puede deshacer desde esta pantalla.</p>
       <div className="flex flex-wrap gap-3"><button className="btn-primary" disabled={ocupado || !aprobadas.data}>{aplicar.isPending ? "Aplicando la carga…" : "Confirmar aprobación"}</button>
         <button type="button" className="btn-glass" onClick={() => setAprobando(false)} disabled={ocupado}>Volver a la revisión</button></div>
