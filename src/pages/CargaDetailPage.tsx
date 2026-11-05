@@ -228,10 +228,10 @@ export function CargaDetailPage() {
             </details>
             {fila.errores.map((e, i) => <p key={i} className="text-rojo mt-2">{textoAviso(e)}</p>)}
             {fila.datosNormalizados?.advertencias?.map((e, i) => <p key={i} className="mt-2">Advertencia: {textoAviso(e)}{abierta && " Si se aprueba, la pieza se crea incompleta y entra a la cola de curación."}</p>)}
-            {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
+            {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver_no_aprobadas") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
           </td>
           <td className="p-4" data-label="Clasificación">{CLASIFICACIONES[fila.clasificacion]}</td>
-          <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
+          <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver_no_aprobadas") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
           <td className="p-4 md:min-w-36" data-label="Acciones">{abierta && puedeRevisar && <div className="flex flex-wrap md:flex-col items-start gap-3">
             <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || fila.estado === "aprobado"} className={ACCION} onClick={() => marcarRevisada(fila)}>Marcar revisada</button>
             <button disabled={ocupado} className={ACCION} onClick={() => abrirCorreccion(fila)}>Corregir fila</button>
