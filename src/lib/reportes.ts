@@ -105,3 +105,13 @@ export function mensajeReporte(error: unknown, generico = "El reporte tardó dem
   if (e.code === "ECONNABORTED" || e.code === "ETIMEDOUT") return generico;
   return extraerMensajeError(error);
 }
+
+/** Piezas que el navegador puede imprimir sin trabarse: con miles de filas el diálogo de impresión se cuelga (QA 5/11). */
+export const MAX_FILAS_IMPRESION = 1000;
+
+/** Filas de pieza que imprimiría el reporte (los de totales por grupo no crecen con el catálogo). */
+export function filasDeImpresion(clave: ClaveReporte, datos: unknown): number {
+  if (clave === "inventario") return (datos as ReporteInventario).piezas.length;
+  if (clave === "informacion-incompleta") return (datos as ReporteIncompletos).detalle.length;
+  return 0;
+}
