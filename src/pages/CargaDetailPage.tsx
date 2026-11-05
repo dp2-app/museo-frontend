@@ -2,7 +2,7 @@ import { Fragment, useRef, useState, type FormEvent, type ReactNode } from "reac
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
-import { CLASIFICACIONES, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
+import { CLASIFICACIONES, codigoRepetidoEnLote, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
 import { contar } from "../lib/texto";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
@@ -233,7 +233,8 @@ export function CargaDetailPage() {
           <td className="p-4" data-label="Clasificación">{CLASIFICACIONES[fila.clasificacion]}</td>
           <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
           <td className="p-4 md:min-w-36" data-label="Acciones">{abierta && puedeRevisar && <div className="flex flex-wrap md:flex-col items-start gap-3">
-            <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || fila.estado === "aprobado"} className={ACCION} onClick={() => marcarRevisada(fila)}>Marcar revisada</button>
+            <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || codigoRepetidoEnLote(fila) || fila.estado === "aprobado"} aria-describedby={codigoRepetidoEnLote(fila) ? `repetido-${fila.id}` : undefined} className={ACCION} onClick={() => marcarRevisada(fila)}>Marcar revisada</button>
+            {codigoRepetidoEnLote(fila) && fila.estado !== "aprobado" && <p id={`repetido-${fila.id}`} className="text-sm text-texto">Su código se repite en otra fila de este lote. Corrige el código o rechaza una de las dos filas para poder revisarla.</p>}
             <button disabled={ocupado} className={ACCION} onClick={() => abrirCorreccion(fila)}>Corregir fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} className={ACCION} onClick={() => abrirCierre("fila", fila.id)}>Rechazar fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} aria-pressed={fila.curacionPendiente} className={ACCION}
