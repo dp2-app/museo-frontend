@@ -28,7 +28,7 @@ export function Encabezado({ reporte, total, nombres }: { reporte: EncabezadoRep
         </div>
       </div>
       <h2 className="text-azul">{reporte.titulo}</h2>
-      <p className="text-sm">Generado el {new Date(reporte.generadoEn).toLocaleString("es-PE")}</p>
+      <p className="text-sm">Generado el {new Date(reporte.generadoEn).toLocaleString("es-PE", { timeZone: "America/Lima" })}</p>
       <p className="text-sm">
         Filtros: {filtros.length ? filtros.map(([k, v]) => `${ETIQUETA_FILTRO[k] ?? k}: ${valor(k, v)}`).join(" · ") : "ninguno (todo el catálogo visible para tu rol)"}
       </p>
