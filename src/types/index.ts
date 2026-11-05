@@ -165,6 +165,7 @@ export interface CuracionImportacion {
   motivos: { codigo: string; mensaje: string }[];
   creadoEn: string;
   validadoPor: string | null;
+  validadoPorNombre?: string | null;
   validadoEn: string | null;
   nota: string | null;
 }

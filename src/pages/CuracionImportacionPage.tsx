@@ -88,7 +88,7 @@ export function CuracionImportacionPage() {
                   <td className="p-4" data-label="Estado">
                     {c.estado === "pendiente" ? "Pendiente" : "Validado"}
                     {c.estado === "pendiente" && !c.piezaDenominacion && <p className="mt-2 font-semibold">La pieza sigue sin denominación: ábrela y complétala antes de validar.</p>}
-                    {c.validadoEn && <p>{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
+                    {c.validadoEn && <p>{c.validadoPorNombre ? `${c.validadoPorNombre}, ` : ""}{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
                     {c.nota && <p>{c.nota}</p>}
                   </td>
                   {puedeCurar && (
