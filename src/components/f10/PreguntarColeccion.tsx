@@ -14,8 +14,10 @@ const TAMANO = 20;
 const EJEMPLOS = [
   "¿Cuántas máscaras de madera hay?",
   "Retablos de Ayacucho en mal estado",
-  "Piezas sin código I en borrador",
+  "Piezas sin foto de la colección Cid Arco",
 ];
+// Filtros sí/no de GET /piezas: el chip vale `true` (sinFotografia y sinUbicacion vienen de F8).
+const BOOLEANOS = new Set(["soloIncompletas", "sinCodigoPrincipal", "sinFotografia", "sinUbicacion"]);
 
 const filtra = (f: InterpretacionFiltro) => f.estado === "aplicado" || f.estado === "como_texto";
 
@@ -26,7 +28,7 @@ function filtrosDe(interpretacion: InterpretacionFiltro[], base: Record<string, 
   const textos: string[] = [];
   for (const f of interpretacion.filter(filtra)) {
     if (f.parametro === "q") textos.push(f.valorEtiqueta ?? f.valor);
-    else if (f.parametro === "soloIncompletas" || f.parametro === "sinCodigoPrincipal") resultado[f.parametro] = true;
+    else if (BOOLEANOS.has(f.parametro)) resultado[f.parametro] = true;
     else resultado[f.parametro] = f.valorId ?? f.valor;
   }
   if (textos.length) resultado.q = [...new Set(textos)].join(" ");
