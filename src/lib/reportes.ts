@@ -1,4 +1,4 @@
-import { datosApi } from "./api";
+import { datosApi, extraerMensajeError } from "./api";
 
 // F8 · Contrato de GET /api/v1/reportes/* (museo-backend#59). Todos aceptan los filtros de GET /piezas (F7)
 // y devuelven lo que aplicaron de verdad: quien no ve fichas sin aprobar recibe `estadoFicha: "aprobada"`.
@@ -91,4 +91,17 @@ export async function descargarExcel(ruta: string, params: Record<string, unknow
 /** Total de piezas del reporte: el de incompletos lo llama `totalPiezas`. */
 export function totalDe(clave: ClaveReporte, datos: unknown): number {
   return clave === "informacion-incompleta" || clave === "indicadores" ? (datos as { totalPiezas: number }).totalPiezas : (datos as { total: number }).total;
+}
+
+/** Mensajes de la consulta o de la exportación según lo que pasó (QA F8-01, F8-04, F8-05); los filtros nunca se pierden. */
+export function mensajeReporte(error: unknown, generico = "El reporte tardó demasiado. Tus filtros se mantienen. Puedes volver a intentarlo."): string {
+  const e = error as { code?: string; response?: { status?: number; headers?: Record<string, string> } };
+  const estado = e.response?.status;
+  if (estado === 429) {
+    const espera = Number(e.response?.headers?.["retry-after"]);
+    return `Se alcanzó el límite de solicitudes. Espera${Number.isFinite(espera) && espera > 0 ? ` ${Math.ceil(espera)} s` : ""} antes de reintentar.`;
+  }
+  if (estado === 503) return "El servicio no está disponible en este momento.";
+  if (e.code === "ECONNABORTED" || e.code === "ETIMEDOUT") return generico;
+  return extraerMensajeError(error);
 }
