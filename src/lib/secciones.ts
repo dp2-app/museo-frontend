@@ -51,7 +51,8 @@ export const SECCIONES: Seccion[] = [
   },
   { ruta: "/importacion", nombre: "Importación", Icono: Upload, permisos: ["importacion.ver", "importacion.cargar"] },
   { ruta: "/consultas-y-reportes", nombre: "Consultas y reportes", Icono: Search, permisos: ["reportes.ver"] },
-  { ruta: "/asistente-ia", nombre: "Asistente IA", Icono: Bot, permisos: ["ia.usar"] },
+  // «Preguntar» (RIA-06) basta con piezas.ver; las demás pestañas del asistente piden ia.usar.
+  { ruta: "/asistente-ia", nombre: "Asistente IA", Icono: Bot, permisos: ["ia.usar", "piezas.ver"] },
   { ruta: "/administracion", nombre: "Administración", Icono: Settings, permisos: PERMISOS_ADMINISTRACION },
 ];
 

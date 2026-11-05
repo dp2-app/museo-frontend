@@ -81,7 +81,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-20 bg-white border-b border-linea">
+      <header className="sticky top-0 z-20 bg-white border-b border-linea print:hidden">
         <div className="max-w-contenido mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
           {/* Escritorio: lockup completo. Móvil: solo isotipo + rol activo (spec §6). */}
           <img
@@ -149,7 +149,7 @@ export function Layout() {
         </ErrorBoundary>
       </main>
 
-      <footer className="bg-azul text-white/80 mt-auto">
+      <footer className="bg-azul text-white/80 mt-auto print:hidden">
         <div className="max-w-contenido mx-auto px-4 sm:px-6 py-6 flex flex-col items-center gap-3 text-center">
           <img src="/brand/matp_lockup_sobre_azul_blanco.svg" alt="" aria-hidden="true" className="h-8" />
           <p className="text-xs leading-relaxed">

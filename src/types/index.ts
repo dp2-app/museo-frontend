@@ -1,6 +1,8 @@
 // Espejo en TypeScript de app/schemas/*.py en museo-backend (docs/openapi.yaml).
 // El wire format de la API es camelCase; estos tipos lo reflejan tal cual.
 
+import type { Ficha } from "../lib/ficha";
+
 export interface Pagina<T> {
   items: T[];
   total: number;
@@ -218,7 +220,8 @@ export type TipoSugerencia =
   | "RIA-02-duplicados-similitud"
   | "RIA-03-categoria-sugerida"
   | "RIA-04-descripcion-preliminar"
-  | "RIA-05-consulta-catalogo";
+  | "RIA-05-consulta-catalogo"
+  | "RIA-06-consulta-lenguaje-natural";
 
 export interface ReporteCalidadDatos {
   totalPiezas: number;
@@ -228,6 +231,37 @@ export interface ReporteCalidadDatos {
   sugerenciasPendientes: { ria01: number; ria02: number };
   piezasElegiblesParaRia01: number;
   ria01Configurado: boolean;
+}
+
+// --- F10 · RIA-06: consulta en lenguaje natural (POST /ia/consultas) ---
+
+export type EstadoFiltroIA = "aplicado" | "como_texto" | "ambiguo" | "no_reconocido" | "no_visible";
+
+/** Cómo entendió la IA cada filtro. `parametro` es el de GET /piezas; solo `aplicado` y `como_texto` filtran. */
+export interface InterpretacionFiltro {
+  campo: string;
+  parametro: string;
+  etiqueta: string;
+  valor: string;
+  valorId: string | null;
+  valorEtiqueta: string | null;
+  estado: EstadoFiltroIA;
+  alternativas: { id: string; etiqueta: string }[];
+}
+
+export interface ConsultaIA {
+  sugerenciaId: string;
+  pregunta: string;
+  intencion: "listar" | "contar" | "por_ubicacion" | "por_estado" | "incompletas" | "no_soportada" | "fuera_de_tema";
+  mensaje: string;
+  interpretacion: InterpretacionFiltro[];
+  avisos: string[];
+  /** Los filtros que se aplicaron, listos para GET /piezas (páginas siguientes) o la exportación. */
+  filtros: Record<string, string | boolean>;
+  total: number | null;
+  piezas: Ficha[];
+  reporteSugerido: "por-ubicacion" | "por-estado" | "informacion-incompleta" | null;
+  modeloUsado: string;
 }
 
 // --- F10 · RIA-05: armado de salas (POST /ia/salas/sugerir) ---
