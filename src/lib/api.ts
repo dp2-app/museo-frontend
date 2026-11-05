@@ -2,6 +2,8 @@ import axios from "axios";
 import type { ErrorApi } from "../types";
 
 export const TOKEN_STORAGE_KEY = "museo.accessToken";
+/** Ruta en la que venció la sesión: tras volver a ingresar se regresa a ella (F5, QA H12). */
+export const VOLVER_A_STORAGE_KEY = "museo.volverA";
 const baseNegocio = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 export const api = axios.create({ baseURL: baseNegocio });
 export const datosApi = axios.create({
@@ -28,7 +30,10 @@ for (const cliente of [api, datosApi]) {
     (error) => {
       if (error.response?.status === 401) {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
-        if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
+        if (!window.location.pathname.startsWith("/login")) {
+          try { sessionStorage.setItem(VOLVER_A_STORAGE_KEY, window.location.pathname + window.location.search); } catch { /* sin almacenamiento: se vuelve al inicio */ }
+          window.location.href = "/login";
+        }
       }
       return Promise.reject(error);
     },

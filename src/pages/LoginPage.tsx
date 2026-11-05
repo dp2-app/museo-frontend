@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { extraerMensajeError } from "../lib/api";
+import { extraerMensajeError, VOLVER_A_STORAGE_KEY } from "../lib/api";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -12,6 +12,10 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [lento, setLento] = useState(false);
+  // Si la sesión venció a medio trabajo, la ruta quedó guardada: se avisa y, al ingresar, se regresa a ella.
+  const [volverA] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(VOLVER_A_STORAGE_KEY); } catch { return null; }
+  });
 
   // El servidor gratuito se duerme tras un rato sin uso y la primera respuesta puede tardar cerca de un minuto.
   useEffect(() => {
@@ -26,7 +30,8 @@ export function LoginPage() {
     setCargando(true);
     try {
       await login(email, password);
-      const desde = (location.state as { desde?: string } | null)?.desde;
+      const desde = (location.state as { desde?: string } | null)?.desde ?? volverA ?? undefined;
+      try { sessionStorage.removeItem(VOLVER_A_STORAGE_KEY); } catch { /* sin almacenamiento */ }
       navigate(desde?.startsWith("/") && !desde.startsWith("//") ? desde : "/");
     } catch (err) {
       setError(extraerMensajeError(err) || "Email o contraseña incorrectos");
@@ -46,6 +51,12 @@ export function LoginPage() {
             <p className="text-sm text-gris-2">Sistema de gestión de colecciones</p>
           </div>
         </div>
+
+        {volverA && !error && (
+          <p role="status" className="text-sm text-texto">
+            Tu sesión venció. Vuelve a ingresar para seguir donde estabas; lo último que escribías no se guardó.
+          </p>
+        )}
 
         {error && (
           <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-btn px-3 py-2">{error}</p>
