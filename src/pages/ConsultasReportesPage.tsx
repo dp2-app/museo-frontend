@@ -114,7 +114,7 @@ export function ConsultasReportesPage() {
         {mensaje && <p role="status" className="text-sm">{mensaje}</p>}
       </div>
 
-      <div role="tabpanel" className="glass-panel p-4 space-y-4">
+      <div role="tabpanel" className="glass-panel p-4 space-y-4 print:p-0">
         {pestana === "busqueda" ? (
           <>
             <ErrorConsulta error={busqueda.error} />
