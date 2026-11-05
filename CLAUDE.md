@@ -68,7 +68,7 @@ documentada en `museo-backend/CLAUDE.md`):
 | `/ubicacion-y-movimientos` | Ubicación y movimientos | `movimientos.registrar`, `estados.cambiar`, `ubicaciones.gestionar` |
 | `/importacion` | Importación | `importacion.ver`, `importacion.cargar` |
 | `/consultas-y-reportes` | Consultas y reportes | `reportes.ver` |
-| `/asistente-ia` | Asistente IA | `ia.usar` |
+| `/asistente-ia` | Asistente IA | `ia.usar`, `piezas.ver` (con solo `piezas.ver` se ve únicamente la pestaña «Preguntar») |
 | `/administracion` | Administración | cualquiera de los `*.ver` de configuración, usuarios, roles y auditoría |
 
 **La autorización es por permiso, nunca por nombre de rol (F9, RNF-08).** `usePermisos()` lee `GET /auth/sesion` (`puede`, `puedeAlguno`); no se decodifica el JWT.
@@ -122,7 +122,8 @@ Esto es solo UX: la autorización real la valida el backend (401/403) en cada en
   PDF real lo genera el navegador vía "Guardar como PDF" — mismo criterio que
   usó el prototipo hermano para no requerir una librería de generación de PDF
   en el servidor.
-- **Asistente IA** (`AsistenteIAPage`, antes `IASugerenciasPage`): todo lo que
+- **Asistente IA** (`AsistenteIAPage`, antes `IASugerenciasPage`) — *histórico: la pestaña «Calidad de datos» descrita
+  aquí se retiró el 03/11/2026 (ver «F10 · Preguntar»)*: todo lo que
   ya funcionaba (RIA-01/RIA-02, KPIs de calidad de datos) más el botón
   **"Fusionar"** (HU-21, `POST /ia/sugerencias/{id}/fusionar`) sobre pares de
   posibles duplicados, y una sección de **"búsqueda asistida por vocabulario
@@ -234,7 +235,7 @@ Pantallas sobre el contrato v3 (requiere museo-backend#41). Detalle, pruebas y c
 
 ## F10 · Armar sala (RIA-05), autorizado por el líder (25/10/2026)
 
-Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`); la pestaña «Calidad de datos» conserva lo anterior (RIA-01/RIA-02, sin adaptar aún al contrato v3).
+Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`). La pestaña «Calidad de datos» (RIA-01/RIA-02) se retiró el 03/11/2026: ver «F10 · Preguntar».
 
 - `POST /ia/salas/sugerir` `{pedido, cantidad}` (10–30) devuelve `SalaSugerida`: mensaje breve de la IA, ranking con puntaje y alertas (`ficha_no_aprobada`, `conservacion`, `en_prestamo`). Se muestra tal cual: el frontend no reordena, no filtra ni completa nada.
 - El curador marca piezas (por defecto todas) y `POST /ia/salas/{sugerenciaId}/exportar` `{piezaIds}` descarga el Excel. El botón se habilita con `reportes.exportar`; el backend vuelve a validar.
@@ -258,3 +259,17 @@ Información incompleta (con % por colección), Excel por `datosApi` y catálogo
 Se muestra lo que arma el backend, sin recalcular. PDF: impresión del navegador mientras P36 siga abierta. Detalle en `docs/f8/README.md`.
 La pestaña **Indicadores** (P37, requiere museo-backend#124) muestra tarjetas y una tabla por colección (`components/f8/Indicadores.tsx`); cada una trae el `filtro` de F7 que lista lo que falta
 y «Ver piezas» lo aplica en Búsqueda (`verPiezas` en la página; `FiltrosReporte` acepta `inicial` y se remonta con `key`). La comparación con la línea base solo llega para quien ve todo el catálogo.
+
+## F10 · Preguntar (RIA-06, 03/11/2026)
+
+Pestaña «Preguntar» del Asistente IA (`src/components/f10/PreguntarColeccion.tsx`), primera pestaña; se ve con `piezas.ver`. «Armar sala» sigue con `ia.usar`.
+
+**Retiro de «Calidad de datos» (03/11/2026, decisión del dueño de F10):** la pestaña seguía sobre el contrato anterior al v3. El KPI mostraba «undefined», los nombres de los duplicados no cargaban y la cola mezclaba propuestas de sala. Se quitaron:
+- la pestaña completa, con sus KPIs, la cola de RIA-01/RIA-02, «Fusionar» (HU-21) y la `BusquedaAsistida`, que reemplaza «Preguntar»;
+- el panel «Revisión de observaciones» de la ficha (`PiezaDetailPage`), que generaba sugerencias de RIA-01 que ya no tendrían dónde revisarse.
+
+Los endpoints (`/ia/sugerencias`, `/ia/extraccion-observaciones/*`, `/ia/deteccion-duplicados`, `/reportes/calidad-datos`) siguen en el backend y sus tipos siguen en `src/types/index.ts`.
+
+- `POST /ia/consultas` `{pregunta}` devuelve `ConsultaIA`: mensaje (lo arma el backend con el total real), `interpretacion` (un chip por filtro con su estado), `avisos`, `filtros` (parámetros de `GET /piezas`), `total` y la página 1 de piezas (`Ficha`).
+- Quitar un chip o elegir una alternativa de un filtro `ambiguo` recalcula los filtros en el cliente y pide `GET /piezas` (también para las páginas siguientes): **no vuelve a llamar a la IA**. La exportación usa `descargarExcel("/exportaciones/piezas.xlsx", filtros)` con `reportes.exportar`.
+- Sin IA configurada el backend responde 503 y se muestra su mensaje. Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-06).
