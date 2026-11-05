@@ -18,6 +18,15 @@ const ACCION = "underline text-azul disabled:no-underline disabled:opacity-40 di
 
 interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; curacionPendiente?: boolean; }
 
+/** El backend propone `errores_<archivo>_<hoja>.xlsx` en Content-Disposition (F4, RF-38); nunca se muestra el id de la carga. */
+function nombreDeDescarga(cabecera: unknown, archivo?: string | null): string {
+  const texto = typeof cabecera === "string" ? cabecera : "";
+  const m = /filename\*=UTF-8''([^;]+)/i.exec(texto) ?? /filename="?([^";]+)"?/i.exec(texto);
+  if (m) { try { return decodeURIComponent(m[1]); } catch { return m[1]; } }
+  const base = (archivo ?? "carga").replace(/\.xlsx$/i, "").replace(/[\\/:*?"<>|]/g, "_");
+  return `errores_${base}.xlsx`;
+}
+
 export function CargaDetailPage() {
   const { cargaId } = useParams<{ cargaId: string }>();
   const cache = useQueryClient();
@@ -93,10 +102,13 @@ export function CargaDetailPage() {
     onSuccess: () => { setError(""); setAviso("Decisión guardada."); setCierre(null); setMotivo(""); invalidar(); }, onError: fallo,
   });
   const reporte = useMutation({
-    mutationFn: async () => (await datosApi.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" })).data as Blob,
-    onSuccess: (blob) => {
+    mutationFn: async () => {
+      const r = await datosApi.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" });
+      return { blob: r.data as Blob, nombre: nombreDeDescarga(r.headers?.["content-disposition"], carga?.archivoNombre) };
+    },
+    onSuccess: ({ blob, nombre }) => {
       setError(""); const url = URL.createObjectURL(blob); const link = document.createElement("a");
-      link.href = url; link.download = `errores_${cargaId}.xlsx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      link.href = url; link.download = nombre; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, onError: fallo,
   });
   const recargar = useMutation({
