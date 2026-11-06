@@ -96,7 +96,10 @@ export default function App() {
           path="/importacion/curacion"
           element={
             <RequirePermiso permisos={["importacion.ver"]}>
-              <CuracionImportacionPage />
+              {/* La cola exige también «piezas.ver» (F5): sin él se redirige en vez de esperar un 403. */}
+              <RequirePermiso permisos={["piezas.ver"]}>
+                <CuracionImportacionPage />
+              </RequirePermiso>
             </RequirePermiso>
           }
         />
