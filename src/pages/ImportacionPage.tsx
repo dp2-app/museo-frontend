@@ -115,14 +115,14 @@ export function ImportacionPage() {
         <select className="glass-input block mt-1" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setVisibles(20); }}>
           <option value="">Todas</option>{Object.entries(ESTADOS_CARGA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select></label>
-      <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left">
+      <div className="glass-panel overflow-x-auto"><table className="tabla-apilable w-full text-sm text-left">
         <thead><tr>{["Archivo y hoja", "Cargada", "Estado", "Nuevas", "Actualizaciones", "Posibles duplicados", ""].map((h, i) => <th key={i} className="px-4 py-3">{h}</th>)}</tr></thead>
         <tbody>{filtradas.slice(0, visibles).map((c) => <tr key={c.id} className="border-t border-ink-100">
-          <td className="px-4 py-3">{c.archivoNombre}<span className="block text-texto">{c.hojaNombre}</span></td>
-          <td className="px-4 py-3">{new Date(c.iniciadaEn).toLocaleString("es-PE")}{c.usuarioNombre && <span className="block text-texto">por {c.usuarioNombre}</span>}</td>
-          <td className="px-4 py-3">{ESTADOS_CARGA[c.estado]}{(c.estado === "rechazada" || c.estado === "cancelada") && c.motivoRechazo && <span className="block text-texto">Motivo: {c.motivoRechazo}</span>}</td><td className="px-4 py-3">{c.filasNuevas}</td>
-          <td className="px-4 py-3">{c.filasActualizacion}</td><td className="px-4 py-3">{c.filasDuplicadas}</td>
-          <td className="px-4 py-3"><Link to={`/importacion/${c.id}`} className="text-clay-700 underline">Revisar carga</Link></td>
+          <td className="px-4 py-3" data-label="Archivo y hoja">{c.archivoNombre}<span className="block text-texto">{c.hojaNombre}</span></td>
+          <td className="px-4 py-3" data-label="Cargada">{new Date(c.iniciadaEn).toLocaleString("es-PE")}{c.usuarioNombre && <span className="block text-texto">por {c.usuarioNombre}</span>}</td>
+          <td className="px-4 py-3" data-label="Estado">{ESTADOS_CARGA[c.estado]}{(c.estado === "rechazada" || c.estado === "cancelada") && c.motivoRechazo && <span className="block text-texto">Motivo: {c.motivoRechazo}</span>}</td><td className="px-4 py-3" data-label="Nuevas">{c.filasNuevas}</td>
+          <td className="px-4 py-3" data-label="Actualizaciones">{c.filasActualizacion}</td><td className="px-4 py-3" data-label="Posibles duplicados">{c.filasDuplicadas}</td>
+          <td className="px-4 py-3"><Link to={`/importacion/${c.id}`} className="inline-block py-2 text-azul underline">Revisar carga</Link></td>
         </tr>)}</tbody>
       </table>{cargas.data?.length === 0 && <p className="p-4">Aún no hay cargas.</p>}
         {cargas.data && cargas.data.length > 0 && filtradas.length === 0 && <p className="p-4">No hay cargas con ese estado.</p>}</div>
