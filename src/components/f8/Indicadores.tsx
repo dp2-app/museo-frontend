@@ -1,3 +1,4 @@
+import { Anillo, BarraProgreso } from "./Graficos";
 import type { FiltrosConsulta, Indicador, IndicadorColeccion, PuntoHistoria, ReporteIndicadores } from "../../lib/reportes";
 
 const numero = (n: number, decimales = 1) => n.toLocaleString("es-PE", { maximumFractionDigits: decimales });
@@ -24,7 +25,10 @@ function Tarjeta({ i, onVer }: { i: Indicador; onVer: (filtro: FiltrosConsulta) 
   return (
     <article className="kpi-card space-y-1" aria-label={i.etiqueta}>
       <h3 className="text-sm">{i.etiqueta}</h3>
-      <p className="text-3xl font-display font-bold text-azul">{esPorcentaje && i.porcentaje !== null ? `${numero(i.porcentaje)} %` : i.valor}</p>
+      <div className="flex items-center gap-3">
+        {esPorcentaje && i.porcentaje !== null && <Anillo porcentaje={i.porcentaje} etiqueta={i.etiqueta} />}
+        <p className="text-3xl font-display font-bold text-azul">{esPorcentaje && i.porcentaje !== null ? `${numero(i.porcentaje)} %` : i.valor}</p>
+      </div>
       <p className="text-sm">{esPorcentaje ? `${i.valor} de ${i.total} piezas` : `${i.valor === 1 ? "pieza" : "piezas"} de ${i.total}`}</p>
       {dias !== undefined && dias !== null && <p className="text-xs text-gris-2">La que más espera lleva {dias} {dias === 1 ? "día" : "días"} en revisión.</p>}
       {esPorcentaje && <Cambio actual={i.porcentaje} previo={i.lineaBase} nombre="Línea base" />}
@@ -56,11 +60,16 @@ function PorColeccion({ filas, indicadores, onVer }: { filas: IndicadorColeccion
                 const faltan = f.totalPiezas - ((f as unknown as Record<string, number>)[c.clave] ?? f.totalPiezas);
                 return (
                   <td key={c.clave} className="px-4 py-2">
-                    {pct === null || pct === undefined ? "—" : faltan > 0 && f.coleccionId ? (
-                      <button type="button" className="text-azul underline" title={`${c.verPiezas} de ${f.coleccion}`}
-                              aria-label={`${numero(pct)} %. ${c.verPiezas} de ${f.coleccion}`}
-                              onClick={() => onVer({ ...c.filtro, coleccionId: f.coleccionId ?? undefined })}>{numero(pct)} %</button>
-                    ) : `${numero(pct)} %`}
+                    {pct === null || pct === undefined ? "—" : (
+                      <div className="space-y-0.5">
+                        <BarraProgreso porcentaje={pct} etiqueta={`${c.etiqueta} de ${f.coleccion}`} />
+                        {faltan > 0 && f.coleccionId && (
+                          <button type="button" className="text-azul underline text-xs print:hidden" title={`${c.verPiezas} de ${f.coleccion}`}
+                                  aria-label={`${c.verPiezas} de ${f.coleccion}`}
+                                  onClick={() => onVer({ ...c.filtro, coleccionId: f.coleccionId ?? undefined })}>Ver {faltan.toLocaleString("es-PE")}</button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 );
               })}

@@ -4,6 +4,7 @@ import {
   ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta, type ReporteIncompletos, type ReporteIndicadores,
   type ReporteInventario, type ReportePorEstado, type ReporteUbicacion,
 } from "../../lib/reportes";
+import { Anillo, BarraProgreso, BarrasHorizontales } from "./Graficos";
 import { Indicadores } from "./Indicadores";
 
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
@@ -52,15 +53,6 @@ function Tabla({ columnas, children, vacio }: { columnas: string[]; children: Re
   );
 }
 
-const Grupos = ({ titulo, grupos, columna }: { titulo: string; grupos: { clave: string; valor: string; total: number }[]; columna: string }) => (
-  <section className="space-y-2">
-    <h3>{titulo}</h3>
-    <Tabla columnas={[columna, "Piezas"]} vacio="No hay datos para este grupo o tu rol no ve este campo.">
-      {grupos.map((g) => <tr key={g.clave}><td className="px-4 py-2">{g.valor}</td><td className="px-4 py-2">{g.total}</td></tr>)}
-    </Tabla>
-  </section>
-);
-
 /** Las ubicaciones tienen dos niveles (sede › ubicación): se agrupan por sede con su subtotal, sumando lo que ya trae el backend. */
 function PorUbicacion({ r }: { r: ReporteUbicacion }) {
   const sedes = new Map<string, { total: number; filas: { clave: string; nombre: string; total: number }[] }>();
@@ -71,7 +63,12 @@ function PorUbicacion({ r }: { r: ReporteUbicacion }) {
     grupo.filas.push({ clave: u.ubicacionId, nombre: resto.join(" › ") || sede, total: u.total });
     sedes.set(sede, grupo);
   }
-  const filas = [...sedes].flatMap(([sede, g]) => [
+  // Con una sola sede el nivel «Sede» no aporta: se muestra una lista plana de ubicaciones (la base conserva los dos niveles).
+  const unaSede = sedes.size === 1;
+  const filas = unaSede ? r.porUbicacion.map((u) => {
+    const [sede, ...resto] = u.ubicacion.split(" › ");
+    return <tr key={u.ubicacionId}><td className="px-4 py-2">{resto.join(" › ") || sede}</td><td className="px-4 py-2">{u.total}</td></tr>;
+  }) : [...sedes].flatMap(([sede, g]) => [
     <tr key={`sede-${sede}`} className="bg-fondo-suave font-semibold"><td className="px-4 py-2">{sede}</td><td className="px-4 py-2">{g.total}</td></tr>,
     ...g.filas.map((f) => <tr key={f.clave}><td className="pl-8 pr-4 py-2">{f.nombre}</td><td className="px-4 py-2">{f.total}</td></tr>),
   ]);
@@ -79,8 +76,112 @@ function PorUbicacion({ r }: { r: ReporteUbicacion }) {
   return (
     <section className="space-y-2">
       <h3>Por ubicación</h3>
-      <Tabla columnas={["Sede › ubicación", "Piezas"]} vacio="No hay datos para este grupo o tu rol no ve este campo.">{filas}</Tabla>
+      {unaSede && <p className="text-sm text-gris-2">Sede: {[...sedes.keys()][0]}</p>}
+      <Tabla columnas={[unaSede ? "Ubicación" : "Sede › ubicación", "Piezas"]} vacio="No hay datos para este grupo o tu rol no ve este campo.">{filas}</Tabla>
     </section>
+  );
+}
+
+const VISIBLES_ESTADO = 10;
+
+/** Por estado en una sola vista: el estado de la pieza (pocos valores) como tarjetas y el de conservación (decenas) como barras con los
+ *  10 mayores; el resto se despliega y al imprimir se muestra completo. No se unen valores parecidos: eso es limpieza de datos (F0/F4). */
+function PorEstado({ r }: { r: ReportePorEstado }) {
+  const [todos, setTodos] = useState(false);
+  const conservacion = r.porEstadoConservacion.map((g) => ({ clave: g.valorId ?? "-", etiqueta: g.valor, total: g.total }));
+  const resto = conservacion.length - VISIBLES_ESTADO;
+  const maximo = Math.max(1, ...conservacion.map((g) => g.total));
+  return (
+    <div className="space-y-6">
+      <section className="space-y-2">
+        <h3>Por estado de la pieza</h3>
+        {r.porEstadoPieza.length ? (
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {r.porEstadoPieza.map((g) => (
+              <div key={g.valorId ?? "-"} className="kpi-card">
+                <p className="text-xs text-gris-2">{g.valor}</p>
+                <p className="text-2xl font-display font-bold text-azul">{g.total.toLocaleString("es-PE")}</p>
+                <p className="text-xs text-gris-2">piezas</p>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-gris-2">No hay datos para este grupo o tu rol no ve este campo.</p>}
+      </section>
+      <section className="space-y-2">
+        <h3>Por estado de conservación</h3>
+        {conservacion.length ? (
+          <>
+            <BarrasHorizontales items={conservacion.slice(0, VISIBLES_ESTADO)} maximo={maximo} />
+            {resto > 0 && (
+              <>
+                <div className={todos ? "" : "hidden print:block"}><BarrasHorizontales items={conservacion.slice(VISIBLES_ESTADO)} maximo={maximo} /></div>
+                <button type="button" className="text-azul underline text-sm font-semibold print:hidden" aria-expanded={todos} onClick={() => setTodos(!todos)}>
+                  {todos ? "Ver solo los 10 mayores" : `Ver los ${resto} restantes`}
+                </button>
+              </>
+            )}
+          </>
+        ) : <p className="text-gris-2">No hay datos para este grupo o tu rol no ve este campo.</p>}
+      </section>
+    </div>
+  );
+}
+
+const DETALLE_PASO = 50;
+
+/** Información incompleta: el resumen y las barras salen de los números del backend; el detalle se muestra por tramos. */
+function Incompletas({ r, etiquetas }: { r: ReporteIncompletos; etiquetas: Record<string, string> }) {
+  const [visibles, setVisibles] = useState(DETALLE_PASO);
+  const nombre = (c: string) => etiquetas[c] ?? FALTANTE[c] ?? c;
+  return (
+    <div className="space-y-6">
+      <div className="kpi-card flex items-center gap-4">
+        <Anillo porcentaje={r.porcentajeIncompleto} etiqueta="Piezas incompletas" tamano={80} />
+        <div>
+          <p className="text-3xl font-display font-bold text-azul">{r.porcentajeIncompleto.toLocaleString("es-PE", { maximumFractionDigits: 1 })} %</p>
+          <p className="text-sm">{r.piezasIncompletas.toLocaleString("es-PE")} de {r.totalPiezas.toLocaleString("es-PE")} piezas incompletas</p>
+        </div>
+      </div>
+      <section className="space-y-2">
+        <h3>Completitud por colección</h3>
+        {r.porColeccion.length ? (
+          <ul className="space-y-1.5">
+            {r.porColeccion.map((g) => (
+              <li key={g.coleccionId ?? "-"} className="grid grid-cols-[minmax(0,14rem)_1fr_auto] items-center gap-2 text-sm">
+                <span className="truncate" title={g.coleccion}>{g.coleccion}</span>
+                <BarraProgreso porcentaje={g.porcentajeCompleto} etiqueta={`Completitud de ${g.coleccion}`} />
+                <span className="text-xs text-gris-2 text-right">{g.piezasIncompletas.toLocaleString("es-PE")} de {g.totalPiezas.toLocaleString("es-PE")} incompletas</span>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="text-gris-2">Sin datos por colección (o tu rol no ve la colección).</p>}
+      </section>
+      <section className="space-y-2">
+        <h3>Qué falta más</h3>
+        {r.porFaltante?.length
+          ? <BarrasHorizontales items={r.porFaltante.map((f) => ({ clave: f.campo, etiqueta: nombre(f.campo), total: f.total }))} />
+          : <p className="text-gris-2">No hay campos faltantes con estos filtros.</p>}
+      </section>
+      <section className="space-y-2">
+        <h3>Piezas incompletas</h3>
+        <Tabla columnas={["Pieza", "Le falta"]} vacio="No hay piezas incompletas con estos filtros.">
+          {r.detalle.slice(0, visibles).map((d) => (
+            <tr key={d.piezaId}>
+              <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${d.piezaId}`}>{d.denominacion ?? "Sin denominación"}</Link></td>
+              <td className="px-4 py-2">
+                <span className="flex flex-wrap gap-1">{d.camposFaltantes.map((c) => <span key={c} className="chip !py-0 !px-2 !text-xs">{nombre(c)}</span>)}</span>
+              </td>
+            </tr>
+          ))}
+        </Tabla>
+        {r.detalle.length > visibles && (
+          <p className="print:hidden text-sm flex flex-wrap items-center gap-3">
+            Se muestran {visibles.toLocaleString("es-PE")} de {r.detalle.length.toLocaleString("es-PE")}.
+            <button type="button" className="btn-glass !py-1 !px-3 !text-sm" onClick={() => setVisibles(visibles + DETALLE_PASO)}>Mostrar {DETALLE_PASO} más</button>
+          </p>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -105,51 +206,7 @@ export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
       </Tabla>
     );
   }
-  if (clave === "por-estado") {
-    const r = datos as ReportePorEstado;
-    const filas = (g: ReportePorEstado["porEstadoPieza"]) => g.map((x) => ({ clave: x.valorId ?? "-", valor: x.valor, total: x.total }));
-    return (
-      <div className="grid gap-6 md:grid-cols-2">
-        <Grupos titulo="Por estado de la pieza" columna="Estado" grupos={filas(r.porEstadoPieza)} />
-        <Grupos titulo="Por estado de conservación" columna="Estado" grupos={filas(r.porEstadoConservacion)} />
-      </div>
-    );
-  }
+  if (clave === "por-estado") return <PorEstado r={datos as ReportePorEstado} />;
   if (clave === "por-ubicacion") return <PorUbicacion r={datos as ReporteUbicacion} />;
-  const r = datos as ReporteIncompletos;
-  return (
-    <div className="space-y-6">
-      <p className="kpi-card inline-block">{r.piezasIncompletas} de {r.totalPiezas} piezas incompletas ({r.porcentajeIncompleto} %)</p>
-      <section className="space-y-2">
-        <h3>Completitud por colección</h3>
-        <Tabla columnas={["Colección", "Piezas", "Incompletas", "% completo"]} vacio="Sin datos por colección (o tu rol no ve la colección).">
-          {r.porColeccion.map((g) => (
-            <tr key={g.coleccionId ?? "-"}>
-              <td className="px-4 py-2">{g.coleccion}</td><td className="px-4 py-2">{g.totalPiezas}</td>
-              <td className="px-4 py-2">{g.piezasIncompletas}</td><td className="px-4 py-2">{g.porcentajeCompleto} %</td>
-            </tr>
-          ))}
-        </Tabla>
-      </section>
-      <section className="space-y-2">
-        <h3>Qué falta más</h3>
-        <Tabla columnas={["Campo faltante", "Piezas a las que les falta"]} vacio="No hay campos faltantes con estos filtros.">
-          {(r.porFaltante ?? []).map((f) => (
-            <tr key={f.campo}><td className="px-4 py-2">{etiquetas[f.campo] ?? FALTANTE[f.campo] ?? f.campo}</td><td className="px-4 py-2">{f.total}</td></tr>
-          ))}
-        </Tabla>
-      </section>
-      <section className="space-y-2">
-        <h3>Piezas incompletas</h3>
-        <Tabla columnas={["Pieza", "Le falta"]} vacio="No hay piezas incompletas con estos filtros.">
-          {r.detalle.map((d) => (
-            <tr key={d.piezaId}>
-              <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${d.piezaId}`}>{d.denominacion ?? "Sin denominación"}</Link></td>
-              <td className="px-4 py-2">{d.camposFaltantes.map((c) => etiquetas[c] ?? FALTANTE[c] ?? c).join(", ")}</td>
-            </tr>
-          ))}
-        </Tabla>
-      </section>
-    </div>
-  );
+  return <Incompletas r={datos as ReporteIncompletos} etiquetas={etiquetas} />;
 }
