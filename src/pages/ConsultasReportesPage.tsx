@@ -8,8 +8,11 @@ import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
 import { nombresDeOpciones, useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
 import { usePermisos } from "../hooks/usePermisos";
 import { nombreFicha, type Ficha } from "../lib/ficha";
-import { useRecurso } from "../lib/recursosFicha";
-import { descargarExcel, filasDeImpresion, MAX_FILAS_IMPRESION, mensajeReporte, parametros, totalDe, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta } from "../lib/reportes";
+import { get, useRecurso } from "../lib/recursosFicha";
+import {
+  descargarExcel, esPaginado, filasDeImpresion, MAX_FILAS_IMPRESION, mensajeReporte, parametros, TAMANO_PAGINA_REPORTE, totalDe,
+  type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta, type PaginacionReporte,
+} from "../lib/reportes";
 import type { Pagina } from "../types";
 
 /** Error de una consulta con mensaje según el caso y «Reintentar» sin perder los filtros (QA F8-01 y F8-05). */
@@ -48,6 +51,10 @@ export function ConsultasReportesPage() {
   const [filtros, setFiltros] = useState<FiltrosConsulta>({});
   const [pestana, setPestana] = useState<Pestana>("busqueda");
   const [pagina, setPagina] = useState(1);
+  const [paginaReporte, setPaginaReporte] = useState(1);
+  // Reportes paginados por el servidor: para imprimir se pide el conjunto completo (hasta MAX_FILAS_IMPRESION) y se dibuja solo al imprimir.
+  const [impresion, setImpresion] = useState<{ clave: Pestana; datos: EncabezadoReporte } | null>(null);
+  const [preparandoImpresion, setPreparandoImpresion] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [descargando, setDescargando] = useState(false);
   const [versionFormulario, setVersionFormulario] = useState(0);
@@ -62,7 +69,9 @@ export function ConsultasReportesPage() {
     ["informacion-incompleta", "Información incompleta"],
   ];
   const busqueda = useRecurso<Pagina<Ficha>>("f8-busqueda", "/piezas", pestana === "busqueda", { ...params, pagina, tamano: TAMANO });
-  const reporte = useRecurso<EncabezadoReporte>("f8-reporte", `/reportes/${pestana}`, pestana !== "busqueda", params);
+  const paginado = esPaginado(pestana);
+  const reporte = useRecurso<EncabezadoReporte & Partial<PaginacionReporte>>(
+    "f8-reporte", `/reportes/${pestana}`, pestana !== "busqueda", paginado ? { ...params, pagina: paginaReporte, tamano: TAMANO_PAGINA_REPORTE } : params);
 
   async function exportar(ruta: string, nombre: string, conFiltros = true) {
     setDescargando(true);
@@ -79,15 +88,37 @@ export function ConsultasReportesPage() {
   const reportePendiente = reporte.isPending || reporte.isFetching;
   const consultando = pestana === "busqueda" ? busqueda.isPending || busqueda.isFetching : reportePendiente;
   const filasImpresion = reporte.data && pestana !== "busqueda" ? filasDeImpresion(pestana, reporte.data) : 0;
+  const hayVariasPaginas = (reporte.data?.paginas ?? 1) > 1;
   const demasiadasParaImprimir = filasImpresion > MAX_FILAS_IMPRESION;
   /** Desde un indicador: abre la búsqueda con los filtros vigentes más el que lista lo que falta. */
   function verPiezas(filtro: FiltrosConsulta) {
     setFiltros({ ...filtros, ...filtro });
     setPagina(1);
+    setPaginaReporte(1);
+    olvidarImpresion();
     setMensaje("");
     setPestana("busqueda");
     setVersionFormulario((v) => v + 1);
   }
+  function olvidarImpresion() { setImpresion(null); setPreparandoImpresion(false); }
+  /** Imprime lo que corresponde a los filtros, no a la página que se ve: con varias páginas pide primero el conjunto completo. */
+  async function imprimir() {
+    if (pestana === "busqueda" || !hayVariasPaginas) { window.print(); return; }
+    setPreparandoImpresion(true);
+    setMensaje("");
+    try {
+      setImpresion({ clave: pestana, datos: await get<EncabezadoReporte>(`/reportes/${pestana}`, params) });
+    } catch (error) {
+      setMensaje(mensajeReporte(error, "No se pudo preparar la impresión. Tus filtros se mantienen."));
+      setPreparandoImpresion(false);
+    }
+  }
+  useEffect(() => {
+    if (!impresion || !preparandoImpresion) return;
+    // Espera a que el navegador dibuje la copia completa antes de abrir el diálogo de impresión.
+    const t = window.setTimeout(() => { window.print(); setPreparandoImpresion(false); }, 150);
+    return () => window.clearTimeout(t);
+  }, [impresion, preparandoImpresion]);
   const hoy = new Date().toISOString().slice(0, 10);
   // Al imprimir, el título de la ventana pasa a ser el del reporte (el navegador lo pone en el encabezado de la hoja).
   const tituloReporte = pestana !== "busqueda" ? reporte.data?.titulo : undefined;
@@ -112,11 +143,11 @@ export function ConsultasReportesPage() {
       </div>
 
       <FiltrosReporte key={versionFormulario} inicial={filtros} opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
-                      onAplicar={(f) => { setFiltros(f); setPagina(1); setMensaje(""); }} />
+                      onAplicar={(f) => { setFiltros(f); setPagina(1); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }} />
 
       <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
         {pestanas.map(([clave, etiqueta]) => (
-          <button key={clave} role="tab" aria-selected={pestana === clave} onClick={() => { setPestana(clave); setMensaje(""); }}
+          <button key={clave} role="tab" aria-selected={pestana === clave} onClick={() => { setPestana(clave); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }}
                   className={`px-4 py-2 -mb-px text-sm font-semibold border-b-2 transition ${
                     pestana === clave ? "border-rojo text-azul" : "border-transparent text-gris-2 hover:text-azul"}`}>
             {etiqueta}
@@ -140,7 +171,7 @@ export function ConsultasReportesPage() {
           </button>
         )}
         {pestana !== "busqueda" && (
-          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={reportePendiente || !reporte.data || demasiadasParaImprimir} onClick={() => window.print()}
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={reportePendiente || !reporte.data || demasiadasParaImprimir || preparandoImpresion} onClick={imprimir}
                   title={demasiadasParaImprimir ? "Demasiadas piezas para imprimir" : undefined}>
             <Printer size={16} aria-hidden="true" /> Imprimir o guardar como PDF
           </button>
@@ -160,7 +191,12 @@ export function ConsultasReportesPage() {
             Acota con filtros o usa Exportar Excel.
           </p>
         )}
-        {descargando && <span className="text-sm text-gris-2">Preparando el archivo… puede tardar unos segundos.</span>}
+        {preparandoImpresion && <span className="text-sm text-gris-2">Preparando la impresión…</span>}
+        {descargando && (
+          <span className="text-sm text-gris-2">
+            Preparando el archivo… {pestana === "busqueda" ? "con muchas piezas puede tardar hasta un minuto." : "puede tardar unos segundos."} No cierres esta pantalla.
+          </span>
+        )}
         {mensaje && <p role="status" className="text-sm">{mensaje}</p>}
       </div>
 
@@ -206,10 +242,23 @@ export function ConsultasReportesPage() {
             <ErrorReporte error={reporte.error} onReintentar={() => reporte.refetch()} />
             {reportePendiente && <p role="status">Generando el reporte…</p>}
             {reporte.data && !reporte.isFetching && (
-              <>
+              <div className={impresion?.clave === pestana ? "space-y-4 print:hidden" : "space-y-4"}>
                 <Encabezado reporte={reporte.data} total={totalDe(pestana, reporte.data)} nombres={nombresDeOpciones(opciones)} />
                 <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} onVerPiezas={verPiezas} />
-              </>
+                {paginado && hayVariasPaginas && (
+                  <div className="flex flex-wrap gap-3 items-center print:hidden">
+                    <button type="button" className="btn-glass" disabled={paginaReporte <= 1} onClick={() => setPaginaReporte(paginaReporte - 1)}>Anterior</button>
+                    <p>Página {reporte.data.pagina} de {reporte.data.paginas} · {filasImpresion.toLocaleString("es-PE")} piezas</p>
+                    <button type="button" className="btn-glass" disabled={paginaReporte >= (reporte.data.paginas ?? 1)} onClick={() => setPaginaReporte(paginaReporte + 1)}>Siguiente</button>
+                  </div>
+                )}
+              </div>
+            )}
+            {impresion?.clave === pestana && (
+              <div className="hidden print:block space-y-4" aria-hidden="true">
+                <Encabezado reporte={impresion.datos} total={totalDe(pestana, impresion.datos)} nombres={nombresDeOpciones(opciones)} />
+                <CuerpoReporte clave={pestana} datos={impresion.datos} etiquetas={etiquetas} onVerPiezas={verPiezas} />
+              </div>
             )}
           </>
         )}

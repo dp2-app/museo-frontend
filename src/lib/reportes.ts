@@ -14,8 +14,15 @@ export interface EncabezadoReporte {
   institucion: { nombre: string | null; logoUrl: string | null; direccion: string | null };
   titulo: string; generadoEn: string; filtros: Record<string, string | boolean>;
 }
-export interface ReporteInventario extends EncabezadoReporte {
-  total: number;
+/** Páginas de un reporte paginado por el servidor: `total` y los porcentajes son siempre del conjunto filtrado completo. */
+export interface PaginacionReporte { pagina: number; tamano: number; paginas: number }
+/** Resumen del Inventario (lo arma el backend sobre todo el conjunto filtrado). `sinColeccion` y las colecciones faltan si el rol no ve la colección. */
+export interface ResumenInventario {
+  totalPiezas: number; completas: number; porCompletar: number; porcentajeCompletas: number | null; sinCodigoI: number;
+  sinColeccion: number | null; topColecciones: { coleccionId: string; coleccion: string; totalPiezas: number }[];
+}
+export interface ReporteInventario extends EncabezadoReporte, PaginacionReporte {
+  total: number; resumen: ResumenInventario;
   piezas: { id: string; denominacion: string | null; codigoPrincipal: string | null; otrosCodigos: string[]; coleccion: string | null; incompleta: boolean }[];
 }
 export interface GrupoReporte { valorId: string | null; valor: string; total: number }
@@ -23,7 +30,7 @@ export interface ReportePorEstado extends EncabezadoReporte { total: number; por
 export interface ReporteUbicacion extends EncabezadoReporte {
   total: number; porUbicacion: { ubicacionId: string; ubicacion: string; total: number }[]; sinUbicacion: number;
 }
-export interface ReporteIncompletos extends EncabezadoReporte {
+export interface ReporteIncompletos extends EncabezadoReporte, PaginacionReporte {
   totalPiezas: number; piezasIncompletas: number; porcentajeIncompleto: number;
   porFaltante: { campo: string; total: number }[];
   porColeccion: { coleccionId: string | null; coleccion: string; totalPiezas: number; piezasIncompletas: number; porcentajeCompleto: number }[];
@@ -106,12 +113,18 @@ export function mensajeReporte(error: unknown, generico = "El reporte tardó dem
   return extraerMensajeError(error);
 }
 
+/** Piezas por página en pantalla de los reportes paginados por el servidor (Inventario e Información incompleta). */
+export const TAMANO_PAGINA_REPORTE = 50;
+
+/** Reportes cuya lista de piezas viene por páginas. */
+export const esPaginado = (clave: string): clave is "inventario" | "informacion-incompleta" => clave === "inventario" || clave === "informacion-incompleta";
+
 /** Piezas que el navegador puede imprimir sin trabarse: con miles de filas el diálogo de impresión se cuelga (QA 5/11). */
 export const MAX_FILAS_IMPRESION = 300;
 
-/** Filas de pieza que imprimiría el reporte (los de totales por grupo no crecen con el catálogo). */
+/** Filas de pieza que imprimiría el reporte completo, no solo la página en pantalla (los de totales por grupo no crecen con el catálogo). */
 export function filasDeImpresion(clave: ClaveReporte, datos: unknown): number {
-  if (clave === "inventario") return (datos as ReporteInventario).piezas.length;
-  if (clave === "informacion-incompleta") return (datos as ReporteIncompletos).detalle.length;
+  if (clave === "inventario") return (datos as ReporteInventario).total;
+  if (clave === "informacion-incompleta") return (datos as ReporteIncompletos).piezasIncompletas;
   return 0;
 }
