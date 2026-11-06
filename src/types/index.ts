@@ -135,6 +135,8 @@ export interface CargaExcel {
   aprobadaPorNombre?: string | null;
   rechazadaPorNombre?: string | null;
   puedeAprobar?: boolean | null;
+  /** Avisos de la carga entera calculados por el backend; `sin_codigos_mapeados`: ninguna fila trae código del museo (R3). */
+  advertencias?: { codigo: string; mensaje: string }[];
   /** Reglas de duplicado con que se concilió la carga (RF-58, RF-39). */
   reglasAplicadas?: { activas?: string[]; similitudMinima?: number };
 }
