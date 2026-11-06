@@ -9,7 +9,7 @@ import { nombresDeOpciones, useOpcionesFiltro } from "../hooks/useOpcionesFiltro
 import { usePermisos } from "../hooks/usePermisos";
 import { nombreFicha, type Ficha } from "../lib/ficha";
 import { useRecurso } from "../lib/recursosFicha";
-import { descargarExcel, mensajeReporte, parametros, totalDe, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta } from "../lib/reportes";
+import { descargarExcel, filasDeImpresion, MAX_FILAS_IMPRESION, mensajeReporte, parametros, totalDe, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta } from "../lib/reportes";
 import type { Pagina } from "../types";
 
 /** Error de una consulta con mensaje según el caso y «Reintentar» sin perder los filtros (QA F8-01 y F8-05). */
@@ -66,6 +66,9 @@ export function ConsultasReportesPage() {
     }
   }
   const reportePendiente = reporte.isPending || reporte.isFetching;
+  const consultando = pestana === "busqueda" ? busqueda.isPending || busqueda.isFetching : reportePendiente;
+  const filasImpresion = reporte.data && pestana !== "busqueda" ? filasDeImpresion(pestana, reporte.data) : 0;
+  const demasiadasParaImprimir = filasImpresion > MAX_FILAS_IMPRESION;
   /** Desde un indicador: abre la búsqueda con los filtros vigentes más el que lista lo que falta. */
   function verPiezas(filtro: FiltrosConsulta) {
     setFiltros({ ...filtros, ...filtro });
@@ -101,7 +104,8 @@ export function ConsultasReportesPage() {
 
       <div className="flex flex-wrap gap-2 items-center print:hidden">
         {puede("reportes.exportar") && (
-          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando}
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando || consultando}
+                  title={consultando ? "Disponible cuando termine de generarse el reporte" : undefined}
                   onClick={() => pestana === "busqueda"
                     ? exportar("/exportaciones/piezas.xlsx", `piezas_${hoy}.xlsx`)
                     : exportar(`/exportaciones/reportes/${pestana}.xlsx`, `${pestana}_${hoy}.xlsx`)}>
@@ -109,7 +113,8 @@ export function ConsultasReportesPage() {
           </button>
         )}
         {pestana !== "busqueda" && (
-          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={reportePendiente || !reporte.data} onClick={() => window.print()}>
+          <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={reportePendiente || !reporte.data || demasiadasParaImprimir} onClick={() => window.print()}
+                  title={demasiadasParaImprimir ? "Demasiadas piezas para imprimir" : undefined}>
             <Printer size={16} aria-hidden="true" /> Imprimir o guardar como PDF
           </button>
         )}
@@ -121,7 +126,14 @@ export function ConsultasReportesPage() {
           </button>
         )}
         {pestana !== "busqueda" && reportePendiente && <span className="text-sm text-gris-2">Generando el reporte… Podrás imprimirlo cuando termine.</span>}
-        {descargando && <span className="text-sm text-gris-2">Preparando el archivo…</span>}
+        {consultando && <span className="text-sm text-gris-2">Exportar Excel se habilita cuando termine de generarse.</span>}
+        {demasiadasParaImprimir && (
+          <p role="status" className="text-sm">
+            Este reporte tiene {filasImpresion.toLocaleString("es-PE")} piezas y el navegador no puede imprimirlo completo (máximo {MAX_FILAS_IMPRESION.toLocaleString("es-PE")}).
+            Acota con filtros o usa Exportar Excel.
+          </p>
+        )}
+        {descargando && <span className="text-sm text-gris-2">Preparando el archivo… puede tardar unos segundos.</span>}
         {mensaje && <p role="status" className="text-sm">{mensaje}</p>}
       </div>
 

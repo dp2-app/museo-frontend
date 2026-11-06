@@ -17,8 +17,8 @@ export function ResultadoValidacion({ id, resultado, cargando }: { id: string; r
       <TriangleAlert size={16} className="shrink-0 mt-0.5 text-rojo" aria-hidden="true" />{e.mensaje}</p>)}
     {resultado.advertencias.map((e) => <p key={e.codigo + e.mensaje} className="flex gap-2 text-texto" data-codigo={e.codigo}>
       <TriangleAlert size={16} className="shrink-0 mt-0.5 text-paja" aria-hidden="true" />{e.mensaje}</p>)}
-    {resultado.errores.length === 0 && <p className="flex gap-2 text-verde font-semibold">
-      <CircleCheck size={16} className="shrink-0 mt-0.5" aria-hidden="true" />Código válido{resultado.valorNormalizado && ` · se guarda como ${resultado.valorNormalizado}`}</p>}
+    {resultado.errores.length === 0 && <p className="flex gap-2 text-azul font-semibold">
+      <CircleCheck size={16} className="shrink-0 mt-0.5 text-verde" aria-hidden="true" />Código válido{resultado.valorNormalizado && ` · se guarda como ${resultado.valorNormalizado}`}</p>}
   </div>;
 }
 

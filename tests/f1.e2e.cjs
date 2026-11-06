@@ -220,6 +220,68 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
     assert.ok(JSON.stringify(auditoria).includes('Se tipeó mal'), 'La corrección queda en la auditoría con su motivo');
     ok('Corregir el I por excepción exige motivo de 10+ caracteres y queda guardado y auditado (RF-05, T08, T09)');
 
+    // ------------------------------------------------------------ Ficha de la pieza con los componentes de F1 (H01, front#43)
+    const enFicha = await pieza('Ficha ' + sfx);
+    await page.goto(web + '/coleccion/' + enFicha.id);
+    const agregar = page.getByRole('form', { name: 'Agregar código', exact: true });
+    await agregar.getByLabel('Tipo de código', { exact: true }).selectOption(tipoI.id);
+    await agregar.getByLabel('Valor', { exact: true }).fill(conI.replace('-', '0'));  // I012345: el mismo I sin separador (#91)
+    await agregar.locator('[data-codigo="duplicado"]').waitFor();
+    assert.ok(await agregar.getByRole('button', { name: 'Agregar código', exact: true }).isDisabled());
+    const nuevoI = `I-${10000 + Math.floor(Math.random() * 80000)}`;
+    await agregar.getByLabel('Valor', { exact: true }).fill(nuevoI);
+    await agregar.getByText('Código válido', { exact: false }).waitFor();
+    await agregar.getByRole('button', { name: 'Agregar código', exact: true }).click();
+    await page.getByRole('button', { name: 'Corregir ' + nuevoI, exact: true }).click();
+    const corregirFicha = page.getByRole('form', { name: 'Corregir ' + tipoI.nombre });
+    const corregidoFicha = nuevoI.replace(/\d+$/, (n) => String(Number(n) + 1));
+    await corregirFicha.getByLabel('Valor corregido', { exact: true }).fill(corregidoFicha);
+    await corregirFicha.getByLabel('Motivo de la corrección', { exact: true }).fill('Corrección desde la ficha de la pieza');
+    await corregirFicha.getByText('Código válido', { exact: false }).waitFor();
+    await corregirFicha.getByRole('button', { name: 'Guardar corrección', exact: true }).click();
+    await page.getByRole('button', { name: 'Corregir ' + corregidoFicha, exact: true }).waitFor();
+    // D5: con el I vigente no pasa a comodato; el error del backend se muestra junto al formulario
+    const regimenFicha = page.getByRole('form', { name: 'Cambiar régimen de tenencia', exact: true });
+    await regimenFicha.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    await regimenFicha.getByLabel('Contraparte', { exact: true }).selectOption(prop.id);
+    await regimenFicha.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+    await regimenFicha.getByRole('alert').waitFor();
+    await shot(page, '11-ficha-codigos-y-tenencia');
+    assert.notEqual((await api(`/piezas/${enFicha.id}`)).tenenciaVigente?.regimen, 'comodato');
+    // Sin I, la misma pieza nueva sí pasa a comodato (RF-09)
+    const sinIFicha = await pieza('Ficha sin I ' + sfx);
+    await page.goto(web + '/coleccion/' + sinIFicha.id);
+    const regimenSinI = page.getByRole('form', { name: 'Cambiar régimen de tenencia', exact: true });
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    await regimenSinI.getByLabel('Contraparte', { exact: true }).selectOption(prop.id);
+    await regimenSinI.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+    await page.getByText('Tenencia: ' + comodato.nombre, { exact: false }).waitFor();
+    assert.equal((await api(`/piezas/${sinIFicha.id}`)).tenenciaVigente.regimen, 'comodato');
+    // RN-07: se restringe el comodato y, al cambiar solo la contraparte, la restricción se precarga y no se pierde
+    const otraContraparte = await api('/propietarios', 'POST', { tipoPersona: 'natural', nombre: 'Otro comodante E2E ' + sfx }, 201);
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    assert.equal(await regimenSinI.getByLabel('Contraparte', { exact: true }).inputValue(), prop.id, 'Con el mismo régimen se precarga la contraparte vigente');
+    await regimenSinI.getByLabel(/Publicación restringida/).check();
+    await regimenSinI.getByLabel('Condiciones contractuales', { exact: true }).fill('No fotografiar sin autorización del comodante');
+    const guardarTenencia = async () => {
+      const r = page.waitForResponse((x) => x.url().endsWith(`/piezas/${sinIFicha.id}/tenencias`) && x.request().method() === 'POST');
+      await regimenSinI.getByRole('button', { name: 'Cambiar régimen', exact: true }).click();
+      assert.equal((await r).status(), 201);
+    };
+    await guardarTenencia();
+    await page.getByText('· publicación restringida', { exact: false }).waitFor();
+    await regimenSinI.getByLabel('Nuevo régimen de tenencia', { exact: true }).selectOption(comodato.id);
+    assert.equal(await regimenSinI.getByLabel(/Publicación restringida/).isChecked(), true, 'La restricción vigente se precarga');
+    await regimenSinI.getByLabel('Contraparte', { exact: true }).selectOption(otraContraparte.id);
+    await guardarTenencia();
+    const tenencias = await api(`/piezas/${sinIFicha.id}/tenencias`);
+    const vigenteRn07 = tenencias.find((t) => t.vigente);
+    assert.equal(vigenteRn07.contraparte.id, otraContraparte.id);
+    assert.equal(vigenteRn07.restringidoPublicacion, true, 'RN-07: cambiar la contraparte no quita la restricción');
+    assert.equal(vigenteRn07.condicionesContractuales, 'No fotografiar sin autorización del comodante');
+    await shot(page, '12-ficha-comodato-restringido');
+    ok('Ficha: valida el I en vivo (también sin separador), lo agrega, lo corrige por excepción y cambia el régimen respetando D5 (H01, RF-04, RF-05, RF-09)');
+
     // ------------------------------------------------------------ Permisos: catalogador y consulta (RNF-08)
     for (const quien of ['catalogador', 'consulta']) {
       const sesion = await api('/auth/sesion', 'GET', undefined, 200, quien);
@@ -228,7 +290,10 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
       if (!tiene('piezas.ver')) { await p.waitForURL(web + '/'); await p.context().close(); continue; }
       await p.getByRole('heading', { name: 'Pendientes de código I', exact: true }).waitFor();
       await p.getByRole('status').filter({ hasText: /pendiente/ }).first().waitFor();
-      assert.equal(await p.getByRole('button', { name: /^Asignar código I a / }).count() > 0, tiene('codigos.gestionar'), quien + ': asignar según codigos.gestionar');
+      // El botón depende también del catálogo de tipos, que puede llegar después de la lista: se espera, no se cuenta al vuelo.
+      const asignarI = p.getByRole('button', { name: /^Asignar código I a / });
+      if (tiene('codigos.gestionar')) await asignarI.first().waitFor();
+      else assert.equal(await asignarI.count(), 0, quien + ': asignar según codigos.gestionar');
       await p.goto(web + '/coleccion/prestamos-temporales');
       if (tiene('tenencias.ver')) {
         await p.getByRole('heading', { name: 'Préstamos temporales', exact: true }).waitFor();
@@ -237,7 +302,7 @@ const pieza = (denominacion, extra = {}) => api('/piezas', 'POST', { campos: { d
       } else await p.waitForURL(web + '/');
       await p.goto(web + '/administracion');
       // Mismo criterio que PERMISOS_ADMINISTRACION (src/lib/secciones.ts): Administración es configuración.
-      const admin = ['config.codigos_tenencia', 'config.campos.ver', 'config.listas', 'config.institucion.ver', 'usuarios.ver', 'roles.ver', 'auditoria.ver'].some(tiene);
+      const admin = ['config.codigos_tenencia', 'propietarios.ver', 'config.campos.ver', 'config.listas', 'config.institucion.ver', 'usuarios.ver', 'roles.ver', 'auditoria.ver'].some(tiene);
       if (admin) {
         await p.getByRole('heading', { name: 'Administración', exact: true }).waitFor();
         assert.equal(await p.getByRole('button', { name: 'Tipos de código', exact: true }).count(), tiene('config.codigos_tenencia') ? 1 : 0);

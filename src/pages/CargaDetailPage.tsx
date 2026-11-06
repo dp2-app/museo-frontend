@@ -2,7 +2,7 @@ import { Fragment, useRef, useState, type FormEvent, type ReactNode } from "reac
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
-import { CLASIFICACIONES, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
+import { CLASIFICACIONES, codigoRepetidoEnLote, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
 import { contar } from "../lib/texto";
 import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
@@ -17,6 +17,15 @@ function textoAviso(e: { columna?: string | null; campo?: string | null; mensaje
 const ACCION = "underline text-azul disabled:no-underline disabled:opacity-40 disabled:cursor-not-allowed";
 
 interface DecisionFila { estado?: "aprobado" | "rechazado"; motivoRechazo?: string; datosCorregidos?: Record<string, unknown>; piezaCoincidenteId?: string; curacionPendiente?: boolean; }
+
+/** El backend propone `errores_<archivo>_<hoja>.xlsx` en Content-Disposition (F4, RF-38); nunca se muestra el id de la carga. */
+function nombreDeDescarga(cabecera: unknown, archivo?: string | null): string {
+  const texto = typeof cabecera === "string" ? cabecera : "";
+  const m = /filename\*=UTF-8''([^;]+)/i.exec(texto) ?? /filename="?([^";]+)"?/i.exec(texto);
+  if (m) { try { return decodeURIComponent(m[1]); } catch { return m[1]; } }
+  const base = (archivo ?? "carga").replace(/\.xlsx$/i, "").replace(/[\\/:*?"<>|]/g, "_");
+  return `errores_${base}.xlsx`;
+}
 
 export function CargaDetailPage() {
   const { cargaId } = useParams<{ cargaId: string }>();
@@ -93,10 +102,13 @@ export function CargaDetailPage() {
     onSuccess: () => { setError(""); setAviso("Decisión guardada."); setCierre(null); setMotivo(""); invalidar(); }, onError: fallo,
   });
   const reporte = useMutation({
-    mutationFn: async () => (await datosApi.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" })).data as Blob,
-    onSuccess: (blob) => {
+    mutationFn: async () => {
+      const r = await datosApi.get(`/importacion/cargas/${cargaId}/reporte-errores`, { responseType: "blob" });
+      return { blob: r.data as Blob, nombre: nombreDeDescarga(r.headers?.["content-disposition"], carga?.archivoNombre) };
+    },
+    onSuccess: ({ blob, nombre }) => {
       setError(""); const url = URL.createObjectURL(blob); const link = document.createElement("a");
-      link.href = url; link.download = `errores_${cargaId}.xlsx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      link.href = url; link.download = nombre; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, onError: fallo,
   });
   const recargar = useMutation({
@@ -117,7 +129,9 @@ export function CargaDetailPage() {
     if (fila.clasificacion === "duplicado") { cerrarPaneles(); setDuplicadoFila(fila.id); setError(""); return; }
     revisarFila.mutate({ id: fila.id, datos: { estado: "aprobado" } });
   }
-  const sinCodigos = !!filas && filas.items.length > 0 && filas.items.every((f) => f.identificadores.length === 0);
+  // R3: el aviso es de la carga entera y lo calcula el backend; no depende de la página ni de los filtros que se vean.
+  const sinCodigos = !!carga?.advertencias?.some((a) => a.codigo === "sin_codigos_mapeados");
+  const avisoSinCodigos = "Ninguna fila de la carga trae código del museo reconocido. Si las apruebas, las piezas se crearán sin código y quedarán pendientes de código I. Si el archivo tiene una columna de código, vuelve a cargarlo con el formato de columnas que la reconozca.";
   function panelDeFila(fila: FilaImportacion): ReactNode {
     if (!abierta || !puedeRevisar) return null;
     if (edicion?.id === fila.id) return <EditorFila key={edicion.id} fila={edicion} ocupado={ocupado} guardar={(datos) => revisarFila.mutate({ id: edicion.id, datos })} cerrar={() => setEdicion(null)} />;
@@ -152,7 +166,7 @@ export function CargaDetailPage() {
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
     {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
     {filas && <p>{contar(filas.resumen.nuevo, "nueva", "nuevas")} · {contar(filas.resumen.actualizacion, "actualización", "actualizaciones")} · {contar(filas.resumen.duplicado, "posible duplicado", "posibles duplicados")} · {contar(filas.resumen.conflicto, "conflicto", "conflictos")}</p>}
-    {abierta && sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">Ninguna de las filas mostradas trae código del museo reconocido. Si las apruebas, las piezas se crearán sin código y quedarán pendientes de código I. Si el archivo tiene una columna de código, vuelve a cargarlo con el formato de columnas que la reconozca.</p>}
+    {abierta && sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
 
     <div className="flex flex-wrap gap-3">
       {carga.filasConError > 0 && <button className="btn-glass" onClick={() => reporte.mutate()} disabled={reporte.isPending}>Descargar reporte de errores</button>}
@@ -200,6 +214,7 @@ export function CargaDetailPage() {
         <li>Posibles duplicados que se registrarán como piezas distintas: <strong>{aprobadas.data.duplicados}</strong></li>
         <li>Filas rechazadas (no se registran): <strong>{carga.filasRechazadas}</strong></li>
       </ul>}
+      {sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
       <p>Las filas con advertencias o marcadas para curación entran a la cola de curación. Esta acción modifica el catálogo y no se puede deshacer desde esta pantalla.</p>
       <div className="flex flex-wrap gap-3"><button className="btn-primary" disabled={ocupado || !aprobadas.data}>{aplicar.isPending ? "Aplicando la carga…" : "Confirmar aprobación"}</button>
         <button type="button" className="btn-glass" onClick={() => setAprobando(false)} disabled={ocupado}>Volver a la revisión</button></div>
@@ -228,12 +243,13 @@ export function CargaDetailPage() {
             </details>
             {fila.errores.map((e, i) => <p key={i} className="text-rojo mt-2">{textoAviso(e)}</p>)}
             {fila.datosNormalizados?.advertencias?.map((e, i) => <p key={i} className="mt-2">Advertencia: {textoAviso(e)}{abierta && " Si se aprueba, la pieza se crea incompleta y entra a la cola de curación."}</p>)}
-            {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
+            {fila.candidatos.map((c, i) => <p key={i} className="mt-2">{c.explicacion}{c.piezaId && permisos.puede("piezas.ver_no_aprobadas") && <> <Link className="underline" to={`/coleccion/${c.piezaId}`}>Consultar pieza</Link></>}</p>)}
           </td>
           <td className="p-4" data-label="Clasificación">{CLASIFICACIONES[fila.clasificacion]}</td>
-          <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
+          <td className="p-4" data-label="Revisión">{fila.estado === "aprobado" ? "Revisada" : fila.estado === "rechazado" ? "Rechazada" : "Pendiente"}{fila.motivoRechazo && <p>{fila.motivoRechazo}</p>}{fila.curacionPendiente && <p className="mt-2 font-semibold">{abierta ? "Irá a la cola de curación al aprobar la carga" : "Quedó en la cola de curación"}</p>}{fila.piezaResultanteId && permisos.puede("piezas.ver_no_aprobadas") && <Link className="block underline mt-2" to={`/coleccion/${fila.piezaResultanteId}`}>Ver pieza registrada</Link>}</td>
           <td className="p-4 md:min-w-36" data-label="Acciones">{abierta && puedeRevisar && <div className="flex flex-wrap md:flex-col items-start gap-3">
-            <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || fila.estado === "aprobado"} className={ACCION} onClick={() => marcarRevisada(fila)}>Marcar revisada</button>
+            <button disabled={ocupado || !!fila.errores.length || fila.clasificacion === "conflicto" || codigoRepetidoEnLote(fila) || fila.estado === "aprobado"} aria-describedby={codigoRepetidoEnLote(fila) ? `repetido-${fila.id}` : undefined} className={ACCION} onClick={() => marcarRevisada(fila)}>Marcar revisada</button>
+            {codigoRepetidoEnLote(fila) && fila.estado !== "aprobado" && <p id={`repetido-${fila.id}`} className="text-sm text-texto">Su código se repite en otra fila de este lote. Corrige el código o rechaza una de las dos filas para poder revisarla.</p>}
             <button disabled={ocupado} className={ACCION} onClick={() => abrirCorreccion(fila)}>Corregir fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} className={ACCION} onClick={() => abrirCierre("fila", fila.id)}>Rechazar fila</button>
             <button disabled={ocupado || fila.estado === "rechazado"} aria-pressed={fila.curacionPendiente} className={ACCION}

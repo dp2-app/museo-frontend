@@ -78,7 +78,7 @@ export function CuracionImportacionPage() {
               {cola.data.items.map((c) => (
                 <tr key={c.id} className="border-t border-linea align-top">
                   <td className="p-4" data-label="Pieza">
-                    {permisos.puede("piezas.ver")
+                    {permisos.puede("piezas.ver_no_aprobadas")
                       ? <Link className="underline" to={`/coleccion/${c.piezaId}`}>{c.piezaDenominacion ?? "Sin denominación"}</Link>
                       : (c.piezaDenominacion ?? "Sin denominación")}
                   </td>
@@ -87,7 +87,7 @@ export function CuracionImportacionPage() {
                   <td className="p-4" data-label="Motivos"><ul className="list-disc pl-4">{c.motivos.map((m) => <li key={m.codigo}>{m.mensaje}</li>)}</ul></td>
                   <td className="p-4" data-label="Estado">
                     {c.estado === "pendiente" ? "Pendiente" : "Validado"}
-                    {c.estado === "pendiente" && !c.piezaDenominacion && <p className="mt-2 font-semibold">La pieza sigue sin denominación: ábrela y complétala antes de validar.</p>}
+                    {c.estado === "pendiente" && !c.piezaDenominacion && permisos.puede("piezas.ver_no_aprobadas") && <p className="mt-2 font-semibold">La pieza sigue sin denominación: ábrela y complétala antes de validar.</p>}
                     {c.validadoEn && <p>{c.validadoPorNombre ? `${c.validadoPorNombre}, ` : ""}{new Date(c.validadoEn).toLocaleString("es-PE")}</p>}
                     {c.nota && <p>{c.nota}</p>}
                   </td>

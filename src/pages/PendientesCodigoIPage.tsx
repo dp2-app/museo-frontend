@@ -71,7 +71,7 @@ export function PendientesCodigoIPage() {
           {puedeCorregir(a.codigo, puede) && corrigiendo !== a.codigo.id && <button type="button" className="f0-action" onClick={() => setCorrigiendo(a.codigo.id)}>Corregir {a.codigo.valor}</button>}
         </div>
         {corrigiendo === a.codigo.id && <CorregirCodigo piezaId={a.piezaId} codigo={a.codigo} alCancelar={() => setCorrigiendo(null)}
-          alTerminar={(codigo) => { setCorrigiendo(null); setAsignados(asignados.map((x) => x.codigo.id === codigo.id ? { ...x, codigo } : x)); }} />}
+          alTerminar={(codigo) => { setCorrigiendo(null); setAsignados((previos) => previos.map((x) => x.codigo.id === codigo.id ? { ...x, codigo } : x)); }} />}
       </li>)}</ul>
     </section>}
 
@@ -99,7 +99,9 @@ export function PendientesCodigoIPage() {
           {asignando === p.id && principal && <div className="glass-panel p-4 space-y-2">
             <AgregarCodigo piezaId={p.id} tipoFijo={principal.id} alGuardar={(codigo) => {
               setAsignando(null);
-              setAsignados([{ piezaId: p.id, denominacion: String(p.campos.denominacion ?? "Sin denominación"), codigo }, ...asignados]);
+              // Si era el último pendiente de la página, esa página queda vacía: se vuelve a la anterior (ASZ-H02, #59).
+              if (consulta.data?.items.length === 1 && pagina > 1) setPagina(pagina - 1);
+              setAsignados((previos) => [{ piezaId: p.id, denominacion: String(p.campos.denominacion ?? "Sin denominación"), codigo }, ...previos]);
               void cache.invalidateQueries({ queryKey: ["f1"] });
             }} />
             <button type="button" className="btn-danger-text text-sm" onClick={() => setAsignando(null)}>Cancelar</button>
