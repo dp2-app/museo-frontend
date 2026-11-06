@@ -160,10 +160,16 @@
 .f0-grupos-scroll::-webkit-scrollbar-track { background: theme("colors.fondo-suave"); }
 .f0-grupos-scroll::-webkit-scrollbar-thumb { background: theme("colors.gris-1"); border-radius: theme("borderRadius.pill"); }
 
+/* Tabla de maquetación de la pantalla de reportes: en pantalla es invisible (bloques normales, sin encabezado ni pie). */
+.print-hoja, .print-hoja > thead, .print-hoja > tbody, .print-hoja > tfoot, .print-hoja > tbody > tr, .print-hoja > tbody > tr > td { display: block; padding: 0; }
+.print-hoja > thead, .print-hoja > tfoot { display: none; }
+
 /* Impresión / PDF de reportes: ancho completo, sin marcos y sin cortar filas. */
+/* Margen de hoja 0: Chrome/Edge no imprimen entonces el encabezado ni el pie del navegador (título del sitio y URL).
+   Los márgenes reales los dan dos separadores que se repiten en cada hoja (.print-espacio) y el relleno lateral. */
 @page {
   size: A4 portrait;
-  margin: 14mm 12mm;
+  margin: 0;
 }
 @media print {
   html, body { background: #fff !important; font-size: 11pt; }
@@ -179,6 +185,14 @@
   thead { display: table-header-group; } /* repite el encabezado en cada hoja */
   tr, img { break-inside: avoid; page-break-inside: avoid; }
   th, td { padding-top: 4px !important; padding-bottom: 4px !important; }
+  .print-hoja { display: table; width: 100%; border-collapse: collapse; }
+  .print-hoja > thead { display: table-header-group; }
+  .print-hoja > tfoot { display: table-footer-group; }
+  .print-hoja > tbody { display: table-row-group; }
+  .print-hoja > tbody > tr { display: table-row; break-inside: auto !important; page-break-inside: auto !important; }
+  .print-hoja > thead > tr, .print-hoja > tfoot > tr { display: table-row; }
+  .print-hoja > tbody > tr > td, .print-hoja > thead > tr > td, .print-hoja > tfoot > tr > td { display: table-cell; padding: 0 12mm !important; }
+  .print-espacio { height: 14mm; }
   h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
   h2 { font-size: 18pt; }
   h3 { font-size: 13pt; }

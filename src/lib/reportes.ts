@@ -107,7 +107,7 @@ export function mensajeReporte(error: unknown, generico = "El reporte tardó dem
 }
 
 /** Piezas que el navegador puede imprimir sin trabarse: con miles de filas el diálogo de impresión se cuelga (QA 5/11). */
-export const MAX_FILAS_IMPRESION = 1000;
+export const MAX_FILAS_IMPRESION = 300;
 
 /** Filas de pieza que imprimiría el reporte (los de totales por grupo no crecen con el catálogo). */
 export function filasDeImpresion(clave: ClaveReporte, datos: unknown): number {

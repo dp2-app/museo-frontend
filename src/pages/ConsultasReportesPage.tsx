@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Database, FileDown, Printer, Search } from "lucide-react";
+import { Database, FileDown, Info, Printer, Search } from "lucide-react";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { FiltrosReporte } from "../components/f8/FiltrosReporte";
 import { CuerpoReporte, Encabezado } from "../components/f8/VistaReporte";
@@ -24,6 +24,16 @@ function ErrorReporte({ error, onReintentar }: { error: unknown; onReintentar: (
 }
 
 type Pestana = "busqueda" | ClaveReporte;
+
+/** Qué es cada pestaña y qué trae su Excel (el (i) de la barra de pestañas). */
+const AYUDA: Record<Pestana, string> = {
+  busqueda: "Lista de piezas (20 por página) con los filtros de arriba; no es un reporte. Su Excel trae la ficha completa de todas las piezas que cumplen los filtros, con los campos que tu rol puede ver.",
+  indicadores: "Indicadores de gestión: qué porcentaje del catálogo tiene la ficha completa, fotografía, ubicación y código I, comparado con la línea base y con la semana anterior. Cada número lleva a la lista de piezas que le falta. Su Excel trae las mismas tarjetas y la tabla por colección.",
+  inventario: "Inventario: una fila por pieza con su código I, otros códigos, denominación, colección y si le falta información. Su Excel trae las mismas filas.",
+  "por-estado": "Cuántas piezas hay por estado de la pieza y por estado de conservación. Los valores se muestran como están registrados. Su Excel trae una hoja por cada grupo.",
+  "por-ubicacion": "Cuántas piezas hay en cada ubicación, más las que no tienen ubicación. Su Excel trae la misma tabla.",
+  "informacion-incompleta": "Qué piezas tienen campos obligatorios, código del museo o fotografía sin completar, cuántas son por colección y qué falta más. Su Excel trae el resumen por colección, qué falta más y el detalle por pieza.",
+};
 const TAMANO = 20;
 
 // F8 · Consultas y reportes (RF-45..RF-49) sobre el contrato v3. La búsqueda y los reportes usan los mismos filtros
@@ -41,6 +51,7 @@ export function ConsultasReportesPage() {
   const [mensaje, setMensaje] = useState("");
   const [descargando, setDescargando] = useState(false);
   const [versionFormulario, setVersionFormulario] = useState(0);
+  const [ayudaAbierta, setAyudaAbierta] = useState(false);
   const params = parametros(filtros);
   const verUbicacion = !camposOcultos.includes("ubicacion_actual_id");
   const verEstado = !camposOcultos.includes("estado_pieza_id");
@@ -78,6 +89,17 @@ export function ConsultasReportesPage() {
     setVersionFormulario((v) => v + 1);
   }
   const hoy = new Date().toISOString().slice(0, 10);
+  // Al imprimir, el título de la ventana pasa a ser el del reporte (el navegador lo pone en el encabezado de la hoja).
+  const tituloReporte = pestana !== "busqueda" ? reporte.data?.titulo : undefined;
+  useEffect(() => {
+    if (!tituloReporte) return;
+    let original = document.title;
+    const antes = () => { original = document.title; document.title = tituloReporte; };
+    const despues = () => { document.title = original; };
+    window.addEventListener("beforeprint", antes);
+    window.addEventListener("afterprint", despues);
+    return () => { window.removeEventListener("beforeprint", antes); window.removeEventListener("afterprint", despues); };
+  }, [tituloReporte]);
 
   return (
     <div className="space-y-6">
@@ -100,7 +122,12 @@ export function ConsultasReportesPage() {
             {etiqueta}
           </button>
         ))}
+        <button type="button" className="ml-auto self-center p-1.5 text-azul" aria-expanded={ayudaAbierta} aria-controls="ayuda-pestana"
+                aria-label={`Qué es la pestaña ${pestanas.find(([c]) => c === pestana)?.[1] ?? ""}`} title="Qué muestra esta pestaña" onClick={() => setAyudaAbierta(!ayudaAbierta)}>
+          <Info size={18} aria-hidden="true" />
+        </button>
       </div>
+      {ayudaAbierta && <p id="ayuda-pestana" role="note" className="text-sm bg-fondo-suave rounded-card px-4 py-3 print:hidden">{AYUDA[pestana]}</p>}
 
       <div className="flex flex-wrap gap-2 items-center print:hidden">
         {puede("reportes.exportar") && (
@@ -137,6 +164,8 @@ export function ConsultasReportesPage() {
         {mensaje && <p role="status" className="text-sm">{mensaje}</p>}
       </div>
 
+      {/* Tabla de maquetación solo para imprimir: su encabezado y pie vacíos se repiten en cada hoja y hacen de margen (ver index.css). */}
+      <table role="presentation" className="print-hoja"><thead aria-hidden="true"><tr><td><div className="print-espacio" /></td></tr></thead><tbody><tr><td>
       <div role="tabpanel" className="glass-panel p-4 space-y-4 print:p-0">
         {pestana === "busqueda" ? (
           <>
@@ -185,6 +214,7 @@ export function ConsultasReportesPage() {
           </>
         )}
       </div>
+      </td></tr></tbody><tfoot aria-hidden="true"><tr><td><div className="print-espacio" /></td></tr></tfoot></table>
     </div>
   );
 }
