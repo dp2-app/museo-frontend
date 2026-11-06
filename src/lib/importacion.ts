@@ -40,6 +40,11 @@ export function valorLegible(valor: unknown): string {
   return String(valor);
 }
 
+/** El código de la fila se repite en otra fila del lote (R2, D7): el backend no la deja aprobar hasta corregirlo o rechazar una de las dos. */
+export function codigoRepetidoEnLote(fila: FilaImportacion): boolean {
+  return fila.candidatos.some((c) => c.regla === "identificador_repetido_en_lote");
+}
+
 export interface SeleccionRevision {
   nuevas: string[]; actualizaciones: string[]; duplicados: string[]; excluidas: number;
 }
@@ -55,7 +60,7 @@ export async function prepararRevision(cargaId: string): Promise<SeleccionRevisi
     total = data.total;
     for (const fila of data.items) {
       if (fila.errores.length || fila.clasificacion === "conflicto" ||
-          fila.candidatos.some((c) => c.regla === "identificador_repetido_en_lote")) {
+          codigoRepetidoEnLote(fila)) {
         seleccion.excluidas++;
       } else if (fila.clasificacion === "nuevo") seleccion.nuevas.push(fila.id);
       else if (fila.clasificacion === "actualizacion") seleccion.actualizaciones.push(fila.id);
