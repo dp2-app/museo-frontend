@@ -64,7 +64,7 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
     </summary>
     <form onSubmit={enviar} noValidate className="mt-4 space-y-4">
       <fieldset className="space-y-2" disabled={!puedeEditar || guardar.isPending}>
-        <legend className="form-label">Criterios para marcar un posible duplicado</legend>
+        <legend className="form-label text-texto">Criterios para marcar un posible duplicado</legend>
         {reglas.reglas.map((r) => <label key={r.clave} className="flex items-start gap-2">
           <input type="checkbox" className="mt-1" checked={r.configurable ? activas.includes(r.clave) : true}
             disabled={!r.configurable || !puedeEditar} onChange={() => alternar(r.clave)} />
@@ -73,14 +73,14 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
       </fieldset>
 
       <div>
-        <label htmlFor="reglas-umbral" className="form-label">Similitud mínima de la denominación ({UMBRAL_MIN.toFixed(2)} a {UMBRAL_MAX.toFixed(2)})</label>
+        <label htmlFor="reglas-umbral" className="form-label text-texto">Similitud mínima de la denominación ({UMBRAL_MIN.toFixed(2)} a {UMBRAL_MAX.toFixed(2)})</label>
         <input id="reglas-umbral" type="number" inputMode="decimal" step="0.05" min={UMBRAL_MIN} max={UMBRAL_MAX}
           className="glass-input max-w-[8rem]" value={umbral} disabled={!puedeEditar || guardar.isPending}
           aria-invalid={!umbralValido} onChange={(e) => setUmbral(e.target.value)} />
       </div>
 
       <div>
-        <label htmlFor="reglas-aprobador" className="form-label">Permiso que autoriza aprobar una carga</label>
+        <label htmlFor="reglas-aprobador" className="form-label text-texto">Permiso que autoriza aprobar una carga</label>
         {puedeEditar && puedeListarPermisos
           ? <select id="reglas-aprobador" className="glass-input" value={aprobador} disabled={guardar.isPending || permisos.isPending}
               onChange={(e) => setAprobador(e.target.value)}>
