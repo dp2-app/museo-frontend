@@ -36,8 +36,14 @@ async function llamar(token, ruta, cuerpo) {
   await page.goto(web + '/coleccion');
   await page.getByLabel('Texto de la ficha', { exact: true }).waitFor();
 
+  async function abrirAvanzados() {
+    const boton = page.getByRole('button', { name: /Filtros avanzados/ });
+    if ((await boton.getAttribute('aria-expanded')) !== 'true') await boton.click();
+  }
+
   async function buscar(texto, extra = {}) {
     await page.getByLabel('Texto de la ficha', { exact: true }).fill(texto);
+    if (Object.keys(extra).length) await abrirAvanzados();
     for (const [etiqueta, valor] of Object.entries(extra)) await page.getByLabel(etiqueta, { exact: true }).fill(valor);
     const respuesta = page.waitForResponse((r) => r.url().startsWith(api + '/piezas?') && r.request().method() === 'GET'
       && new URL(r.url()).searchParams.get('q') === texto);
@@ -56,6 +62,7 @@ async function llamar(token, ruta, cuerpo) {
   ok('Los comodines se buscan como texto');
   assert.deepEqual(await buscar(marca, { Autor: 'anonimo' }), [`Mate burilado ${marca}`]);
   ok('RF-42: filtro por atributo (autor) sin tildes, combinado con el texto');
+  await abrirAvanzados();
   for (const etiqueta of ['Material', 'Tipo de bien', 'Clasificación', 'Procedencia', 'Estado de conservación', 'Ubicación']) {
     await page.locator('form label.form-label', { hasText: etiqueta }).first().waitFor();
   }
