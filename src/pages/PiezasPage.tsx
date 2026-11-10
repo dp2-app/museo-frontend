@@ -10,6 +10,7 @@ import { ErrorConsulta, Panel } from "../components/FichaComun";
 import { useRecurso } from "../lib/recursosFicha";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { AltaComplementos, type Complementos } from "../components/IdentificacionFicha";
+import { errorLocal } from "../lib/f1";
 import { AccesosF1 } from "../components/f1/PendienteCodigoI";
 import { usePermisos } from "../hooks/usePermisos";
 import { api } from "../lib/api";
@@ -18,7 +19,7 @@ import type { Pagina } from "../types";
 
 export function PiezasPage() {
   const { puede, sesion } = usePermisos(); const navegar = useNavigate(); const cache = useQueryClient();
-  const [nueva, setNueva] = useState(false); const [complementos, setComplementos] = useState<Complementos>({ codigos: [] });
+  const [nueva, setNueva] = useState(false); const [complementos, setComplementos] = useState<Complementos>({ codigos: [] }); const [problemas, setProblemas] = useState<string[]>([]);
   const [pagina, setPagina] = useState(1); const [filtros, setFiltros] = useState<Record<string, unknown>>({});
   const piezas = useRecurso<Pagina<Ficha>>("piezas", "/piezas", true, { ...filtros, pagina, tamano: 20 });
   const opciones = useOpcionesFiltro();
@@ -26,7 +27,7 @@ export function PiezasPage() {
     <AccesosF1 />
     {puede("colecciones.gestionar") && <details><summary className="cursor-pointer font-semibold">Gestionar colecciones</summary><Colecciones /></details>}
     <button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button>
-    {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={setComplementos} /><FormularioFicha onGuardar={async (datos) => { const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
+    {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={(v, p) => { setComplementos(v); setProblemas(p); }} /><FormularioFicha onGuardar={async (datos) => { if (problemas.length) throw errorLocal(problemas); const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
     <FiltrosReporte opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
       onAplicar={(f) => { setPagina(1); setFiltros(parametros(f)); }} /><ErrorConsulta error={piezas.error} />{piezas.isPending && <p>Cargando piezas…</p>}
     <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr><th className="p-4">Pieza / códigos</th><th className="p-4">Colección</th><th className="p-4">Ficha</th><th className="p-4">Información</th></tr></thead>
