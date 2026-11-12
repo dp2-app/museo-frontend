@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { usePermisos } from "../hooks/usePermisos";
 import { api } from "../lib/api";
-import { ubicacionesPlanas, type Ficha, type Ubicacion } from "../lib/ficha";
+import { ubicacionesPlanas, type Ficha, type HistorialFicha, type Ubicacion } from "../lib/ficha";
 import type { ValorLista } from "../types";
 import { Aviso, ErrorConsulta, Panel } from "./FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
 
-interface Historial { id: string; fecha: string; responsable: string; motivo: string | null; ubicacionAnterior?: string; ubicacionNueva?: string; estadoAnterior?: string; estadoNuevo?: string; }
-export function EstadoUbicacion({ pieza }: { pieza: Ficha }) {
+type Historial = HistorialFicha;
+export function EstadoUbicacion({ pieza, movimientosIniciales, estadosIniciales }: { pieza: Ficha; movimientosIniciales?: Historial[]; estadosIniciales?: Historial[] }) {
   const { puede, sesion } = usePermisos();
   const veUbicacion = Boolean(sesion) && !sesion?.camposOcultos.includes("ubicacion_actual_id");
   const veEstado = Boolean(sesion) && !sesion?.camposOcultos.includes("estado_pieza_id");
-  const movimientos = useRecurso<Historial[]>("movimientos", `/piezas/${pieza.id}/movimientos`, veUbicacion);
-  const estados = useRecurso<Historial[]>("estados", `/piezas/${pieza.id}/estados`, veEstado);
+  const movimientos = useRecurso<Historial[]>("movimientos", `/piezas/${pieza.id}/movimientos`, veUbicacion, undefined, movimientosIniciales);
+  const estados = useRecurso<Historial[]>("estados", `/piezas/${pieza.id}/estados`, veEstado, undefined, estadosIniciales);
   const ubicaciones = useRecurso<Ubicacion[]>("ubicaciones", "/ubicaciones", veUbicacion);
   const lista = useRecurso<ValorLista[]>("estado-pieza", "/listas/estado_pieza/valores", veEstado);
   const tipos = useRecurso<ValorLista[]>("tipo-movimiento", "/listas/tipo_movimiento/valores", veUbicacion && puede("movimientos.registrar"));
@@ -42,5 +42,5 @@ export function EstadoUbicacion({ pieza }: { pieza: Ficha }) {
 }
 function HistorialVista({ titulo, registros, error, cargando }: { titulo: string; registros?: Historial[]; error: unknown; cargando: boolean }) {
   return <div><h4 className="font-semibold">{titulo}</h4><ErrorConsulta error={error} />{cargando && <p>Cargando historial…</p>}
-    <ol className="space-y-3 mt-2">{registros?.map((r) => <li key={r.id} className="border-l-2 border-linea pl-3 text-sm"><p>{r.ubicacionAnterior ?? r.estadoAnterior ?? "Sin asignar"} → {r.ubicacionNueva ?? r.estadoNuevo}</p><p>{r.motivo || "Sin motivo registrado"}</p><p className="text-gris-2">{new Date(r.fecha).toLocaleString("es-PE")} · {r.responsable}</p></li>)}</ol>{registros?.length === 0 && <p>Sin cambios registrados.</p>}</div>;
+    <ol className="space-y-3 mt-2">{registros?.map((r) => <li key={r.id} className="border-l-2 border-linea pl-3 text-sm"><p>{r.ubicacionAnterior ?? r.estadoAnterior ?? "Sin asignar"} → {r.ubicacionNueva ?? r.estadoNuevo}</p><p>{r.motivo || "Sin motivo registrado"}</p><p className="text-gris-2">{new Date(r.fecha).toLocaleString("es-PE")} · {r.responsable || "Sin responsable"}</p></li>)}</ol>{registros?.length === 0 && <p>Sin cambios registrados.</p>}</div>;
 }

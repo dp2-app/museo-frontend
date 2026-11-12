@@ -14,8 +14,8 @@ import { ErrorOperacion, Etiqueta } from "../f0/Comun";
  * RN-07: la tenencia nueva reemplaza a la vigente, así que la restricción de publicación, las condiciones y el
  * documento se precargan desde la vigente; si no se reenvían, el backend los deja en blanco y la restricción se
  * perdería sin aviso. El régimen actual también se puede elegir para cambiar solo la contraparte o las condiciones. */
-export function CambiarRegimen({ piezaId, regimenActual, restringidoActual = false, alGuardar }: {
-  piezaId: string; regimenActual?: string | null; restringidoActual?: boolean; alGuardar: (t: Tenencia) => void;
+export function CambiarRegimen({ piezaId, regimenActual, restringidoActual = false, alGuardar, historialInicial }: {
+  piezaId: string; regimenActual?: string | null; restringidoActual?: boolean; alGuardar: (t: Tenencia) => void; historialInicial?: Tenencia[];
 }) {
   const { puede } = usePermisos();
   const id = useId();
@@ -23,7 +23,8 @@ export function CambiarRegimen({ piezaId, regimenActual, restringidoActual = fal
   const vePropietarios = puede("propietarios.ver");
   const propietarios = usePropietarios(vePropietarios);
   const historial = useConsultaF0({ queryKey: ["f1", "tenencias-pieza", piezaId], enabled: puede("tenencias.ver"),
-    queryFn: async () => (await api.get<Tenencia[]>(`/piezas/${piezaId}/tenencias`)).data });
+    queryFn: async () => (await api.get<Tenencia[]>(`/piezas/${piezaId}/tenencias`)).data,
+    ...(historialInicial ? { initialData: historialInicial, staleTime: 5 * 60_000 } : {}) });
   const vigente = historial.data?.find((t) => t.vigente);
   const [regimenId, setRegimenId] = useState("");
   const [contraparteId, setContraparteId] = useState("");

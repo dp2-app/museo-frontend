@@ -11,7 +11,7 @@ import { useOperacion, useRecurso } from "../lib/recursosFicha";
 import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
 import { usePermisos } from "../hooks/usePermisos";
 import { api, extraerErroresApi } from "../lib/api";
-import { cambiosFicha, datosFicha, nombreFicha, type Ficha } from "../lib/ficha";
+import { cambiosFicha, datosFicha, nombreFicha, type Ficha, type FichaCompleta } from "../lib/ficha";
 import type { RegistroAuditoria } from "../types";
 
 /** El editor conserva su instantánea y entradas cuando el servidor responde 409. */
@@ -32,7 +32,7 @@ function EditorFicha({ original, terminar }: { original: Ficha; terminar: () => 
 }
 export function PiezaDetailPage() {
   const { piezaId = "" } = useParams(); const navegar = useNavigate(); const { puede } = usePermisos(); const op = useOperacion();
-  const detalle = useRecurso<Ficha>("pieza", `/piezas/${piezaId}`); const catalogo = useCatalogoFicha();
+  const detalle = useRecurso<FichaCompleta>("pieza-completa", `/piezas/${piezaId}/ficha-completa`); /* una sola llamada (RF-44, museo-frontend#100) */ const catalogo = useCatalogoFicha();
   const auditoria = useRecurso<RegistroAuditoria[]>("auditoria-pieza", `/piezas/${piezaId}/auditoria`, !!detalle.data);
   const [original, setOriginal] = useState<Ficha | null>(null);
   const p = detalle.data;
@@ -47,8 +47,8 @@ export function PiezaDetailPage() {
       {p.estadoFicha === "en_revision" && <button className="btn-glass" disabled={!puede("piezas.editar") || op.pendiente || !!original} onClick={() => enviar("volver_borrador")}>Volver a borrador</button>}
     </div>{p.incompleta && <p>Completa los datos pendientes para enviar la ficha a revisión.</p>}<p className="text-sm">Creada por {p.creadoPor?.nombre || "Sin responsable"} · {new Date(p.creadoEn).toLocaleString("es-PE")}<br />Última actualización: {p.actualizadoPor?.nombre || "Sin responsable"} · {new Date(p.actualizadoEn).toLocaleString("es-PE")}</p></Panel>
     {original && <EditorFicha original={original} terminar={() => setOriginal(null)} />}
-    <Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} /></Panel>
-    <ArchivosFicha piezaId={piezaId} /><ArchivosFicha piezaId={piezaId} documentos /><EstadoUbicacion key={piezaId} pieza={p} />
+    <Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} codigosIniciales={p.codigosDetalle} tenenciasIniciales={p.tenencias} /></Panel>
+    <ArchivosFicha piezaId={piezaId} inicial={p.fotografias} /><ArchivosFicha piezaId={piezaId} documentos inicial={p.documentos} /><EstadoUbicacion key={piezaId} pieza={p} movimientosIniciales={p.movimientos} estadosIniciales={p.estados} />
     <Panel titulo="Historial de cambios"><ErrorConsulta error={auditoria.error} /><ul className="space-y-2 text-sm">{auditoria.data?.map((r, i) => <li key={i} className="border-b border-linea pb-2"><p>{r.fecha ? new Date(r.fecha).toLocaleString("es-PE") : ""} · {r.accion} · {r.campo}</p><p className="break-words">{r.valorAnterior ?? "Sin dato"} → {r.valorNuevo ?? "Sin dato"}</p></li>)}</ul>{auditoria.data?.length === 0 && <p>Sin cambios registrados.</p>}</Panel>
     <Panel titulo="Baja de la pieza"><p>La ficha y sus historiales se conservan. La restauración está disponible en Administración.</p><ConMotivo etiqueta="Dar de baja" pendiente={!puede("piezas.baja") || op.pendiente || !!original} ejecutar={(motivo) => op.ejecutar(async () => { await api.post(`/piezas/${piezaId}/baja`, { motivo }); navegar("/coleccion"); })} /></Panel>
   </div>;

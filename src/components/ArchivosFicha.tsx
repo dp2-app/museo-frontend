@@ -6,13 +6,13 @@ import { usePermisos } from "../hooks/usePermisos";
 import type { ValorLista } from "../types";
 import { Aviso, ConMotivo, ErrorConsulta, Panel } from "./FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
+import type { Archivo } from "../lib/ficha";
 
-interface Archivo { id: string; url: string; titulo?: string; descripcion?: string; fechaDocumento?: string; restringidoUso: boolean; esPrincipal?: boolean; tipoVistaId?: string; fotografoId?: string; fechaFotografia?: string; orden?: number; }
 interface Persona { id: string; nombreCompleto: string; activo: boolean; }
-export function ArchivosFicha({ piezaId, documentos = false }: { piezaId: string; documentos?: boolean }) {
+export function ArchivosFicha({ piezaId, documentos = false, inicial }: { piezaId: string; documentos?: boolean; inicial?: Archivo[] }) {
   const { puede } = usePermisos(); const ruta = `/piezas/${piezaId}/${documentos ? "documentos" : "fotografias"}`;
   const gestionar = puede(documentos ? "documentos.gestionar" : "fotos.gestionar");
-  const archivos = useRecurso<Archivo[]>("archivos", ruta);
+  const archivos = useRecurso<Archivo[]>("archivos", ruta, true, undefined, inicial);
   const tipos = useRecurso<ValorLista[]>("tipo-archivo", `/listas/${documentos ? "tipo_documento" : "tipo_vista_foto"}/valores`, gestionar);
   const personas = useRecurso<Persona[]>("personas", "/personas", gestionar && !documentos);
   const [arrastrada, setArrastrada] = useState(""); const [archivo, setArchivo] = useState<File | null>(null); const op = useOperacion();
