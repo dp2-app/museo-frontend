@@ -1,6 +1,6 @@
 // Mapa de navegación (spec de diseño §6). Cada sección se muestra si el usuario tiene AL MENOS UNO de sus
-// permisos (F9, RF-52): la autorización nunca depende del nombre del rol. Los nombres amigables del spec
-// (Curador, Conservador...) solo se usan como texto de UI (ver ROL_ETIQUETA).
+// permisos (F9, RF-52): la autorización nunca depende del nombre del rol. El nombre que se muestra
+// siempre viene de la sesión; no se mantiene un segundo catálogo de alias en el frontend.
 
 import type { ComponentType } from "react";
 import {
@@ -13,16 +13,6 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { IconoRetablo } from "../components/IconoRetablo";
-
-/** Nombres amigables del spec de diseño (§0, §5) para mostrar en la UI. */
-export const ROL_ETIQUETA: Record<string, string> = {
-  Administrador: "Administrador",
-  "Gestor de colecciones": "Curador",
-  "Catalogador/practicante": "Catalogador",
-  Conservación: "Conservador",
-  "Consulta interna": "Consulta",
-  "Consulta externa": "Consulta externa",
-};
 
 export interface Seccion {
   ruta: string;
