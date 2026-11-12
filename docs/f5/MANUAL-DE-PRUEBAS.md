@@ -14,17 +14,17 @@ Necesita PostgreSQL 17 (o 16), Node 20 o superior y Python 3.12.
 3. Frontend: `npm install`, `npm run dev` y abrir `http://localhost:5173` (use `localhost`, no `127.0.0.1`, por CORS).
 4. En PowerShell use `npm.cmd` en lugar de `npm` si la política de scripts lo bloquea.
 
-## 2. Prueba automática (10 controles)
+## 2. Prueba automática (11 controles)
 
-La prueba exige una base **vacía** y corre una sola vez por base.
+La prueba exige una base **vacía** y corre una sola vez por base. Necesita **dos cuentas** con permiso de importación (F5-D8: quien sube una carga no la aprueba): `F5_EMAIL` carga y `F5_EMAIL2` aprueba, ambas con la contraseña `F5_PASSWORD`. Comprueba además que el cargador no ve «Aprobar carga completa» y que la API responde 403 `aprobacion_propia`.
 
 ```
 npx playwright install chromium     # una sola vez
-$env:F5_EMAIL="correo-del-admin"; $env:F5_PASSWORD="su-contraseña"
+$env:F5_EMAIL="admin-1"; $env:F5_EMAIL2="admin-2"; $env:F5_PASSWORD="su-contraseña"
 npm run test:f5
 ```
 
-Debe imprimir 10 líneas `OK` y terminar sin errores 4xx/5xx. Las capturas quedan en `F5_EVIDENCIA` (por defecto `evidencia-f5/`). Para repetirla hay que recrear la base.
+Debe imprimir 11 líneas `OK` y terminar sin errores 4xx/5xx. Las capturas quedan en `F5_EVIDENCIA` (por defecto `evidencia-f5/`). Para repetirla hay que recrear la base.
 
 ## 3. Prueba manual en el navegador
 

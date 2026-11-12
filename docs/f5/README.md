@@ -43,9 +43,9 @@ sin respuestas 4xx ni errores de página.
 `npm run test:f5` (`tests/f5.e2e.cjs`, Playwright) recorre contra el backend real y una base local **vacía** (nunca Supabase):
 reglas y umbral con persistencia (RF-58), carga de un Excel, enviar/quitar/volver a enviar una fila a curación y aprobar el lote
 con el pendiente en la cola (RF-36, RF-40), las reglas que guarda cada carga (RF-39) y la cancelación con motivo. Crea datos:
-corre una vez por base; deja las reglas con sus valores por defecto. Variables: `F5_EMAIL` y `F5_PASSWORD` (un administrador
-local), y opcionales `F5_WEB`, `F5_DATOS`, `F5_EVIDENCIA` y `F5_PLAYWRIGHT_MODULE`. Los Excel están en `tests/fixtures/f5/`.
-También recorre la cola de curación en pantalla y valida el pendiente con nota (#32 y #33). Son 10 controles `OK`.
+corre una vez por base; deja las reglas con sus valores por defecto. Variables: `F5_EMAIL` (carga), `F5_EMAIL2` (aprueba; F5-D8) y `F5_PASSWORD` (misma contraseña para ambas, cuentas
+locales), y opcionales `F5_WEB`, `F5_DATOS`, `F5_EVIDENCIA` y `F5_PLAYWRIGHT_MODULE`. Los Excel están en `tests/fixtures/f5/`.
+También recorre la cola de curación en pantalla y valida el pendiente con nota (#32 y #33). Son 11 controles `OK`.
 
 ![Pendiente validado](evidencias/f5-e2e-curacion-validada.png)
 
