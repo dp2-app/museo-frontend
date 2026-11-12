@@ -35,7 +35,7 @@ function ok(s) { informe.comprobaciones.push(s); console.log('OK ' + s); }
     assert.equal(nueva.status, 201); const ubicacion = await nueva.json();
     const estados = await api('/listas/estado_pieza/valores');
     browser = await chromium.launch({ headless: true, channel: 'chrome' });
-    const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => localStorage.setItem('museo.accessToken', t), token);
+    const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => sessionStorage.setItem('museo.accessToken', t), token);
     page = await context.newPage(); page.setDefaultTimeout(30000); page.on('pageerror', e => informe.erroresReact.push(e.message));
     for (const carga of cargas) {
       const fila = (await api(`/importacion/cargas/${carga.id}/filas?tamano=1`, true)).items[0]; assert.ok(fila.piezaResultanteId);
