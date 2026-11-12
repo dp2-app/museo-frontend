@@ -4,7 +4,7 @@ import { CircleUser, LogOut, Menu, X } from "lucide-react";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermisos } from "../hooks/usePermisos";
-import { ROL_ETIQUETA, seccionesPara } from "../lib/secciones";
+import { seccionesPara } from "../lib/secciones";
 
 // Header/nav/footer per la especificación de diseño §6. El nombre del
 // archivo/export se conserva (Layout) para no tocar App.tsx ni los imports
@@ -95,7 +95,7 @@ export function Layout() {
 
           <div className="flex items-center gap-3">
             <span className="hidden md:inline xl:hidden text-xs font-semibold uppercase tracking-wide text-gris-2">
-              {rol ? ROL_ETIQUETA[rol] ?? rol : ""}
+              {rol ?? ""}
             </span>
 
             <div className="relative hidden lg:block">
@@ -116,7 +116,7 @@ export function Layout() {
                   onMouseLeave={() => setCuentaAbierta(false)}
                 >
                   <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-gris-2">
-                    {rol ? ROL_ETIQUETA[rol] ?? rol : ""}
+                    {rol ?? ""}
                   </p>
                   <button
                     role="menuitem"

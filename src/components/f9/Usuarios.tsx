@@ -4,11 +4,9 @@ import { KeyRound, UserPlus } from "lucide-react";
 import { useConsultaF0 as useQuery } from "../../hooks/useConsultaF0";
 import { usePermisos } from "../../hooks/usePermisos";
 import { api, erroresPorCampo } from "../../lib/api";
-import { ROL_ETIQUETA } from "../../lib/secciones";
 import type { RolDetalle, Usuario } from "../../types";
 import { ErrorCampo, ErrorOperacion, EstadoConsulta, Etiqueta } from "../f0/Comun";
 
-const etiquetaRol = (nombre: string) => ROL_ETIQUETA[nombre] ?? nombre;
 const fecha = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }) : "Nunca");
 
 function FilaUsuario({ usuario, roles, puedeEditar, esYo }: { usuario: Usuario; roles: RolDetalle[]; puedeEditar: boolean; esYo: boolean }) {
@@ -46,9 +44,9 @@ function FilaUsuario({ usuario, roles, puedeEditar, esYo }: { usuario: Usuario; 
           {puedeEditar ? (
             <select className="glass-input !min-h-11" aria-label={`Rol de ${usuario.nombre}`} value={usuario.rol.id} disabled={editar.isPending}
               onChange={(e) => { setAviso(""); editar.mutate({ rolId: e.target.value }); }}>
-              {roles.map((r) => <option key={r.id} value={r.id} disabled={!r.activo && r.id !== usuario.rol.id}>{etiquetaRol(r.nombre)}{r.activo ? "" : " (inactivo)"}</option>)}
+              {roles.map((r) => <option key={r.id} value={r.id} disabled={!r.activo && r.id !== usuario.rol.id}>{r.nombre}{r.activo ? "" : " (inactivo)"}</option>)}
             </select>
-          ) : etiquetaRol(usuario.rol.nombre)}
+          ) : usuario.rol.nombre}
         </td>
         <td>
           <span className={`f0-badge ${usuario.activo ? "f0-badge-active" : ""}`}><span className="h-1 w-1 rounded-pill bg-current" />{usuario.activo ? "Activo" : "Inactivo"}</span>
@@ -123,7 +121,7 @@ function NuevoUsuario({ roles }: { roles: RolDetalle[] }) {
         <div><Etiqueta htmlFor="u-rol">Rol *</Etiqueta>
           <select id="u-rol" className="glass-input" required value={form.rolId} onChange={(e) => setForm({ ...form, rolId: e.target.value })} aria-invalid={Boolean(errores.rolId)} aria-describedby="u-rol-error">
             <option value="">Seleccionar…</option>
-            {roles.filter((r) => r.activo).map((r) => <option key={r.id} value={r.id}>{etiquetaRol(r.nombre)}</option>)}
+            {roles.filter((r) => r.activo).map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}
           </select>
           <ErrorCampo id="u-rol-error" mensaje={errores.rolId} /></div>
       </div>
