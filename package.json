@@ -20,7 +20,8 @@
     "test:f2-f6:importados": "node tests/f2-f6-importados.e2e.cjs",
     "test:pantallas": "node tests/pantallas-diagnostico.e2e.cjs",
     "test:f5": "node tests/f5.e2e.cjs",
-    "test:f7": "node tests/f7.e2e.cjs"
+    "test:f7": "node tests/f7.e2e.cjs",
+    "test:f1:asignar": "node tests/f1-asignar.e2e.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

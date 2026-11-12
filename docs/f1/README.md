@@ -98,3 +98,13 @@ F1_PLAYWRIGHT_MODULE=<ruta a playwright> F1_ACCOUNT_FILE=<cuentas.json> F1_BROWS
 - Requiere backend #41 (validar y correlativo) en el backend desplegado.
 - N17–N19 siguen sin respuesta del museo: el formato del I y si es correlativo cambian la configuración, no el código.
 - Revisión de otra persona y del líder (DA-009). La matriz de cobertura no se marca como Cumplido desde aquí.
+
+## Asignar el código I a varias pendientes (RF-06, museo-backend#170)
+
+En **Colección › Pendientes de código I**, quien tiene `codigos.gestionar` puede elegir varias piezas (casilla por pieza o «Elegir todas las de esta página») y pulsar
+**«Asignar código I a las N elegidas»**. Pide confirmación porque el código I queda inscrito en la pieza (RN-02) y llama a `POST /codigos/asignar-principal`: cada pieza
+elegida recibe el siguiente correlativo, en el orden de la lista. Si alguna ya tenía I o su régimen no lo admite se omite y se dice por qué. Al terminar se muestra la lista
+«pieza → código» y se puede **descargar** (CSV que abre Excel) para marcar las piezas. Nunca hay un «asignar a todas»: solo lo elegido. Solo se ofrece si el tipo I es
+correlativo (museo-backend#184). La asignación pieza por pieza («Asignar código I» con «Usar el siguiente») sigue igual. Prueba: `npm run test:f1:asignar`
+(`F1A_EMAIL` y `F1A_PASSWORD` de un administrador de la base local).
+
