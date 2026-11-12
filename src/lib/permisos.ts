@@ -53,6 +53,7 @@ export const ETIQUETA_PERMISO: Record<string, string> = {
   "importacion.aprobar": "Aprobar cargas",
   "importacion.rechazar": "Rechazar cargas",
   "ia.ejecutar_lote": "Ejecutar en lote",
+  "ia.indexar": "Indexar el armado de salas",
   "ia.fusionar": "Fusionar duplicados",
   "reportes.exportar": "Exportar búsquedas y reportes",
   "reportes.exportar_total": "Exportar todo el catálogo",

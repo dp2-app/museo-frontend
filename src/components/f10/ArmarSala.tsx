@@ -1,14 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Bot, Download } from "lucide-react";
+import { AlertTriangle, Bot, Download, Loader2 } from "lucide-react";
 import { api, extraerMensajeError } from "../../lib/api";
 import { usePermisos } from "../../hooks/usePermisos";
 import type { SalaSugerida } from "../../types";
+import { EsperaIA } from "./EsperaIA";
 import { EstadoIndiceSalas } from "./EstadoIndiceSalas";
 
 const CANTIDAD_MIN = 10;
 const CANTIDAD_MAX = 30;
+const MENSAJES_ESPERA = ["Buscando piezas del tema", "Comparando por significado y por texto", "Ordenando por relevancia",
+  "Redactando la propuesta"];
 
 /** F10 · RIA-05: el curador describe un tema o estilo, la IA propone un ranking de piezas y él
  * elige cuáles toma y exporta (DA-006: nada se escribe en la ficha). El ranking y el mensaje vienen
@@ -73,7 +76,8 @@ export function ArmarSala() {
         </p>
       </div>
 
-      {puede("ia.ejecutar_lote") && <EstadoIndiceSalas />}
+      {/* Indexar es solo del Administrador: permiso propio ia.indexar (museo-backend#163). */}
+      {puede("ia.indexar") && <EstadoIndiceSalas />}
 
       <form onSubmit={onSugerir} className="glass-panel p-5 flex flex-col sm:flex-row gap-3 sm:items-end">
         <label className="flex-1">
@@ -98,14 +102,18 @@ export function ArmarSala() {
             className="glass-input"
           />
         </label>
-        <button type="submit" disabled={sugerir.isPending || !pedido.trim()} className="btn-primary shrink-0">
+        <button type="submit" disabled={sugerir.isPending || !pedido.trim()}
+          className="btn-primary shrink-0 inline-flex items-center justify-center gap-2">
+          {sugerir.isPending && <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />}
           {sugerir.isPending ? "Buscando piezas..." : "Proponer piezas"}
         </button>
       </form>
 
       {error && <p className="text-sm text-rojo" role="alert">{error}</p>}
 
-      {sala && (
+      {sugerir.isPending && <EsperaIA mensajes={MENSAJES_ESPERA} filas={6} />}
+
+      {sala && !sugerir.isPending && (
         <div className="space-y-3">
           <div className="glass-panel-sm p-4 flex items-start gap-3" role="status">
             <Bot size={22} className="text-azul shrink-0 mt-0.5" aria-hidden="true" />

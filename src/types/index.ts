@@ -310,7 +310,10 @@ export interface SugerenciaIA {
   payloadSugerido: Record<string, unknown>;
   modeloUsado: string;
   confianza: number | null;
-  estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
+  /** `registrada`: consulta RIA-06, solo registro (museo-backend#160); no se acepta ni se rechaza. */
+  estado: "pendiente" | "aceptado" | "rechazado" | "modificado" | "registrada";
+  /** Quién pidió la salida (RIA-06). */
+  solicitadoPor: string | null;
 }
 
 // --- HU-22: usuarios y roles ---
