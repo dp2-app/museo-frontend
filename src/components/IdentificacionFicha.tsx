@@ -7,7 +7,7 @@ import { Aviso, ErrorConsulta } from "./FichaComun";
 import { useRecurso } from "../lib/recursosFicha";
 import { useConsultaF0 } from "../hooks/useConsultaF0";
 import { puedeCorregir } from "../lib/f1";
-import type { Codigo } from "../types/f1";
+import type { Codigo, Tenencia as TenenciaF1 } from "../types/f1";
 import { AgregarCodigo } from "./f1/CampoCodigo";
 import { CorregirCodigo } from "./f1/CorregirCodigo";
 import { CambiarRegimen } from "./f1/CambiarRegimen";
@@ -44,9 +44,10 @@ export function AltaComplementos({ onChange }: { onChange: (v: Complementos) => 
 }
 /** Identificadores y tenencia de la ficha (H01, museo-frontend#43): usa los componentes de F1 para validar en vivo,
  * sugerir el correlativo, corregir por excepción (RF-05) y cambiar el régimen (RF-09). Las reglas son del backend. */
-export function CodigosFicha({ pieza }: { pieza: Ficha }) {
+export function CodigosFicha({ pieza, codigosIniciales, tenenciasIniciales }: { pieza: Ficha; codigosIniciales?: Codigo[]; tenenciasIniciales?: TenenciaF1[] }) {
   const { puede } = usePermisos(); const cache = useQueryClient();
-  const codigos = useConsultaF0({ queryKey: ["f1", "codigos-pieza", pieza.id], queryFn: async () => (await api.get<Codigo[]>(`/piezas/${pieza.id}/codigos`)).data });
+  const codigos = useConsultaF0({ queryKey: ["f1", "codigos-pieza", pieza.id], queryFn: async () => (await api.get<Codigo[]>(`/piezas/${pieza.id}/codigos`)).data,
+    ...(codigosIniciales ? { initialData: codigosIniciales, staleTime: 5 * 60_000 } : {}) });
   const [corrigiendo, setCorrigiendo] = useState<string | null>(null); const [mensaje, setMensaje] = useState("");
   // Solo lo de F1 y lo de esta pieza (ficha, auditoría, códigos, tenencias); no toda la caché.
   const listo = async (texto: string) => { setMensaje(texto); setCorrigiendo(null);
@@ -62,6 +63,6 @@ export function CodigosFicha({ pieza }: { pieza: Ficha }) {
     <Aviso mensaje={mensaje} /><ErrorConsulta error={codigos.error} />
     <AgregarCodigo piezaId={pieza.id} alGuardar={() => listo("Código agregado.")} />
     <p>Tenencia: {pieza.tenenciaVigente?.regimenNombre || "Sin registro"}{pieza.tenenciaVigente?.restringidoPublicacion && " · publicación restringida"}</p>
-    <CambiarRegimen piezaId={pieza.id} regimenActual={pieza.tenenciaVigente?.regimen} restringidoActual={pieza.tenenciaVigente?.restringidoPublicacion ?? false} alGuardar={() => listo("Régimen de tenencia actualizado.")} />
+    <CambiarRegimen piezaId={pieza.id} regimenActual={pieza.tenenciaVigente?.regimen} restringidoActual={pieza.tenenciaVigente?.restringidoPublicacion ?? false} historialInicial={tenenciasIniciales} alGuardar={() => listo("Régimen de tenencia actualizado.")} />
   </div>;
 }

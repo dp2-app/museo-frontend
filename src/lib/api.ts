@@ -6,6 +6,9 @@ export const TOKEN_STORAGE_KEY = "museo.accessToken";
 export const VOLVER_A_STORAGE_KEY = "museo.volverA";
 const baseNegocio = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 export const api = axios.create({ baseURL: baseNegocio });
+/** TanStack Query: un 4xx (403 «ficha no aprobada», 404, 422…) es una respuesta definitiva y no se repite; la red y los 5xx, hasta 2 veces. */
+export const reintentarConsulta = (intentos: number, error: unknown): boolean =>
+  !(axios.isAxiosError(error) && error.response && error.response.status >= 400 && error.response.status < 500) && intentos < 2;
 export const datosApi = axios.create({
   baseURL: import.meta.env.VITE_DATOS_API_BASE_URL ?? baseNegocio.replace(/\/api\/v1\/?$/, "/datos/v1"),
   // La validación de un inventario completo puede durar varios minutos.

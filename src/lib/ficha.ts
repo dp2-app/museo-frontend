@@ -1,4 +1,7 @@
 import type { DatosFichaV3, EstadoFicha } from "../types";
+import type { Codigo, Tenencia } from "../types/f1";
+
+export interface Archivo { id: string; url: string; titulo?: string; descripcion?: string; fechaDocumento?: string; restringidoUso: boolean; esPrincipal?: boolean; tipoVistaId?: string; fotografoId?: string; fechaFotografia?: string; orden?: number; }
 
 export interface Ficha {
   id: string; version: string; estadoFicha: EstadoFicha; motivoRechazo: string | null;
@@ -9,6 +12,19 @@ export interface Ficha {
   tenenciaVigente: { regimen: string; regimenNombre: string; restringidoPublicacion: boolean } | null;
   creadoPor: { nombre: string } | null; creadoEn: string;
   actualizadoPor: { nombre: string } | null; actualizadoEn: string;
+}
+/** `GET /piezas/{id}/ficha-completa` (RF-44): la ficha con todo lo que muestra la pantalla de detalle, en una sola llamada. */
+export interface HistorialFicha {
+  id: string; fecha: string; motivo: string | null; responsable?: string | null;
+  ubicacionAnterior?: string | null; ubicacionNueva?: string | null; estadoAnterior?: string | null; estadoNuevo?: string | null;
+}
+export interface FichaCompleta extends Ficha {
+  codigosDetalle: Codigo[];
+  tenencias: Tenencia[];
+  fotografias: Archivo[];
+  documentos: Archivo[];
+  movimientos: HistorialFicha[];
+  estados: HistorialFicha[];
 }
 export interface Ubicacion {
   id: string; parentId: string | null; nivelTipo: "sede" | "ubicacion"; nombre: string;

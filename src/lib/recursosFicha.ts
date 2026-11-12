@@ -4,8 +4,10 @@ import { api, extraerMensajeError } from "./api";
 import { useConsultaF0 } from "../hooks/useConsultaF0";
 
 export const get = async <T,>(ruta: string, params?: Record<string, unknown>): Promise<T> => (await api.get<T>(ruta, { params })).data;
-export function useRecurso<T>(key: string, ruta: string, enabled = true, params?: Record<string, unknown>) {
-  return useConsultaF0<T>({ queryKey: [key, ruta, params], enabled, queryFn: () => get<T>(ruta, params) });
+/** `inicial`: datos que la pantalla ya tiene (p. ej. de `ficha-completa`); se usan sin volver a pedirlos hasta que algo los invalide. */
+export function useRecurso<T>(key: string, ruta: string, enabled = true, params?: Record<string, unknown>, inicial?: T) {
+  return useConsultaF0<T>({ queryKey: [key, ruta, params], enabled, queryFn: () => get<T>(ruta, params),
+    ...(inicial !== undefined ? { initialData: inicial, staleTime: 5 * 60_000 } : {}) });
 }
 export function useOperacion() {
   const cache = useQueryClient();
