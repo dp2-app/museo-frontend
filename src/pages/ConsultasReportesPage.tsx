@@ -7,7 +7,7 @@ import { CuerpoReporte, Encabezado } from "../components/f8/VistaReporte";
 import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
 import { nombresDeOpciones, useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
 import { usePermisos } from "../hooks/usePermisos";
-import { nombreFicha, type Ficha } from "../lib/ficha";
+import { nombreFicha, piezas as contarPiezas, type Ficha } from "../lib/ficha";
 import { get, useRecurso } from "../lib/recursosFicha";
 import {
   descargarExcel, esPaginado, filasDeImpresion, MAX_FILAS_IMPRESION, mensajeReporte, parametros, TAMANO_PAGINA_REPORTE, totalDe,
@@ -232,7 +232,7 @@ export function ConsultasReportesPage() {
             </div>
             <div className="flex flex-wrap gap-3 items-center">
               <button className="btn-glass" disabled={pagina === 1 || busqueda.isFetching} onClick={() => setPagina(pagina - 1)}>Anterior</button>
-              {busqueda.data && !busqueda.isFetching && <p>Página {pagina} · {busqueda.data.total} piezas</p>}
+              {busqueda.data && !busqueda.isFetching && <p>Página {pagina} · {contarPiezas(busqueda.data.total)}</p>}
               <button className="btn-glass" disabled={!busqueda.data || pagina * TAMANO >= busqueda.data.total || busqueda.isFetching}
                       onClick={() => setPagina(pagina + 1)}>Siguiente</button>
             </div>

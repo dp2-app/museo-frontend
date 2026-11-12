@@ -23,9 +23,16 @@ export function Colecciones() {
       <p>Solo se puede dar de baja una colección sin piezas activas.</p><button className="btn-glass" disabled={op.pendiente} onClick={() => op.ejecutar(async () => { await api.post(`/colecciones/${id}/baja`); seleccionar(); })}>Dar de baja colección {nombre}</button></>}
   </Panel>;
 }
+/** `GET /piezas/eliminadas` trae además la última baja (museo-backend, F2-P7). */
+type FichaDadaDeBaja = Ficha & { baja?: { motivo: string | null; fecha: string; responsable: string | null } | null };
 export function PiezasBaja() {
-  const lista = useRecurso<Ficha[]>("piezas-baja", "/piezas/eliminadas"); const op = useOperacion();
+  const lista = useRecurso<FichaDadaDeBaja[]>("piezas-baja", "/piezas/eliminadas"); const op = useOperacion();
   return <Panel titulo="Piezas dadas de baja"><ErrorConsulta error={lista.error} /><Aviso mensaje={op.mensaje} />{lista.isPending && <p>Cargando…</p>}
-    <ul className="space-y-4">{lista.data?.map((p) => <li key={p.id} className="border-b border-linea pb-4"><p className="font-semibold">{nombreFicha(p)} · {p.codigos.map((c) => c.valor).join(", ")}</p><ConMotivo etiqueta="Restaurar" pendiente={op.pendiente} ejecutar={(motivo) => op.ejecutar(() => api.post(`/piezas/${p.id}/restaurar`, { motivo }))} /></li>)}</ul>{lista.data?.length === 0 && <p>No hay piezas dadas de baja.</p>}
+    <ul className="space-y-4">{lista.data?.map((p) => <li key={p.id} className="border-b border-linea pb-4"><p className="font-semibold">{nombreFicha(p)}{p.codigos.length > 0 && ` · ${p.codigos.map((c) => c.valor).join(", ")}`}</p>
+      {/* frontend#61 P7: quién, cuándo y por qué se dio de baja, para decidir si restaurar */}
+      {p.baja ? <dl className="text-sm grid grid-cols-[auto_1fr] gap-x-3"><dt className="text-gris-2">Motivo</dt><dd>{p.baja.motivo || "Sin motivo registrado"}</dd>
+        <dt className="text-gris-2">Fecha</dt><dd>{new Date(p.baja.fecha).toLocaleString("es-PE")}</dd>
+        <dt className="text-gris-2">Responsable</dt><dd>{p.baja.responsable || "Sin responsable registrado"}</dd></dl>
+        : <p className="text-sm text-gris-2">Sin registro de la baja en la auditoría.</p>}<ConMotivo etiqueta="Restaurar" pendiente={op.pendiente} ejecutar={(motivo) => op.ejecutar(() => api.post(`/piezas/${p.id}/restaurar`, { motivo }))} /></li>)}</ul>{lista.data?.length === 0 && <p>No hay piezas dadas de baja.</p>}
   </Panel>;
 }
