@@ -1,4 +1,5 @@
 // F5 de punta a punta: reglas, carga, enviar a curación, aprobar y bitácora.
+// Dos cuentas con permiso de importación (F5-D8: quien sube no aprueba), misma contraseña F5_PASSWORD.
 // Backend real con base local VACÍA (nunca Supabase). Crea datos: correr una vez por base.
 const { chromium } = require(process.env.F5_PLAYWRIGHT_MODULE || 'playwright');
 const fs = require('node:fs');
@@ -8,7 +9,7 @@ const assert = require('node:assert/strict');
 const web = process.env.F5_WEB || 'http://localhost:5173';
 const datos = process.env.F5_DATOS || 'http://localhost:8000/datos/v1';
 for (const url of [web, datos]) assert.match(url, /^http:\/\/(127\.0\.0\.1|localhost):/, 'Solo servicios locales de prueba');
-for (const key of ['F5_EMAIL', 'F5_PASSWORD']) assert.ok(process.env[key], `Configure ${key}`);
+for (const key of ['F5_EMAIL', 'F5_EMAIL2', 'F5_PASSWORD']) assert.ok(process.env[key], `Configure ${key}`);
 const out = process.env.F5_EVIDENCIA || path.join(process.cwd(), 'evidencia-f5');
 const lote1 = path.join(__dirname, 'fixtures', 'f5', 'lote1.xlsx');
 const lote2 = path.join(__dirname, 'fixtures', 'f5', 'lote2.xlsx');
@@ -21,6 +22,9 @@ async function api(ruta) {
   const r = await fetch(datos + ruta, { headers: { Authorization: 'Bearer ' + token } });
   assert.equal(r.status, 200, `${ruta}: ${r.status} ${await r.clone().text()}`);
   return r.json();
+}
+function tokenDeSesion() {
+  return page.evaluate(() => { for (const k of Object.keys(sessionStorage)) { const v = sessionStorage.getItem(k); if (v && v.split('.').length === 3) return v; } });
 }
 async function shot(nombre) { await page.screenshot({ path: path.join(out, nombre + '.png') }); }
 async function abrirPanelReglas() {
@@ -52,7 +56,7 @@ async function subir(archivo) {
   await page.fill('input[type=password]', process.env.F5_PASSWORD);
   await page.click('button[type=submit]');
   await page.waitForURL(web + '/');
-  token = await page.evaluate(() => { for (const k of Object.keys(sessionStorage)) { const v = sessionStorage.getItem(k); if (v && v.split('.').length === 3) return v; } });
+  token = await tokenDeSesion();
   assert.ok(token, 'No se encontró el token de sesión');
 
   // RF-58: reglas, umbral y persistencia
@@ -105,7 +109,21 @@ async function subir(archivo) {
   await page.waitForFunction(() => document.body.innerText.includes('0 filas pendientes de revisión'), null, { timeout: 15000 });
   // Aprobar no actúa con un solo clic: muestra primero el resumen de lo que se registrará
   assert.equal(await page.getByRole('button', { name: 'Descargar reporte de errores' }).count(), 0, 'Sin errores no se ofrece el reporte de errores');
-  await page.getByText(/Ninguna de las filas mostradas trae código del museo/).waitFor();
+  // F5-D8 (#127): quien sube la carga no la aprueba; entra la segunda cuenta
+  assert.equal(await page.getByRole('button', { name: 'Aprobar carga completa' }).count(), 0, 'El cargador no debe ver Aprobar carga completa');
+  const r403 = await fetch(datos + '/importacion/cargas/' + carga1 + '/aprobar', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+  assert.equal(r403.status, 403);
+  assert.match(await r403.text(), /aprobacion_propia/);
+  ok('F5-D8: el cargador no ve el botón y la API responde 403 aprobacion_propia');
+  await page.evaluate(() => { sessionStorage.clear(); localStorage.clear(); });
+  await page.goto(web + '/login');
+  await page.fill('input[type=email]', process.env.F5_EMAIL2);
+  await page.fill('input[type=password]', process.env.F5_PASSWORD);
+  await page.click('button[type=submit]');
+  await page.waitForURL(web + '/');
+  token = await tokenDeSesion();
+  await page.goto(web + '/importacion/' + carga1);
+  await page.waitForSelector('tr[data-fila]');
   await page.getByRole('button', { name: 'Aprobar carga completa' }).click();
   const confirmacion = page.getByRole('form', { name: 'Confirmar aprobación de la carga' });
   await confirmacion.getByText('Piezas nuevas que se registrarán:').waitFor();
