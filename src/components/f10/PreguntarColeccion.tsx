@@ -1,13 +1,14 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Bot, Download, X } from "lucide-react";
+import { Bot, Download, Loader2, X } from "lucide-react";
 import { api, extraerMensajeError } from "../../lib/api";
 import { nombreFicha, type Ficha } from "../../lib/ficha";
 import { descargarExcel } from "../../lib/reportes";
 import { useRecurso } from "../../lib/recursosFicha";
 import { usePermisos } from "../../hooks/usePermisos";
 import { ChipEstadoFicha } from "../ChipEstadoFicha";
+import { EsperaIA } from "./EsperaIA";
 import type { ConsultaIA, InterpretacionFiltro, Pagina } from "../../types";
 
 const TAMANO = 20;
@@ -18,6 +19,8 @@ const EJEMPLOS = [
 ];
 // Filtros sí/no de GET /piezas: el chip vale `true` (sinFotografia y sinUbicacion vienen de F8).
 const BOOLEANOS = new Set(["soloIncompletas", "sinCodigoPrincipal", "sinFotografia", "sinUbicacion"]);
+
+const MENSAJES_ESPERA = ["Interpretando la pregunta", "Reconociendo los filtros", "Buscando en el catálogo"];
 
 const filtra = (f: InterpretacionFiltro) => f.estado === "aplicado" || f.estado === "como_texto";
 
@@ -75,6 +78,14 @@ export function PreguntarColeccion() {
     () => (consulta ? (editada ? filtrosDe(interpretacion, consulta.filtros) : consulta.filtros) : {}),
     [consulta, editada, interpretacion],
   );
+  // D4 (museo-backend#160): RIA-06 es solo registro. Si la persona quita o cambia un filtro, el registro de su
+  // consulta guarda con qué filtros se quedó. Es solo trazabilidad: si falla, la búsqueda sigue igual.
+  const sugerenciaId = consulta?.sugerenciaId;
+  useEffect(() => {
+    if (!sugerenciaId || !editada) return;
+    api.put(`/ia/consultas/${sugerenciaId}/filtros-aplicados`, { filtros }).catch(() => undefined);
+  }, [sugerenciaId, editada, filtros]);
+
   // La primera página ya viene en la respuesta; las demás (o tras editar los filtros) se piden a GET /piezas.
   const otraPagina = useRecurso<Pagina<Ficha>>("piezas", "/piezas", buscable && (editada || pagina > 1),
     { ...filtros, pagina, tamano: TAMANO });
@@ -129,7 +140,9 @@ export function PreguntarColeccion() {
               className="glass-input"
               required
             />
-            <button type="submit" disabled={preguntar.isPending || !pregunta.trim()} className="btn-primary shrink-0">
+            <button type="submit" disabled={preguntar.isPending || !pregunta.trim()}
+              className="btn-primary shrink-0 inline-flex items-center justify-center gap-2">
+              {preguntar.isPending && <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />}
               {preguntar.isPending ? "Buscando..." : "Preguntar"}
             </button>
           </div>
@@ -147,7 +160,9 @@ export function PreguntarColeccion() {
 
       {error && <p className="text-sm text-rojo" role="alert">{error}</p>}
 
-      {consulta && (
+      {preguntar.isPending && <EsperaIA mensajes={MENSAJES_ESPERA} />}
+
+      {consulta && !preguntar.isPending && (
         <div className="space-y-3">
           <div className="glass-panel-sm p-4 flex items-start gap-3" role="status">
             <Bot size={22} className="text-azul shrink-0 mt-0.5" aria-hidden="true" />

@@ -13,7 +13,7 @@ const CORTE: Record<string, string> = {
   error: "terminó con error; se reintenta en la próxima ejecución",
 };
 
-/** F10 · RIA-05, vista de administración (permiso ia.ejecutar_lote): cuántas piezas ya tienen su búsqueda
+/** F10 · RIA-05, vista de administración (permiso ia.indexar, solo del Administrador: museo-backend#163): cuántas piezas ya tienen su búsqueda
  * por significado al día y cuándo corre la indexación diaria. Todos los números vienen del backend. */
 export function EstadoIndiceSalas() {
   const queryClient = useQueryClient();

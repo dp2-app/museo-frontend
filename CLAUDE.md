@@ -240,7 +240,7 @@ Pestaña «Armar sala» del Asistente IA (`src/components/f10/ArmarSala.tsx`). L
 - `POST /ia/salas/sugerir` `{pedido, cantidad}` (10–30) devuelve `SalaSugerida`: mensaje breve de la IA, ranking con puntaje y alertas (`ficha_no_aprobada`, `conservacion`, `en_prestamo`). Se muestra tal cual: el frontend no reordena, no filtra ni completa nada.
 - El curador marca piezas (por defecto todas) y `POST /ia/salas/{sugerenciaId}/exportar` `{piezaIds}` descarga el Excel. El botón se habilita con `reportes.exportar`; el backend vuelve a validar.
 - Sin IA configurada el backend responde 503 y se muestra su mensaje: nunca se simula una respuesta (DA-006).
-- Con `ia.ejecutar_lote`, arriba aparece `EstadoIndiceSalas`: piezas con búsqueda por significado al día, pendientes, uso de hoy contra el cupo diario (con el 7 % reservado para consultas), última y próxima indexación diaria (`GET /ia/salas/indice`, se refresca cada 15 s mientras corre) y el botón «Indexar ahora» (`POST /ia/salas/indexar`).
+- Con `ia.indexar` (solo el Administrador, museo-backend#163; antes `ia.ejecutar_lote`), arriba aparece `EstadoIndiceSalas`: piezas con búsqueda por significado al día, pendientes, uso de hoy contra el cupo diario (con el 7 % reservado para consultas), última y próxima indexación diaria (`GET /ia/salas/indice`, se refresca cada 15 s mientras corre) y el botón «Indexar ahora» (`POST /ia/salas/indexar`).
 - Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-05) y `DA-015`. Verificado con `npm run build`, `npm run lint` (dos advertencias previas) y en el navegador contra el backend local (escritorio y móvil; sin claves de IA solo se probó el estado 503).
 
 ## F7 · filtros de Colección (2/11/2026)
@@ -273,3 +273,9 @@ Los endpoints (`/ia/sugerencias`, `/ia/extraccion-observaciones/*`, `/ia/detecci
 - `POST /ia/consultas` `{pregunta}` devuelve `ConsultaIA`: mensaje (lo arma el backend con el total real), `interpretacion` (un chip por filtro con su estado), `avisos`, `filtros` (parámetros de `GET /piezas`), `total` y la página 1 de piezas (`Ficha`).
 - Quitar un chip o elegir una alternativa de un filtro `ambiguo` recalcula los filtros en el cliente y pide `GET /piezas` (también para las páginas siguientes): **no vuelve a llamar a la IA**. La exportación usa `descargarExcel("/exportaciones/piezas.xlsx", filtros)` con `reportes.exportar`.
 - Sin IA configurada el backend responde 503 y se muestra su mensaje. Contrato y decisiones: `Base-de-conocimiento/flujos/F10.md` (RIA-06).
+- **RIA-06 es solo registro (D4, museo-backend#160):** al quitar un chip o elegir una alternativa, además de buscar, la pantalla manda
+  `PUT /ia/consultas/{sugerenciaId}/filtros-aplicados` `{filtros}` para que el registro de la consulta guarde con qué filtros se quedó la
+  persona. Es solo trazabilidad: si falla, no se muestra error ni cambia la búsqueda. Más de 10 consultas por minuto dan 429 `limite_consultas`.
+- **Espera de la IA (#101):** «Preguntar» y «Armar sala» usan `EsperaIA` (`components/f10/EsperaIA.tsx`): aro animado, mensajes de avance
+  que se suceden hasta el último, esqueleto de resultados y, a los 20 s, aviso de que el proveedor está ocupado. Las animaciones van con
+  `motion-safe:` (nada se mueve con `prefers-reduced-motion`) y el lector de pantalla oye un solo aviso. Úsalo en cualquier espera de IA nueva.
