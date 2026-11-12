@@ -161,6 +161,8 @@ export interface CuracionImportacion {
   estado: "pendiente" | "validado";
   piezaId: string;
   piezaDenominacion: string | null;
+  /** Verdadero si el rol no ve la denominación: `piezaDenominacion` llega null aunque la pieza la tenga (RF-57). */
+  denominacionOculta?: boolean;
   cargaId: string;
   archivoNombre: string;
   filaNumero: number;
