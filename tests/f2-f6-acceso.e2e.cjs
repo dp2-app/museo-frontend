@@ -31,7 +31,7 @@ async function visibilidad(visible) { for (const campo of [campoEstado, campoUbi
     browser = await chromium.launch({ headless: true, channel: 'chrome' });
     const p = await api(admin, '/piezas', 'POST', { campos: { denominacion: 'Pieza de acceso F2/F6 ' + Date.now() } }, 201);
     const codigo = (await api(admin, '/tipos-codigo')).find(t => t.clave === 'I');
-    await api(admin, `/piezas/${p.id}/codigos`, 'POST', { tipoCodigoId: codigo.id, valor: 'I-' + Date.now() }, 201);
+    await api(admin, `/piezas/${p.id}/codigos`, 'POST', { tipoCodigoId: codigo.id, valor: 'I-' + String(Date.now() % 100000).padStart(5, '0') }, 201);
     await api(admin, `/piezas/${p.id}/fotografias`, 'POST', { url: 'https://res.cloudinary.com/museo-pruebas/image/upload/acceso.jpg', restringidoUso: true }, 201);
     await api(admin, `/piezas/${p.id}/documentos`, 'POST', { url: 'https://res.cloudinary.com/museo-pruebas/raw/upload/acceso.pdf', titulo: 'Documento restringido F2', restringidoUso: true }, 201);
     const estado = (await api(admin, '/listas/estado_pieza/valores'))[0];

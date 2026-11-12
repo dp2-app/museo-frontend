@@ -17,25 +17,39 @@ interface Regimen extends Tipo { ingresaInventarioPermanente: boolean; requiereC
 interface Tenencia { regimenId: string; contraparteId?: string | null; fechaInicio?: string | null; fechaFin?: string | null; condicionesContractuales?: string | null; restringidoPublicacion?: boolean; documentoReferencia?: string | null; }
 export interface Complementos { codigos: { tipoCodigoId: string; valor: string }[]; ubicacionInicialId?: string; tenencia?: Tenencia; }
 
-/** Solo compone el alta atómica de F2. Las reglas de código y tenencia las resuelve F1. */
-export function AltaComplementos({ onChange }: { onChange: (v: Complementos) => void }) {
+const MENSAJE_CODIGO = "Selecciona el tipo de código y escribe su valor.";
+const filaIncompleta = (c: { tipoCodigoId: string; valor: string }) => !c.tipoCodigoId !== !c.valor.trim();
+
+/** Solo compone el alta atómica de F2. Las reglas de código y tenencia las resuelve F1; aquí solo se evita enviar
+ * una fila de código a medias (#94) o un régimen sin la contraparte que exige (#95). Una fila vacía se ignora. */
+export function AltaComplementos({ onChange }: { onChange: (v: Complementos, problemas: string[]) => void }) {
   const { puede, sesion } = usePermisos(); const [datos, setDatos] = useState<Complementos>({ codigos: [] });
   const tipos = useRecurso<Tipo[]>("tipos-codigo", "/tipos-codigo", puede("codigos.gestionar"));
   const regimenes = useRecurso<Regimen[]>("regimenes", "/regimenes", puede("tenencias.gestionar"));
   const propietarios = useRecurso<Tipo[]>("propietarios", "/propietarios", puede("tenencias.gestionar") && puede("propietarios.ver"));
   const veUbicacion = Boolean(sesion) && !sesion?.camposOcultos.includes("ubicacion_actual_id");
   const ubicaciones = useRecurso<Ubicacion[]>("ubicaciones", "/ubicaciones", veUbicacion);
-  function cambiar(v: Complementos) { setDatos(v); onChange(v); }
   const tenencia = datos.tenencia;
+  const regimen = regimenes.data?.find((r) => r.id === tenencia?.regimenId);
+  const faltaContraparte = Boolean(regimen?.requiereContraparte && !tenencia?.contraparteId);
+  function cambiar(v: Complementos) {
+    setDatos(v);
+    const r = regimenes.data?.find((x) => x.id === v.tenencia?.regimenId);
+    const problemas = [...v.codigos.flatMap((c, i) => filaIncompleta(c) ? [`Código inicial ${i + 1}: falta el tipo o el valor`] : []),
+      ...(r?.requiereContraparte && !v.tenencia?.contraparteId ? [`El régimen «${r.nombre}» exige indicar la contraparte`] : [])];
+    onChange({ ...v, codigos: v.codigos.filter((c) => c.tipoCodigoId || c.valor.trim()) }, problemas);
+  }
   function cambiarTenencia(v: Partial<Tenencia>) { if (tenencia) cambiar({ ...datos, tenencia: { ...tenencia, ...v } }); }
   return <details className="space-y-3"><summary className="cursor-pointer font-semibold">Códigos, tenencia y ubicación inicial (opcionales)</summary>
     <ErrorConsulta error={tipos.error || regimenes.error || propietarios.error || ubicaciones.error} />
     {puede("codigos.gestionar") && <div className="space-y-2">{datos.codigos.map((c, i) => <div className="flex flex-wrap gap-2" key={i}>
-      <label>Tipo de código<select aria-label="Tipo de código" className="glass-input" value={c.tipoCodigoId} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, tipoCodigoId: e.target.value } : x) })}><option value="">Seleccionar…</option>{tipos.data?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></label>
-      <label>Valor del código<input className="glass-input" value={c.valor} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, valor: e.target.value } : x) })} /></label>
-      <button className="btn-glass" onClick={() => cambiar({ ...datos, codigos: datos.codigos.filter((_, j) => i !== j) })}>Quitar código</button></div>)}<button className="btn-glass" onClick={() => cambiar({ ...datos, codigos: [...datos.codigos, { tipoCodigoId: "", valor: "" }] })}>Añadir código inicial</button></div>}
+      <label>Tipo de código *<select aria-label="Tipo de código" aria-required="true" aria-invalid={filaIncompleta(c) && !c.tipoCodigoId} className="glass-input" value={c.tipoCodigoId} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, tipoCodigoId: e.target.value } : x) })}><option value="">Seleccionar…</option>{tipos.data?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></label>
+      <label>Valor del código *<input aria-required="true" aria-invalid={filaIncompleta(c) && !c.valor.trim()} className="glass-input" value={c.valor} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, valor: e.target.value } : x) })} /></label>
+      <button type="button" className="btn-glass" onClick={() => cambiar({ ...datos, codigos: datos.codigos.filter((_, j) => i !== j) })}>Quitar código</button>
+      {filaIncompleta(c) && <p role="alert" className="w-full text-rojo">{MENSAJE_CODIGO}</p>}</div>)}<button type="button" className="btn-glass" onClick={() => cambiar({ ...datos, codigos: [...datos.codigos, { tipoCodigoId: "", valor: "" }] })}>Añadir código inicial</button></div>}
     {puede("tenencias.gestionar") && <div className="grid gap-3 sm:grid-cols-2"><label>Régimen de tenencia<select aria-label="Régimen de tenencia" className="glass-input" value={tenencia?.regimenId ?? ""} onChange={(e) => cambiar({ ...datos, tenencia: e.target.value ? { regimenId: e.target.value } : undefined })}><option value="">Propiedad predeterminada</option>{regimenes.data?.filter((r) => r.ingresaInventarioPermanente).map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
-      {tenencia && <><label>Contraparte<select aria-label="Contraparte" className="glass-input" value={tenencia.contraparteId ?? ""} onChange={(e) => cambiarTenencia({ contraparteId: e.target.value || null })}><option value="">Sin contraparte</option>{propietarios.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select></label>
+      {tenencia && <><label>Contraparte{regimen?.requiereContraparte && " *"}<select aria-label="Contraparte" aria-required={regimen?.requiereContraparte} aria-invalid={faltaContraparte} className="glass-input" value={tenencia.contraparteId ?? ""} onChange={(e) => cambiarTenencia({ contraparteId: e.target.value || null })}><option value="">{regimen?.requiereContraparte ? "Seleccionar…" : "Sin contraparte"}</option>{propietarios.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
+        {faltaContraparte && <span role="alert" className="block text-rojo">El régimen «{regimen?.nombre}» exige indicar la contraparte.</span>}</label>
         <label>Fecha de inicio<input type="date" className="glass-input" value={tenencia.fechaInicio ?? ""} onChange={(e) => cambiarTenencia({ fechaInicio: e.target.value || null })} /></label><label>Fecha de fin<input type="date" className="glass-input" value={tenencia.fechaFin ?? ""} onChange={(e) => cambiarTenencia({ fechaFin: e.target.value || null })} /></label>
         <label>Condiciones contractuales<textarea className="glass-input" value={tenencia.condicionesContractuales ?? ""} onChange={(e) => cambiarTenencia({ condicionesContractuales: e.target.value || null })} /></label><label>Documento de referencia<input className="glass-input" value={tenencia.documentoReferencia ?? ""} onChange={(e) => cambiarTenencia({ documentoReferencia: e.target.value || null })} /></label><label><input type="checkbox" checked={tenencia.restringidoPublicacion ?? false} onChange={(e) => cambiarTenencia({ restringidoPublicacion: e.target.checked })} />Publicación restringida</label></>}
     </div>}
