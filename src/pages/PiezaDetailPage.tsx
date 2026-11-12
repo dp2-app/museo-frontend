@@ -37,7 +37,12 @@ export function PiezaDetailPage() {
   const [original, setOriginal] = useState<Ficha | null>(null);
   const p = detalle.data;
   if (!p) return <div><Link to="/coleccion">← Volver a Colección</Link><ErrorConsulta error={detalle.error} />{detalle.isPending && <p>Cargando ficha…</p>}</div>;
-  const enviar = (accion: string, motivoRechazo?: string) => op.ejecutar(() => api.patch(`/piezas/${piezaId}/estado-ficha`, { accion, motivoRechazo }));
+  const enviar = (accion: string, motivoRechazo?: string) => op.ejecutar(async () => {
+    const r = await api.patch<Ficha>(`/piezas/${piezaId}/estado-ficha`, { accion, motivoRechazo });
+    // museo-backend#170: al aprobar, el backend puede asignar el siguiente código I; hay que escribirlo en la pieza.
+    const asignado = r.data.codigos?.find((c) => c.tipoCodigo === "I" && !p.codigos.some((x) => x.id === c.id));
+    return asignado ? `Ficha aprobada. Se asignó el código ${asignado.valor}: escríbalo en la pieza.` : r;
+  });
   return <div className="space-y-6"><Link to="/coleccion" className="text-azul underline">← Volver a Colección</Link>
     <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="font-accent italic">{nombreFicha(p)}</h1><ChipEstadoFicha estado={p.estadoFicha} /></div>{!original && <button className="btn-primary" disabled={!puede("piezas.editar")} onClick={() => setOriginal(p)}>Editar ficha</button>}</div>
     <Aviso mensaje={op.mensaje} />{p.motivoRechazo && <p className="text-rojo">Motivo de rechazo: {p.motivoRechazo}</p>}<CamposFaltantes incompleta={p.incompleta} camposFaltantes={p.camposFaltantes} />
