@@ -38,4 +38,6 @@ export function cambiosFicha(original: DatosFichaV3, nuevo: DatosFichaV3): Datos
   const listas = Object.fromEntries(Object.entries(nuevo.listas).filter(([k, v]) => JSON.stringify([...v].sort()) !== JSON.stringify([...(original.listas[k] ?? [])].sort())));
   return { campos, listas };
 }
+/** frontend#61 P8: «1 pieza», «2 piezas» (no «1 piezas»). */
+export const piezas = (n: number) => `${n.toLocaleString("es-PE")} ${n === 1 ? "pieza" : "piezas"}`;
 export const ubicacionesPlanas = (nodos: Ubicacion[], prefijo = ""): (Ubicacion & { etiqueta: string })[] => nodos.flatMap((n) => [{ ...n, etiqueta: `${prefijo}${n.nombre}` }, ...ubicacionesPlanas(n.hijos ?? [], `${prefijo}${n.nombre} › `)]);
