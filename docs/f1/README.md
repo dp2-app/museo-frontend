@@ -108,3 +108,4 @@ elegida recibe el siguiente correlativo, en el orden de la lista. Si alguna ya t
 correlativo (museo-backend#184). La asignación pieza por pieza («Asignar código I» con «Usar el siguiente») sigue igual. Prueba: `npm run test:f1:asignar`
 (`F1A_EMAIL` y `F1A_PASSWORD` de un administrador de la base local).
 
+La confirmación muestra **el primer código que se va a asignar** (el «siguiente» del tipo I) y no deja confirmar si no se pudo calcular: el número queda escrito en la pieza, y el siguiente se calcula como el mayor + 1, así que un código fuera de serie en la base lo desplaza.
