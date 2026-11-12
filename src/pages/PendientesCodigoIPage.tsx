@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download, Lock, Search } from "lucide-react";
 import { useConsultaF0 } from "../hooks/useConsultaF0";
 import { usePermisos } from "../hooks/usePermisos";
+import { useSiguienteCorrelativo } from "../hooks/useCodigosF1";
 import { useTiposCodigo } from "../hooks/useCatalogosF1";
 import { puedeCorregir } from "../lib/f1";
 import { api, extraerMensajeError } from "../lib/api";
@@ -70,6 +71,7 @@ export function PendientesCodigoIPage() {
   const todasMarcadas = idsDePagina.length > 0 && idsDePagina.every((id) => seleccion.includes(id));
   const alternar = (id: string) => { setConfirmando(false); setSeleccion((previa) => previa.includes(id) ? previa.filter((x) => x !== id) : [...previa, id]); };
   const puedeMasivo = puede("codigos.gestionar") && Boolean(principal?.esCorrelativo);
+  const primero = useSiguienteCorrelativo(principal?.id ?? "", confirmando); // el número desde el que se asignará: una persona lo ve antes de confirmar
 
   return <div className="space-y-6">
     <div>
@@ -127,7 +129,10 @@ export function PendientesCodigoIPage() {
         </div>
         {confirmando && <div role="alertdialog" aria-label="Confirmar la asignación" className="glass-panel p-4 space-y-3">
           <p>Cada pieza elegida recibirá el siguiente código I, en el orden de la lista. El código I queda <strong>escrito en la pieza</strong> y después solo se corrige por excepción: tendrás que marcarla.</p>
-          <div className="flex flex-wrap gap-3"><button type="button" className="btn-primary" disabled={asignarVarias.isPending} onClick={() => asignarVarias.mutate(idsDePagina.filter((id) => seleccion.includes(id)))}>{asignarVarias.isPending ? "Asignando…" : "Confirmar asignación"}</button>
+          <p role="status" className="font-semibold">{primero.isPending ? "Calculando el primer número…" : primero.data
+            ? <>El primer código será <span className="font-mono">{primero.data}</span>{seleccion.length > 1 && " y seguirá en orden"}. Si no es el número que sigue en el inventario del museo, cancela y avisa.</>
+            : "No se pudo calcular el primer número: no confirmes todavía."}</p>
+          <div className="flex flex-wrap gap-3"><button type="button" className="btn-primary" disabled={asignarVarias.isPending || !primero.data} onClick={() => asignarVarias.mutate(idsDePagina.filter((id) => seleccion.includes(id)))}>{asignarVarias.isPending ? "Asignando…" : "Confirmar asignación"}</button>
             <button type="button" className="btn-glass" disabled={asignarVarias.isPending} onClick={() => setConfirmando(false)}>Cancelar</button></div></div>}
       </div>}
       {consulta.data.items.length === 0

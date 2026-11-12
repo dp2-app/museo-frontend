@@ -41,7 +41,8 @@ async function llamar(token, ruta, cuerpo) {
   await page.getByLabel(`Elegir Gamma ${marca}`).check(); await page.getByLabel(`Elegir Alfa ${marca}`).check();
   await page.getByRole('button', { name: /Asignar código I a las 2 elegidas/ }).click();
   assert.match(await page.getByRole('alertdialog').innerText(), /escrito en la pieza/);
-  ok('pide confirmación y avisa que el código queda escrito en la pieza');
+  await page.getByText(/El primer código será I-\d{5}/).waitFor();
+  ok('pide confirmación, avisa que el código queda escrito en la pieza y muestra el primer número');
   await page.getByRole('button', { name: 'Confirmar asignación' }).click();
   await page.getByText('2 códigos I asignados').waitFor();
   const resultado = await page.getByLabel('Resultado de la asignación').innerText();
