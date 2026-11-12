@@ -13,7 +13,7 @@ const informe = { pantallas: [], erroresAplicacion: [], erroresHTTP: [], errores
   fs.mkdirSync(out, { recursive: true });
   try {
     for (const ruta of ['/', '/coleccion', '/ubicacion-y-movimientos', '/importacion', '/consultas-y-reportes', '/asistente-ia', '/administracion']) {
-      const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => localStorage.setItem('museo.accessToken', t), token);
+      const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => sessionStorage.setItem('museo.accessToken', t), token);
       const page = await context.newPage();
       const fallos = [];
       page.on('pageerror', e => { informe.erroresAplicacion.push({ ruta, mensaje: e.message }); fallos.push(e.message); });

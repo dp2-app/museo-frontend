@@ -17,7 +17,7 @@ export const datosApi = axios.create({
 
 for (const cliente of [api, datosApi]) {
   cliente.interceptors.request.use((config) => {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const token = sessionStorage.getItem(TOKEN_STORAGE_KEY);
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   });
@@ -32,7 +32,7 @@ for (const cliente of [api, datosApi]) {
     },
     (error) => {
       if (error.response?.status === 401) {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
         if (!window.location.pathname.startsWith("/login")) {
           try { sessionStorage.setItem(VOLVER_A_STORAGE_KEY, window.location.pathname + window.location.search); } catch { /* sin almacenamiento: se vuelve al inicio */ }
           window.location.href = "/login";

@@ -120,7 +120,7 @@ async function estado(texto) { await page.getByRole('status').filter({hasText:te
   await api('/usuarios','POST',{nombre:'Catalogador de pruebas F0',email,password:cuenta.password,rolId:rol.id},201);
   const loginOtro=await api('/auth/login','POST',{email,password:cuenta.password});
   const respuesta=await fetch(base+'/config/parametros',{headers:{Authorization:'Bearer '+loginOtro.accessToken}});assert.equal(respuesta.status,403);
-  const otro=await browser.newContext({viewport:{width:1280,height:800}});const p2=await otro.newPage();await p2.goto(web+'/login');await p2.evaluate(t=>localStorage.setItem('museo.accessToken',t),loginOtro.accessToken);await p2.goto(web+'/administracion');await p2.waitForURL(web+'/');assert.equal(await p2.getByRole('heading',{name:'Administración',exact:true}).count(),0);await otro.close();ok('Permiso negativo: catalogador sin acceso a configuración por API y ruta');
+  const otro=await browser.newContext({viewport:{width:1280,height:800}});const p2=await otro.newPage();await p2.goto(web+'/login');await p2.evaluate(t=>sessionStorage.setItem('museo.accessToken',t),loginOtro.accessToken);await p2.goto(web+'/administracion');await p2.waitForURL(web+'/');assert.equal(await p2.getByRole('heading',{name:'Administración',exact:true}).count(),0);await otro.close();ok('Permiso negativo: catalogador sin acceso a configuración por API y ruta');
   // Ninguna excepción de React se acepta dentro de las pantallas F0.
   assert.equal(report.errores.filter(e=>e.url.includes('/administracion')).length,0);
  } catch(e) { report.fallo=String(e.stack||e);if(page)await shot('fallo').catch(()=>{});throw e; }

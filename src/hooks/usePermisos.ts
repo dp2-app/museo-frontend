@@ -7,7 +7,7 @@ import type { SesionV3 } from "../types";
  * `rol` es solo el nombre para mostrar: la autorización siempre es por permiso (RNF-08). */
 export function usePermisos() {
   const { isAuthenticated, usuarioId } = useAuth();
-  const firmaSesion = localStorage.getItem(TOKEN_STORAGE_KEY)?.slice(-12) ?? "";
+  const firmaSesion = sessionStorage.getItem(TOKEN_STORAGE_KEY)?.slice(-12) ?? "";
   const consulta = useQuery({
     queryKey: ["sesion-v3", usuarioId, firmaSesion],
     enabled: isAuthenticated,

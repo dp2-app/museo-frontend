@@ -28,18 +28,18 @@ function decodificarToken(token: string | null): JwtPayload | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [token, setToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_STORAGE_KEY));
 
   const payload = useMemo(() => decodificarToken(token), [token]);
 
   async function login(email: string, password: string) {
     const { data } = await api.post<{ access_token: string }>("/auth/login", { email, password });
-    localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
     setToken(data.access_token);
   }
 
   function logout() {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
   }
 

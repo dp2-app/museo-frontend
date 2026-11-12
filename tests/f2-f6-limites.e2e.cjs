@@ -34,7 +34,7 @@ async function guardarFoto(pieza, fecha) {
     token = (await api('/auth/login', 'POST', { email: process.env.F0_EMAIL, password: process.env.F0_PASSWORD })).accessToken;
     browser = await chromium.launch({ headless: true, channel: 'chrome' });
     context = await browser.newContext({ viewport: { width: 1366, height: 950 } });
-    await context.addInitScript(t => localStorage.setItem('museo.accessToken', t), token);
+    await context.addInitScript(t => sessionStorage.setItem('museo.accessToken', t), token);
     page = await context.newPage(); page.setDefaultTimeout(15000); page.on('pageerror', e => informe.erroresReact.push(e.message));
 
     await caso('Editar una fecha conserva el fotógrafo aunque quede fuera de las primeras 200 personas', async () => {

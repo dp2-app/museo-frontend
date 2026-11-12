@@ -52,7 +52,7 @@ async function subir(archivo) {
   await page.fill('input[type=password]', process.env.F5_PASSWORD);
   await page.click('button[type=submit]');
   await page.waitForURL(web + '/');
-  token = await page.evaluate(() => { for (const k of Object.keys(localStorage)) { const v = localStorage.getItem(k); if (v && v.split('.').length === 3) return v; } });
+  token = await page.evaluate(() => { for (const k of Object.keys(sessionStorage)) { const v = sessionStorage.getItem(k); if (v && v.split('.').length === 3) return v; } });
   assert.ok(token, 'No se encontró el token de sesión');
 
   // RF-58: reglas, umbral y persistencia

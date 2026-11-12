@@ -14,7 +14,7 @@ async function api(token, ruta, method = 'GET', body, status = 200) {
   const r = await fetch(base + ruta, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   const s = await r.text(); assert.equal(r.status, status, `${method} ${ruta}: ${s}`); return s ? JSON.parse(s) : null;
 }
-async function abrir(token, ruta) { const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => localStorage.setItem('museo.accessToken', t), token); const page = await context.newPage(); page.setDefaultTimeout(15000); page.on('pageerror', e => informe.errores.push(e.message)); await page.goto(web + ruta); return page; }
+async function abrir(token, ruta) { const context = await browser.newContext({ viewport: { width: 1366, height: 950 } }); await context.addInitScript(t => sessionStorage.setItem('museo.accessToken', t), token); const page = await context.newPage(); page.setDefaultTimeout(15000); page.on('pageerror', e => informe.errores.push(e.message)); await page.goto(web + ruta); return page; }
 const ok = (s) => { informe.comprobaciones.push(s); console.log('OK ' + s); };
 async function visibilidad(visible) { for (const campo of [campoEstado, campoUbicacion]) await api(admin, '/config/visibilidad-campos', 'PUT', { campoId: campo.id, rolId: rol.id, visible }); }
 (async () => {
