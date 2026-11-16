@@ -1,11 +1,15 @@
 import { Fragment, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { datosApi, extraerMensajeError } from "../lib/api";
+import { api, datosApi, extraerMensajeError } from "../lib/api";
+import { Control } from "../components/f0/FormularioFicha";
+import { EstadoConsulta } from "../components/f0/Comun";
+import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
+import { useConsultaF0 } from "../hooks/useConsultaF0";
 import { CLASIFICACIONES, codigoRepetidoEnLote, ESTADOS_CARGA, prepararRevision, subirExcel, validarArchivoExcel, valorLegible, type SeleccionRevision } from "../lib/importacion";
 import { usePermisos } from "../hooks/usePermisos";
 import { contar } from "../lib/texto";
-import type { CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
+import type { CampoFicha, CargaExcel, FilaImportacion, FilaImportacionPagina, ReglasImportacion } from "../types";
 
 const fecha = (iso: string) => new Date(iso).toLocaleString("es-PE");
 /** «Material: Material no es válido» → «Material no es válido»: no repite el nombre de la columna. */
@@ -275,14 +279,39 @@ function ResolverConflicto({ fila, ocupado, guardar }: { fila: FilaImportacion; 
     <button className="btn-glass" disabled={!id || ocupado} onClick={() => guardar(id)}>Resolver coincidencia</button></div>;
 }
 
+/** Separador de valores múltiples que entiende el backend al importar (comas, punto y coma, barras y saltos de línea). */
+const SEPARADOR_MULTIVALOR = /\s*(?:[,;/\n]|\r\n)\s*/;
+
+/** Destinos que no son campos de la ficha: se corrigen con el mismo tipo de control que el campo equivalente. */
+const DESTINOS_ESPECIALES: Record<string, Pick<CampoFicha, "tipo" | "clave">> = { regimen: { tipo: "referencia", clave: "regimen" }, ubicacion: { tipo: "referencia", clave: "ubicacion" } };
+
+function CampoCorreccion({ destino, etiqueta, campos, valor, cambiar, coleccionNombre }: { destino: string; etiqueta: string; campos: CampoFicha[]; valor: unknown; cambiar: (v: string) => void; coleccionNombre: string }) {
+  const def = campos.find((c) => c.clave === destino);
+  const especial = DESTINOS_ESPECIALES[destino];
+  const colecciones = useConsultaF0({ queryKey: ["f0", "referencias", "/colecciones"], enabled: destino === "subcoleccion_id", queryFn: async () => (await api.get<{ id: string; nombre: string; prefijoCodigo?: string }[]>("/colecciones")).data });
+  const coleccionId = colecciones.data?.find((c) => c.nombre.trim().toLowerCase() === coleccionNombre.trim().toLowerCase() || c.prefijoCodigo?.toLowerCase() === coleccionNombre.trim().toLowerCase())?.id;
+  const texto = valor == null ? "" : String(valor);
+  // Un código del museo (o cualquier destino sin definición en la ficha) es texto libre.
+  const base: CampoFicha = def ? { ...def } : { id: destino, etiqueta, clave: especial?.clave ?? destino, tipo: especial?.tipo ?? "texto", lista: null, multivalor: false, obligatorio: false, orden: 0, grupo: "", ayuda: null, activo: true, esBase: false, almacenamiento: "columna", soloLectura: false };
+  // Valores del Excel que el tipo no admite (p. ej. «16 a 20 cm», «11-jul.-2005») se muestran como texto para no perderlos.
+  const noEncaja = (base.tipo === "numero" && texto !== "" && !Number.isFinite(Number(texto))) || (base.tipo === "fecha" && texto !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(texto));
+  const campo: CampoFicha = { ...base, etiqueta: def?.etiqueta ?? etiqueta, obligatorio: false, soloLectura: false, tipo: noEncaja ? "texto" : base.tipo,
+    ayuda: `Columna del Excel: ${etiqueta}.${noEncaja ? " El valor original no tiene el formato del campo; se conserva como texto y el servidor lo revisa al guardar." : ""}` };
+  const multi = campo.tipo === "lista" && campo.multivalor;
+  return <Control porNombre campo={campo} coleccionId={coleccionId} valor={multi ? texto.split(SEPARADOR_MULTIVALOR).filter(Boolean) : texto}
+    cambiar={(v) => cambiar(Array.isArray(v) ? v.join("\n") : v == null ? "" : String(v))} />;
+}
+
 function EditorFila({ fila, ocupado, guardar, cerrar }: { fila: FilaImportacion; ocupado: boolean; guardar: (datos: DecisionFila) => void; cerrar: () => void }) {
   const [valores, setValores] = useState<Record<string, unknown>>({});
+  const catalogo = useCatalogoFicha();
   const columnas = fila.datosNormalizados?.columnas ?? {};
+  const valorActual = (destino: string) => valores[destino] ?? fila.datosNormalizados?.mapeados?.[destino] ?? "";
   return <form aria-label={`Corrección de fila ${fila.numeroFila}`} className="glass-panel p-5 space-y-3" onSubmit={(e: FormEvent) => { e.preventDefault(); guardar({ datosCorregidos: valores }); }}>
     <h2 className="section-title">Corregir fila {fila.numeroFila}</h2><p>Los valores anteriores se conservan en el registro de importación.</p>
-    <div className="max-h-96 overflow-auto grid gap-4 md:grid-cols-2">{Object.entries(columnas).map(([destino, etiqueta]) => <div key={destino}>
-      <label htmlFor={`correccion-${destino}`} className="block">{etiqueta}</label><textarea id={`correccion-${destino}`} className="glass-input block w-full" value={String(valores[destino] ?? fila.datosNormalizados?.mapeados?.[destino] ?? "")} onChange={(e) => setValores((prev) => ({ ...prev, [destino]: e.target.value }))} />
-    </div>)}</div>
+    {catalogo.isPending || catalogo.isError ? <EstadoConsulta cargando={catalogo.isPending} error={catalogo.error} reintentar={() => { void catalogo.refetch(); }} /> :
+    <div className="max-h-96 overflow-auto grid gap-4 md:grid-cols-2">{Object.entries(columnas).map(([destino, etiqueta]) => <CampoCorreccion key={destino} destino={destino} etiqueta={etiqueta} campos={catalogo.data ?? []}
+      valor={valorActual(destino)} coleccionNombre={String(valorActual("coleccion_id") ?? "")} cambiar={(v) => setValores((prev) => ({ ...prev, [destino]: v }))} />)}</div>}
     <div className="flex gap-3"><button className="btn-primary" disabled={ocupado || !Object.keys(valores).length}>Guardar corrección</button><button type="button" className="btn-glass" onClick={cerrar} disabled={ocupado}>Cerrar corrección</button></div>
   </form>;
 }

@@ -8,21 +8,30 @@ import { usePermisos } from "../../hooks/usePermisos";
 import type { CampoFicha, DatosFichaV3, ValorLista } from "../../types";
 import { ErrorCampo, ErrorOperacion, EstadoConsulta } from "./Comun";
 
-interface Opcion { id: string; nombre?: string; nombreCompleto?: string; etiqueta?: string; hijos?: Opcion[]; }
+interface Opcion { id: string; nombre?: string; nombreCompleto?: string; etiqueta?: string; hijos?: Opcion[]; valorTexto?: string; }
 function opcionesUbicacion(datos: Opcion[], prefijo = ""): Opcion[] {
-  return datos.flatMap((o) => [{ ...o, nombre: `${prefijo}${o.nombre ?? ""}` }, ...opcionesUbicacion(o.hijos ?? [], `${prefijo}${o.nombre ?? ""} › `)]);
+  return datos.flatMap((o) => [{ ...o, valorTexto: o.nombre, nombre: `${prefijo}${o.nombre ?? ""}` }, ...opcionesUbicacion(o.hijos ?? [], `${prefijo}${o.nombre ?? ""} › `)]);
 }
 
-function Control({ campo, valor, cambiar, error, coleccionId, etiquetasActuales = {} }: { campo: CampoFicha; valor: unknown; cambiar: (v: unknown) => void; error?: string; coleccionId?: unknown; etiquetasActuales?: Record<string, string> }) {
+/**
+ * `porNombre`: el valor es el texto del Excel (etiqueta de la lista o nombre del registro), que es lo que el backend de importación
+ * resuelve (F4/F5); sin él el valor es el id, como en la ficha. Lo usa «Corregir fila» de la carga masiva.
+ */
+export function Control({ campo, valor, cambiar, error, coleccionId, etiquetasActuales = {}, porNombre = false }: { campo: CampoFicha; valor: unknown; cambiar: (v: unknown) => void; error?: string; coleccionId?: unknown; etiquetasActuales?: Record<string, string>; porNombre?: boolean }) {
   const { puede } = usePermisos();
   const lista = useQuery({ queryKey: ["f0", "opciones", campo.lista?.clave], enabled: campo.tipo === "lista" && Boolean(campo.lista), queryFn: async () => (await api.get<ValorLista[]>(`/listas/${campo.lista!.clave}/valores`)).data });
-  const rutas: Record<string, string> = { coleccion_id: "/colecciones", subcoleccion_id: `/colecciones/${String(coleccionId)}/subcolecciones`, propietario_id: "/propietarios", registrador_id: "/personas", ubicacion_actual_id: "/ubicaciones" };
+  const rutas: Record<string, string> = { coleccion_id: "/colecciones", subcoleccion_id: `/colecciones/${String(coleccionId)}/subcolecciones`, propietario_id: "/propietarios", registrador_id: "/personas", ubicacion_actual_id: "/ubicaciones", ...(porNombre ? { regimen: "/regimenes", ubicacion: "/ubicaciones" } : {}) };
   const ruta = campo.tipo === "referencia" && (campo.clave !== "propietario_id" || puede("propietarios.ver")) ? rutas[campo.clave] : undefined;
   const referencias = useQuery({ queryKey: ["f0", "referencias", ruta], enabled: Boolean(ruta) && (campo.clave !== "subcoleccion_id" || Boolean(coleccionId)), queryFn: async () => (await api.get<Opcion[]>(ruta!)).data });
-  const esSelector = campo.tipo === "lista" || Boolean(ruta);
-  const opciones: Opcion[] = campo.tipo === "lista" ? lista.data?.map((v) => ({ id: v.id, nombre: v.etiqueta })) ?? [] : campo.clave === "ubicacion_actual_id" ? opcionesUbicacion(referencias.data ?? []) : referencias.data ?? [];
+  // En modo texto, si la lista o el catálogo no cargan (o no hay colección), se cae a un campo de texto para no bloquear la corrección.
+  const sinOpciones = porNombre && (Boolean(lista.error ?? referencias.error) || (campo.clave === "subcoleccion_id" && !coleccionId));
+  const esSelector = (campo.tipo === "lista" || Boolean(ruta)) && !sinOpciones;
+  const esUbicacion = campo.clave === "ubicacion_actual_id" || campo.clave === "ubicacion";
+  const opciones: Opcion[] = campo.tipo === "lista" ? lista.data?.filter((v) => v.activo || !porNombre).map((v) => ({ id: v.id, nombre: v.etiqueta })) ?? [] : esUbicacion ? opcionesUbicacion(referencias.data ?? []) : referencias.data ?? [];
+  const textoDe = (o: Opcion) => o.valorTexto ?? o.nombre ?? o.nombreCompleto ?? o.etiqueta ?? o.id;
+  const clavePorOpcion = (o: Opcion) => (porNombre ? textoDe(o) : o.id);
   for (const id of Array.isArray(valor) ? valor.map(String) : valor ? [String(valor)] : []) {
-    if (esSelector && !opciones.some((o) => o.id === id)) opciones.push({ id, nombre: `${etiquetasActuales[id] ?? "Valor actual"} (conservado)` });
+    if (esSelector && !opciones.some((o) => clavePorOpcion(o) === id)) opciones.push(porNombre ? { id, valorTexto: id, nombre: `${id} (valor original, no está en la lista)` } : { id, nombre: `${etiquetasActuales[id] ?? "Valor actual"} (conservado)` });
   }
   const id = `ficha-${campo.clave}`;
   const estadoError = lista.error ?? referencias.error;
@@ -30,8 +39,8 @@ function Control({ campo, valor, cambiar, error, coleccionId, etiquetasActuales 
   const valorString = typeof valor === "string" || typeof valor === "number" ? String(valor) : "";
   return <div className="space-y-1"><label className="block font-semibold text-azul" htmlFor={id}>{campo.etiqueta}{campo.obligatorio && <span> *<span className="sr-only"> obligatorio</span></span>}{campo.soloLectura && " (solo lectura)"}</label>
     {esSelector ? <select id={id} className="glass-input" multiple={campo.multivalor} size={campo.multivalor ? 4 : undefined} value={campo.multivalor ? (Array.isArray(valor) ? valor.map(String) : []) : valorString} disabled={campo.soloLectura || esperando || (campo.clave === "subcoleccion_id" && !coleccionId)} aria-required={campo.obligatorio} aria-invalid={Boolean(error)} aria-describedby={`${id}-ayuda ${id}-error`} onChange={(e) => cambiar(campo.multivalor ? [...e.target.selectedOptions].map((o) => o.value) : e.target.value || null)}>
-      {!campo.multivalor && <option value="">{esperando ? "Cargando opciones…" : "Seleccionar…"}</option>}{opciones.map((o) => <option key={o.id} value={o.id}>{o.nombre ?? o.nombreCompleto ?? o.etiqueta ?? o.id}</option>)}</select> :
-      campo.tipo === "texto" ? <textarea id={id} className="glass-input" rows={campo.clave === "descripcion" || campo.clave === "observaciones" ? 4 : 2} value={valorString} readOnly={campo.soloLectura} aria-required={campo.obligatorio} aria-invalid={Boolean(error)} aria-describedby={`${id}-ayuda ${id}-error`} onChange={(e) => cambiar(e.target.value === "" ? null : e.target.value)} /> :
+      {!campo.multivalor && <option value="">{esperando ? "Cargando opciones…" : "Seleccionar…"}</option>}{opciones.map((o) => <option key={o.id} value={clavePorOpcion(o)}>{o.nombre ?? o.nombreCompleto ?? o.etiqueta ?? o.id}</option>)}</select> :
+      (campo.tipo === "texto" || sinOpciones || (porNombre && campo.tipo === "referencia")) ? <textarea id={id} className="glass-input" rows={porNombre ? 2 : campo.clave === "descripcion" || campo.clave === "observaciones" ? 4 : 2} value={valorString} readOnly={campo.soloLectura} aria-required={campo.obligatorio} aria-invalid={Boolean(error)} aria-describedby={`${id}-ayuda ${id}-error`} onChange={(e) => cambiar(e.target.value === "" ? null : e.target.value)} /> :
       <input id={id} className="glass-input" type={campo.tipo === "numero" ? "number" : campo.tipo === "fecha" ? "date" : "text"} step={campo.tipo === "numero" ? "any" : undefined} value={campo.tipo === "referencia" ? etiquetasActuales[valorString] ?? valorString : valorString} readOnly={campo.soloLectura || campo.tipo === "referencia"} aria-required={campo.obligatorio} aria-invalid={Boolean(error)} aria-describedby={`${id}-ayuda ${id}-error`} onChange={(e) => cambiar(e.target.value === "" ? null : campo.tipo === "numero" ? Number(e.target.value) : e.target.value)} />}
     <p id={`${id}-ayuda`} className="text-sm">{campo.ayuda}{campo.multivalor && " Selecciona uno o varios valores."}{campo.clave === "subcoleccion_id" && !coleccionId && " Primero selecciona una colección."}</p>
     <ErrorCampo id={`${id}-error`} mensaje={error} /><ErrorOperacion error={estadoError} />
