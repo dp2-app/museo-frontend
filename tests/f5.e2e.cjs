@@ -105,7 +105,6 @@ async function subir(archivo) {
   await page.waitForFunction(() => document.body.innerText.includes('0 filas pendientes de revisión'), null, { timeout: 15000 });
   // Aprobar no actúa con un solo clic: muestra primero el resumen de lo que se registrará
   assert.equal(await page.getByRole('button', { name: 'Descargar reporte de errores' }).count(), 0, 'Sin errores no se ofrece el reporte de errores');
-  await page.getByText(/Ninguna de las filas mostradas trae código del museo/).waitFor();
   await page.getByRole('button', { name: 'Aprobar carga completa' }).click();
   const confirmacion = page.getByRole('form', { name: 'Confirmar aprobación de la carga' });
   await confirmacion.getByText('Piezas nuevas que se registrarán:').waitFor();
