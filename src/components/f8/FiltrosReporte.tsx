@@ -13,6 +13,9 @@ const AVANZADOS: (keyof FiltrosConsulta)[] = ["estadoPiezaId", "estadoConservaci
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
 
 /** Los mismos filtros de la búsqueda (F7) para la búsqueda y para todos los reportes. Un filtro sobre un campo oculto para el rol no se muestra. */
+/** `faltaCampo` lleva la clave de `camposFaltantes`; las fijas se nombran aquí y las demás por su etiqueta de la ficha. */
+const FALTA_CAMPO: Record<string, string> = { codigos_externos: "código del museo", fotografias: "fotografía" };
+
 export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicados, inicial, onAplicar }: Props) {
   const [f, setF] = useState<FiltrosConsulta>(inicial ?? {});
   const [abierto, setAbierto] = useState(false);
@@ -91,7 +94,7 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicad
         <ul aria-label="Filtros aplicados" className="flex flex-wrap gap-1.5 text-xs">
           {Object.entries(aplicadosParams).map(([clave, valor]) => (
             <li key={clave} className="chip !py-0.5 !px-2 !text-xs inline-flex items-center gap-1">
-              {ETIQUETA_FILTRO[clave] ?? clave}{valor === true ? "" : `: ${clave === "estadoFicha" ? ESTADO_FICHA[String(valor)] ?? String(valor) : nombres[String(valor)] ?? String(valor)}`}
+              {ETIQUETA_FILTRO[clave] ?? clave}{valor === true ? "" : `: ${clave === "estadoFicha" ? ESTADO_FICHA[String(valor)] ?? String(valor) : clave === "faltaCampo" ? FALTA_CAMPO[String(valor)] ?? String(valor) : nombres[String(valor)] ?? String(valor)}`}
               <button type="button" aria-label={`Quitar el filtro ${ETIQUETA_FILTRO[clave] ?? clave}`} className="inline-flex" onClick={() => quitar(clave)}>
                 <X size={12} aria-hidden="true" />
               </button>

@@ -5,22 +5,40 @@ import { Aviso, ConMotivo, ErrorConsulta, Panel } from "./FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
 
 export interface ColeccionFicha { id: string; nombre: string; prefijoCodigo: string | null; descripcion: string | null; }
+/** Gestionar colecciones (#119): la lista a la izquierda y, al elegir una o pulsar «Nueva colección», su panel a la derecha. */
 export function Colecciones() {
   const lista = useRecurso<ColeccionFicha[]>("colecciones", "/colecciones");
-  const [id, setId] = useState(""); const [nombre, setNombre] = useState(""); const [prefijo, setPrefijo] = useState(""); const [descripcion, setDescripcion] = useState(""); const [sub, setSub] = useState("");
+  const [id, setId] = useState(""); const [abierto, setAbierto] = useState(false);
+  const [nombre, setNombre] = useState(""); const [prefijo, setPrefijo] = useState(""); const [descripcion, setDescripcion] = useState(""); const [sub, setSub] = useState("");
   const subs = useRecurso<{ id: string; nombre: string }[]>("subcolecciones", `/colecciones/${id}/subcolecciones`, !!id);
   const op = useOperacion();
-  function seleccionar(c?: ColeccionFicha) { setId(c?.id ?? ""); setNombre(c?.nombre ?? ""); setPrefijo(c?.prefijoCodigo ?? ""); setDescripcion(c?.descripcion ?? ""); }
+  function seleccionar(c?: ColeccionFicha, nueva = false) { setId(c?.id ?? ""); setNombre(c?.nombre ?? ""); setPrefijo(c?.prefijoCodigo ?? ""); setDescripcion(c?.descripcion ?? ""); setSub(""); setAbierto(Boolean(c) || nueva); }
   return <Panel titulo="Colecciones y subcolecciones"><ErrorConsulta error={lista.error || subs.error} /><Aviso mensaje={op.mensaje} />
-    <div className="flex flex-wrap gap-2">{lista.data?.map((c) => <button className="btn-glass" key={c.id} onClick={() => seleccionar(c)}>{c.nombre}</button>)}</div>
-    <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => { const datos = { nombre: nombre.trim(), prefijoCodigo: prefijo.trim() || null, descripcion: descripcion.trim() || null }; if (id) await api.patch(`/colecciones/${id}`, datos); else await api.post("/colecciones", datos); seleccionar(); }); }}>
-      <label>Nombre de colección<input required className="glass-input" value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
-      <label>Prefijo del código<input className="glass-input" value={prefijo} onChange={(e) => setPrefijo(e.target.value)} /></label>
-      <label>Descripción de colección<textarea className="glass-input" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} /></label>
-      <div className="flex gap-2 items-end"><button className="btn-primary" disabled={op.pendiente || !nombre.trim()}>{id ? "Guardar colección" : "Crear colección"}</button>{id && <button type="button" className="btn-glass" onClick={() => seleccionar()}>Nueva colección</button>}</div>
-    </form>
-    {id && <><p>Subcolecciones: {subs.data?.map((s) => s.nombre).join(", ") || "Ninguna"}</p><form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => { await api.post(`/colecciones/${id}/subcolecciones`, { nombre: sub.trim() }); setSub(""); }); }}><label>Nombre de subcolección<input required className="glass-input" value={sub} onChange={(e) => setSub(e.target.value)} /></label><button className="btn-glass" disabled={op.pendiente || !sub.trim()}>Crear subcolección</button></form>
-      <p>Solo se puede dar de baja una colección sin piezas activas.</p><button className="btn-glass" disabled={op.pendiente} onClick={() => op.ejecutar(async () => { await api.post(`/colecciones/${id}/baja`); seleccionar(); })}>Dar de baja colección {nombre}</button></>}
+    <div className="flex justify-end"><button type="button" className="btn-primary" onClick={() => seleccionar(undefined, true)}>Nueva colección</button></div>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="overflow-x-auto"><table className="w-full text-sm text-left"><caption className="sr-only">Colecciones del museo</caption>
+        <thead className="text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave"><tr><th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Prefijo</th><th className="px-3 py-2">Descripción</th><th className="px-3 py-2"><span className="sr-only">Acciones</span></th></tr></thead>
+        <tbody className="divide-y divide-linea">{lista.data?.map((c) => <tr key={c.id} className={c.id === id ? "bg-fondo-suave" : undefined}>
+          <td className="px-3 py-2 font-semibold">{c.nombre}</td><td className="px-3 py-2">{c.prefijoCodigo ?? "—"}</td><td className="px-3 py-2 text-gris-2">{c.descripcion ?? "—"}</td>
+          <td className="px-3 py-2"><button type="button" className="text-azul underline font-semibold" aria-label={`Editar ${c.nombre}`} onClick={() => seleccionar(c)}>Editar</button></td></tr>)}</tbody></table>
+        {lista.data?.length === 0 && <p className="p-3 text-sm">Aún no hay colecciones.</p>}</div>
+      {abierto && <aside className="rounded-card border border-linea p-4 space-y-4" aria-label={id ? `Colección ${nombre}` : "Nueva colección"}>
+        <h3 className="section-title">{id ? "Editar colección" : "Nueva colección"}</h3>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => { const datos = { nombre: nombre.trim(), prefijoCodigo: prefijo.trim() || null, descripcion: descripcion.trim() || null }; if (id) await api.patch(`/colecciones/${id}`, datos); else await api.post("/colecciones", datos); seleccionar(); }); }}>
+          <label className="block">Nombre de colección<input required className="glass-input" value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
+          <label className="block">Prefijo del código<input className="glass-input" value={prefijo} onChange={(e) => setPrefijo(e.target.value)} /></label>
+          <label className="block">Descripción de colección<textarea className="glass-input" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} /></label>
+          <div className="flex gap-2"><button className="btn-primary" disabled={op.pendiente || !nombre.trim()}>{id ? "Guardar colección" : "Crear colección"}</button><button type="button" className="btn-glass" onClick={() => seleccionar()}>Cerrar</button></div>
+        </form>
+        {id && <>
+          <div><h4 className="font-semibold">Subcolecciones</h4>{subs.data?.length ? <ul className="list-disc pl-5 text-sm">{subs.data.map((x) => <li key={x.id}>{x.nombre}</li>)}</ul> : <p className="text-sm text-gris-2">Ninguna</p>}</div>
+          <form className="flex flex-wrap gap-2 items-end" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => { await api.post(`/colecciones/${id}/subcolecciones`, { nombre: sub.trim() }); setSub(""); await subs.refetch(); }); }}>
+            <label className="flex-1 min-w-40">Nombre de subcolección<input required className="glass-input" value={sub} onChange={(e) => setSub(e.target.value)} /></label>
+            <button className="btn-glass" disabled={op.pendiente || !sub.trim()}>Agregar subcolección</button></form>
+          <p className="text-sm">Solo se puede dar de baja una colección sin piezas activas.</p>
+          <button className="btn-glass" disabled={op.pendiente} onClick={() => op.ejecutar(async () => { await api.post(`/colecciones/${id}/baja`); seleccionar(); })}>Dar de baja colección {nombre}</button></>}
+      </aside>}
+    </div>
   </Panel>;
 }
 /** `GET /piezas/eliminadas` trae además la última baja (museo-backend, F2-P7). */

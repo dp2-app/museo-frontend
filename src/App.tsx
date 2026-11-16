@@ -15,7 +15,7 @@ import { PendientesCodigoIPage } from "./pages/PendientesCodigoIPage";
 import { PrestamosTemporalesPage } from "./pages/PrestamosTemporalesPage";
 import { PiezaDetailPage } from "./pages/PiezaDetailPage";
 import { PiezasPage } from "./pages/PiezasPage";
-import { UbicacionMovimientosPage } from "./pages/UbicacionMovimientosPage";
+import { SedesPage, UbicacionMovimientosPage } from "./pages/UbicacionMovimientosPage";
 
 /** Permisos que dan acceso a una sección: una sola fuente con el menú (lib/secciones.ts). */
 const permisosDe = (ruta: string) => SECCIONES.find((s) => s.ruta === ruta)?.permisos ?? [];
@@ -79,6 +79,15 @@ export default function App() {
           element={
             <RequirePermiso permisos={permisosDe("/ubicacion-y-movimientos")}>
               <UbicacionMovimientosPage />
+            </RequirePermiso>
+          }
+        />
+
+        <Route
+          path="/ubicacion-y-movimientos/sedes"
+          element={
+            <RequirePermiso permisos={["ubicaciones.gestionar"]}>
+              <SedesPage />
             </RequirePermiso>
           }
         />

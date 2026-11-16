@@ -47,9 +47,11 @@ export interface IndicadorColeccion {
 export interface ReporteIndicadores extends EncabezadoReporte {
   totalPiezas: number; indicadores: Indicador[]; porColeccion: IndicadorColeccion[];
   historia: { disponible: boolean; motivo: string | null };
+  /** Qué falta campo por campo (#208): cada uno con el filtro de F7 que lista esas piezas. Solo campos que el rol ve. */
+  faltantes?: { campo: string; etiqueta: string; total: number; filtro: FiltrosConsulta; verPiezas: string }[];
 }
 
-export type ClaveReporte = "inventario" | "por-estado" | "por-ubicacion" | "informacion-incompleta" | "indicadores";
+export type ClaveReporte = "inventario" | "por-estado" | "por-ubicacion" | "informacion-incompleta" | "estado-catalogo";
 
 /** Campo de la ficha que protege cada filtro: si el rol no lo ve, el backend rechaza el filtro (403). */
 export const CAMPO_DE_FILTRO: Partial<Record<keyof FiltrosConsulta, string>> = {
@@ -62,7 +64,7 @@ export const ETIQUETA_FILTRO: Record<string, string> = {
   q: "Texto", codigo: "Código", coleccionId: "Colección", ubicacionId: "Ubicación", estadoConservacionId: "Estado de conservación",
   estadoPiezaId: "Estado de la pieza", materialId: "Material", tipoBienId: "Tipo de bien", clasificacionId: "Clasificación",
   autor: "Autor", procedencia: "Procedencia", epoca: "Época", estadoFicha: "Estado de ficha",
-  soloIncompletas: "Solo incompletas", sinFotografia: "Sin fotografía", sinUbicacion: "Sin ubicación", sinCodigoPrincipal: "Pendientes de código I",
+  soloIncompletas: "Solo incompletas", sinFotografia: "Sin fotografía", sinUbicacion: "Sin ubicación", sinCodigoPrincipal: "Pendientes de código I", conFotografia: "Con fotografía", faltaCampo: "Le falta",
 };
 
 /** Solo los filtros con valor, para no mandar parámetros vacíos. */
@@ -92,7 +94,7 @@ export async function descargarExcel(ruta: string, params: Record<string, unknow
 
 /** Total de piezas del reporte: el de incompletos lo llama `totalPiezas`. */
 export function totalDe(clave: ClaveReporte, datos: unknown): number {
-  return clave === "informacion-incompleta" || clave === "indicadores" ? (datos as { totalPiezas: number }).totalPiezas : (datos as { total: number }).total;
+  return clave === "informacion-incompleta" || clave === "estado-catalogo" ? (datos as { totalPiezas: number }).totalPiezas : (datos as { total: number }).total;
 }
 
 /** Mensajes de la consulta o de la exportación según lo que pasó (QA F8-01, F8-04, F8-05); los filtros nunca se pierden. */
