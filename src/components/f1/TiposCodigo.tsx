@@ -12,7 +12,7 @@ type Form = typeof vacio;
 
 const REGLAS: { clave: "esUnico" | "inmutable" | "esCorrelativo" | "permiteMultiples"; etiqueta: string; ayuda: string }[] = [
   { clave: "esUnico", etiqueta: "Único", ayuda: "Dos piezas no pueden tener el mismo valor (se compara normalizado: I-00001 = i 1)." },
-  { clave: "inmutable", etiqueta: "Inmutable", ayuda: "Queda bloqueado al guardarse; solo se corrige por excepción (RF-05)." },
+  { clave: "inmutable", etiqueta: "Inmutable", ayuda: "Queda bloqueado al guardarse; solo se corrige por excepción." },
   { clave: "esCorrelativo", etiqueta: "Correlativo", ayuda: "La ficha sugiere el número siguiente al mayor registrado; no rellena huecos." },
   { clave: "permiteMultiples", etiqueta: "Permite varios por pieza", ayuda: "Una pieza puede tener más de un código de este tipo." },
 ];

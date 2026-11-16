@@ -279,3 +279,12 @@ Los endpoints (`/ia/sugerencias`, `/ia/extraccion-observaciones/*`, `/ia/detecci
 - **Espera de la IA (#101):** «Preguntar» y «Armar sala» usan `EsperaIA` (`components/f10/EsperaIA.tsx`): aro animado, mensajes de avance
   que se suceden hasta el último, esqueleto de resultados y, a los 20 s, aviso de que el proveedor está ocupado. Las animaciones van con
   `motion-safe:` (nada se mueve con `prefers-reduced-motion`) y el lector de pantalla oye un solo aviso. Úsalo en cualquier espera de IA nueva.
+
+## Inicio, «Qué le falta» y cifras únicas (16/11/2026, issues #118, #121, #208 a #210)
+
+- Navegación: Inicio, Colección, Ubicación y movimientos, Importación, Consultas y reportes, **Armar sala** (antes «Asistente IA»), Administración. Sin códigos internos (HU/RF/RN) en textos visibles.
+- **Inicio** (`PanelPrincipalPage`) muestra lo que arma `GET /reportes/panel-principal`: fichas completas, «Por qué hay N fichas incompletas» (`motivosIncompletas`, un botón «Completar» por motivo) y pendientes; cada enlace lleva a `/coleccion?<filtro de F7>` con el `filtro` que trae el backend (`enlaceColeccion`, `filtrosDeDireccion` en `lib/reportes.ts`). No recalcula nada.
+- **Colección**: la columna «Qué le falta» muestra un chip por cada clave de `camposFaltantes`; cada chip abre la ficha con `?campo=<clave>`, que abre la edición, señala los campos que faltan (borde, `aria-invalid`, barra «Faltan N campos») y enfoca el pedido. `FormularioFicha` recibe `faltantes` y `enfocar`.
+- **Inventario ya no trae `resumen`** (museo-backend#211): el resumen vive en Inicio y en el nuevo `GET /reportes/estado-catalogo`; esta pantalla solo lista una fila por pieza.
+- **Armar sala** muestra `condiciones` del pedido como chips que se quitan (`ignorarCondiciones`); el frontend no filtra, vuelve a pedir la propuesta.
+- Este cambio exige museo-backend#211 (mergear juntos). Pendiente de estas issues: pestaña «Estado del catálogo» (#208), «Buscar con IA» dentro de Colección (#121), Gestionar colecciones como lista (#119) y árbol de ubicaciones (#120).

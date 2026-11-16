@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormularioFicha, CamposFaltantes } from "../components/f0/FormularioFicha";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
@@ -15,7 +15,7 @@ import { cambiosFicha, datosFicha, nombreFicha, type Ficha, type FichaCompleta }
 import type { RegistroAuditoria } from "../types";
 
 /** El editor conserva su instantánea y entradas cuando el servidor responde 409. */
-function EditorFicha({ original, terminar }: { original: Ficha; terminar: () => void }) {
+function EditorFicha({ original, terminar, enfocar }: { original: Ficha; terminar: () => void; enfocar: string | null }) {
   const cache = useQueryClient(); const [conflicto, setConflicto] = useState(false); const [recarga, setRecarga] = useState(0); const [base, setBase] = useState(original);
   const op = useOperacion();
   const etiquetasActuales = Object.fromEntries([
@@ -24,7 +24,7 @@ function EditorFicha({ original, terminar }: { original: Ficha; terminar: () => 
   ]);
   return <Panel titulo="Editar ficha"><p>Solo se enviarán los campos modificados.</p>
     {conflicto && <div role="alert"><p>Otra persona cambió esta pieza. Tus cambios siguen en el formulario. Copia lo que necesites antes de recargar la versión del servidor.</p><button className="btn-glass" disabled={op.pendiente} onClick={() => op.ejecutar(async () => { const p = (await api.get<Ficha>(`/piezas/${base.id}`)).data; setBase(p); setRecarga(recarga + 1); setConflicto(false); })}>Recargar ficha y descartar mis cambios</button></div>}
-    <Aviso mensaje={op.mensaje} /><FormularioFicha key={recarga} edicion inicial={datosFicha(base)} etiquetasActuales={etiquetasActuales} onGuardar={async (datos) => {
+    <Aviso mensaje={op.mensaje} /><FormularioFicha key={recarga} edicion faltantes={base.camposFaltantes} enfocar={enfocar} inicial={datosFicha(base)} etiquetasActuales={etiquetasActuales} onGuardar={async (datos) => {
       try { await api.patch(`/piezas/${base.id}`, { version: base.version, ...cambiosFicha(datosFicha(base), datos) }); await cache.invalidateQueries(); terminar(); }
       catch (e) { if (extraerErroresApi(e).some((x) => x.codigo === "conflicto_version")) setConflicto(true); throw e; }
     }} /><button className="btn-glass" onClick={terminar}>Cerrar edición</button>
@@ -34,8 +34,11 @@ export function PiezaDetailPage() {
   const { piezaId = "" } = useParams(); const navegar = useNavigate(); const { puede } = usePermisos(); const op = useOperacion();
   const detalle = useRecurso<FichaCompleta>("pieza-completa", `/piezas/${piezaId}/ficha-completa`); /* una sola llamada (RF-44, museo-frontend#100) */ const catalogo = useCatalogoFicha();
   const auditoria = useRecurso<RegistroAuditoria[]>("auditoria-pieza", `/piezas/${piezaId}/auditoria`, !!detalle.data);
-  const [original, setOriginal] = useState<Ficha | null>(null);
+  const [elegido, setOriginal] = useState<Ficha | null>(null); const [cerrado, setCerrado] = useState(false);
   const p = detalle.data;
+  // `?campo=<clave>` (desde «Qué le falta»): abre la edición con ese campo señalado, solo si la persona puede editar.
+  const [consulta] = useSearchParams(); const campoPedido = consulta.get("campo");
+  const original = elegido ?? (campoPedido && !cerrado && p && puede("piezas.editar") ? p : null);
   if (!p) return <div><Link to="/coleccion">← Volver a Colección</Link><ErrorConsulta error={detalle.error} />{detalle.isPending && <p>Cargando ficha…</p>}</div>;
   const enviar = (accion: string, motivoRechazo?: string) => op.ejecutar(async () => {
     const r = await api.patch<Ficha>(`/piezas/${piezaId}/estado-ficha`, { accion, motivoRechazo });
@@ -51,7 +54,7 @@ export function PiezaDetailPage() {
       {p.estadoFicha === "en_revision" && <><button className="btn-primary" disabled={!puede("piezas.aprobar_ficha") || op.pendiente || !!original} onClick={() => enviar("aprobar")}>Aprobar ficha</button><ConMotivo etiqueta="Rechazar ficha" pendiente={!puede("piezas.aprobar_ficha") || op.pendiente || !!original} ejecutar={(motivo) => enviar("rechazar", motivo)} /></>}
       {p.estadoFicha === "en_revision" && <button className="btn-glass" disabled={!puede("piezas.editar") || op.pendiente || !!original} onClick={() => enviar("volver_borrador")}>Volver a borrador</button>}
     </div>{p.incompleta && <p>Completa los datos pendientes para enviar la ficha a revisión.</p>}<p className="text-sm">Creada por {p.creadoPor?.nombre || "Sin responsable"} · {new Date(p.creadoEn).toLocaleString("es-PE")}<br />Última actualización: {p.actualizadoPor?.nombre || "Sin responsable"} · {new Date(p.actualizadoEn).toLocaleString("es-PE")}</p></Panel>
-    {original && <EditorFicha original={original} terminar={() => setOriginal(null)} />}
+    {original && <EditorFicha original={original} enfocar={campoPedido} terminar={() => { setOriginal(null); setCerrado(true); }} />}
     <Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} codigosIniciales={p.codigosDetalle} tenenciasIniciales={p.tenencias} /></Panel>
     <ArchivosFicha piezaId={piezaId} inicial={p.fotografias} /><ArchivosFicha piezaId={piezaId} documentos inicial={p.documentos} /><EstadoUbicacion key={piezaId} pieza={p} movimientosIniciales={p.movimientos} estadosIniciales={p.estados} />
     <Panel titulo="Historial de cambios"><ErrorConsulta error={auditoria.error} /><ul className="space-y-2 text-sm">{auditoria.data?.map((r, i) => <li key={i} className="border-b border-linea pb-2"><p>{r.fecha ? new Date(r.fecha).toLocaleString("es-PE") : ""} · {r.accion} · {r.campo}</p><p className="break-words">{r.valorAnterior ?? "Sin dato"} → {r.valorNuevo ?? "Sin dato"}</p></li>)}</ul>{auditoria.data?.length === 0 && <p>Sin cambios registrados.</p>}</Panel>

@@ -178,7 +178,7 @@ export function ConsultasReportesPage() {
         )}
         {puede("reportes.exportar_total") && (
           <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando}
-                  title="Todas las piezas con todos los campos que tu rol ve; no aplica los filtros (RF-49)"
+                  title="Todas las piezas con todos los campos que tu rol ve; no aplica los filtros"
                   onClick={() => exportar("/exportaciones/catalogo-completo.xlsx", `catalogo_completo_${hoy}.xlsx`, false)}>
             <Database size={16} aria-hidden="true" /> Exportar catálogo completo
           </button>

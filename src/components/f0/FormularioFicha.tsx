@@ -1,6 +1,6 @@
 import { datosEditables } from "../../lib/fichaF0";
 import { useConsultaF0 as useQuery } from "../../hooks/useConsultaF0";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { useCatalogoFicha } from "../../hooks/useCatalogoFicha";
 import { api, erroresPorCampo } from "../../lib/api";
@@ -54,10 +54,13 @@ export interface FormularioFichaProps {
   onChange?: (datos: DatosFichaV3) => void;
   edicion?: boolean;
   etiquetasActuales?: Record<string, string>;
+  /** Claves que el backend dice que faltan (`camposFaltantes`): se señalan en el formulario; `enfocar` lleva la vista a una de ellas. */
+  faltantes?: string[];
+  enfocar?: string | null;
 }
 
 /** F2 integra onGuardar; sin callback es vista previa y no escribe ninguna pieza. */
-export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange, edicion = false, etiquetasActuales }: FormularioFichaProps) {
+export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange, edicion = false, etiquetasActuales, faltantes = [], enfocar = null }: FormularioFichaProps) {
   const catalogo = useCatalogoFicha();
   const [datos, setDatos] = useState<DatosFichaV3>(inicial ?? { campos: {}, listas: {} });
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -66,6 +69,27 @@ export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuar
   const [aviso, setAviso] = useState("");
   const campos = [...(catalogo.data ?? [])].filter((c) => c.activo).sort((a, b) => a.orden - b.orden || a.clave.localeCompare(b.clave));
   const grupos = [...new Set(campos.map((c) => c.grupo))];
+  const etiquetaDe = (clave: string) => campos.find((c) => c.clave === clave)?.etiqueta ?? clave;
+  const faltantesDeCampo = faltantes.filter((c) => campos.some((x) => x.clave === c));
+  const ids = faltantesDeCampo.join(",");
+  // Señala en el formulario los campos que faltan (borde, aria-invalid y un aviso) sin volver a calcular nada: la lista es del backend.
+  useEffect(() => {
+    const marcados: HTMLElement[] = [];
+    for (const clave of ids ? ids.split(",") : []) {
+      const el = document.getElementById(`ficha-${clave}`);
+      if (!el) continue;
+      el.setAttribute("aria-invalid", "true"); el.classList.add("!border-rojo", "!border-2");
+      marcados.push(el);
+    }
+    return () => marcados.forEach((el) => { el.removeAttribute("aria-invalid"); el.classList.remove("!border-rojo", "!border-2"); });
+  }, [ids, catalogo.isSuccess, datos]);
+  useEffect(() => {
+    if (!enfocar || !catalogo.isSuccess) return;
+    const el = document.getElementById(`ficha-${enfocar}`);
+    el?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    el?.focus({ preventScroll: true });
+  }, [enfocar, catalogo.isSuccess]);
+  function irA(clave: string) { const el = document.getElementById(`ficha-${clave}`); el?.scrollIntoView({ block: "center" }); el?.focus({ preventScroll: true }); }
   function cambiar(campo: CampoFicha, valor: unknown) {
     let nuevo: DatosFichaV3;
     if (campo.almacenamiento === "lista") nuevo = { ...datos, listas: { ...datos.listas, [campo.clave]: Array.isArray(valor) ? valor.map(String) : [] } };
@@ -93,6 +117,10 @@ export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuar
   if (catalogo.isPending || catalogo.isError) return <EstadoConsulta cargando={catalogo.isPending} error={catalogo.error} reintentar={() => { void catalogo.refetch(); }} />;
   return <form className="f0-surface space-y-6" onSubmit={(e) => { void enviar(e); }} noValidate aria-label="Formulario de ficha">
     <p>Los campos y las listas provienen de la configuración vigente. El asterisco indica un campo obligatorio.</p>
+    {faltantesDeCampo.length > 0 && <div role="status" className="sticky top-0 z-10 rounded-card border border-rojo bg-white p-3 space-y-2">
+      <p className="font-semibold text-rojo-oscuro">{faltantesDeCampo.length === 1 ? "Falta 1 campo para completar la ficha" : `Faltan ${faltantesDeCampo.length} campos para completar la ficha`}</p>
+      <div className="flex flex-wrap gap-2">{faltantesDeCampo.map((c) => <button key={c} type="button" className="chip" onClick={() => irA(c)}>{etiquetaDe(c)}</button>)}</div>
+    </div>}
     <ErrorOperacion error={error} />
     {grupos.map((grupo) => <fieldset key={grupo} className="space-y-4 border-t border-linea pt-6"><legend className="mb-3 font-semibold text-azul">{grupo}</legend><div className="grid gap-4 md:grid-cols-2">{campos.filter((c) => c.grupo === grupo).map((c) => <Control key={c.id} campo={c} valor={c.almacenamiento === "lista" ? datos.listas[c.clave] : datos.campos[c.clave]} etiquetasActuales={etiquetasActuales} coleccionId={datos.campos.coleccion_id} cambiar={(v) => cambiar(c, v)} error={errores[c.clave] ?? erroresExternos[c.clave]} />)}</div></fieldset>)}
     {aviso && <p role="status">{aviso}</p>}<button className="btn-primary" disabled={guardando || catalogo.isFetching}>{guardando ? "Guardando…" : onGuardar ? "Guardar ficha" : "Comprobar obligatorios"}</button>

@@ -67,7 +67,7 @@ const menu = async (page) => { await page.waitForLoadState('networkidle'); await
     // ---------- 1. El administrador crea un rol desde la pantalla, con una combinación de permisos
     const ctxAdmin = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const admin = await entrar(ctxAdmin, EMAIL_ADMIN);
-    assert.deepEqual((await menu(admin)).sort(), ['Administración', 'Asistente IA', 'Colección', 'Consultas y reportes', 'Importación', 'Panel principal', 'Ubicación y movimientos'].sort());
+    assert.deepEqual((await menu(admin)).sort(), ['Administración', 'Armar sala', 'Colección', 'Consultas y reportes', 'Importación', 'Inicio', 'Ubicación y movimientos'].sort());
     ok('Administrador ve todo el menú (derivado de sus 44 permisos, no de su nombre de rol)');
     await admin.goto(WEB + '/administracion');
     await admin.getByRole('button', { name: 'Roles y permisos', exact: true }).click();
@@ -115,7 +115,7 @@ const menu = async (page) => { await page.waitForLoadState('networkidle'); await
     const ctxAud = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const aud = await entrar(ctxAud, EMAIL);
     const audMenu = await menu(aud);
-    assert.deepEqual(audMenu.sort(), ['Consultas y reportes', 'Importación', 'Panel principal'].sort());
+    assert.deepEqual(audMenu.sort(), ['Consultas y reportes', 'Importación', 'Inicio'].sort());
     ok('El menú del usuario nuevo muestra solo Panel, Importación y Consultas');
     await aud.goto(WEB + '/administracion');
     await aud.waitForURL((u) => u.pathname === '/');
@@ -134,8 +134,8 @@ const menu = async (page) => { await page.waitForLoadState('networkidle'); await
     await admin.getByRole('button', { name: 'Guardar cambios' }).click();
     await admin.getByText('Rol guardado').waitFor();
     await aud.reload();
-    await aud.locator('header nav a', { hasText: 'Asistente IA' }).waitFor();
-    ok('Al guardar el rol, el usuario ve «Asistente IA» tras recargar, con el mismo inicio de sesión');
+    await aud.locator('header nav a', { hasText: 'Armar sala' }).waitFor();
+    ok('Al guardar el rol, el usuario ve «Armar sala» tras recargar, con el mismo inicio de sesión');
 
     // ---------- 5. Rol de solo lectura en Administración
     await api('/roles', { metodo: 'POST', token: adminT, esperado: 201, cuerpo: { nombre: ROL_LECTURA, permisos: ['usuarios.ver', 'roles.ver', 'auditoria.ver', 'config.visibilidad.ver'] } });
@@ -143,7 +143,7 @@ const menu = async (page) => { await page.waitForLoadState('networkidle'); await
     await api('/usuarios', { metodo: 'POST', token: adminT, esperado: 201, cuerpo: { nombre: 'Lector de Seguridad', email: EMAIL_LECTURA, password: CLAVE, rolId: rolLectura.id } });
     const ctxLec = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const lec = await entrar(ctxLec, EMAIL_LECTURA);
-    assert.deepEqual(await menu(lec), ['Panel principal', 'Administración']);
+    assert.deepEqual(await menu(lec), ['Inicio', 'Administración']);
     await lec.goto(WEB + '/administracion');
     await lec.locator('nav[aria-label="Secciones de administración"] button').first().waitFor();
     const secciones = await lec.locator('nav[aria-label="Secciones de administración"] button').allInnerTexts();

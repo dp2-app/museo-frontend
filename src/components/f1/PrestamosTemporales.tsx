@@ -83,7 +83,7 @@ export function PrestamosTemporales() {
         <div className="md:col-span-2"><Etiqueta htmlFor="f1-prest-condiciones">Condiciones del préstamo</Etiqueta>
           <textarea id="f1-prest-condiciones" className="glass-input" value={form.condicionesContractuales} onChange={(e) => setForm({ ...form, condicionesContractuales: e.target.value })} /></div>
       </div>
-      <label className="flex items-center gap-2"><input type="checkbox" checked={form.restringidoPublicacion} onChange={(e) => setForm({ ...form, restringidoPublicacion: e.target.checked })} />Restringido para publicación (RN-07)</label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={form.restringidoPublicacion} onChange={(e) => setForm({ ...form, restringidoPublicacion: e.target.checked })} />Restringido para publicación </label>
       <div className="flex flex-wrap gap-3">
         <button className="btn-primary bg-rojo-oscuro" disabled={registrar.isPending || !regimen}>{registrar.isPending ? "Registrando…" : "Registrar préstamo"}</button>
         <button type="button" className="btn-glass" onClick={() => setAbierto(false)}>Cancelar</button>

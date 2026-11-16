@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   ETIQUETA_FILTRO, type ClaveReporte, type EncabezadoReporte, type FiltrosConsulta, type ReporteIncompletos, type ReporteIndicadores,
-  type ReporteInventario, type ReportePorEstado, type ReporteUbicacion, type ResumenInventario,
+  type ReporteInventario, type ReportePorEstado, type ReporteUbicacion,
 } from "../../lib/reportes";
 import { Anillo, BarraProgreso, BarrasHorizontales } from "./Graficos";
 import { Indicadores } from "./Indicadores";
@@ -176,56 +176,6 @@ function Incompletas({ r, etiquetas }: { r: ReporteIncompletos; etiquetas: Recor
   );
 }
 
-function VerPiezas({ filtro, onVerPiezas }: { filtro: FiltrosConsulta; onVerPiezas: (filtro: FiltrosConsulta) => void }) {
-  return <button type="button" className="text-azul underline text-xs font-semibold print:hidden" onClick={() => onVerPiezas(filtro)}>Ver las piezas</button>;
-}
-
-/** Tarjetas sobre el Inventario: salen del `resumen` del backend (todo el conjunto filtrado), nunca de las filas de la página. */
-function ResumenDeInventario({ r, onVerPiezas }: { r: ResumenInventario; onVerPiezas: (filtro: FiltrosConsulta) => void }) {
-  const n = (v: number) => v.toLocaleString("es-PE");
-  const maximo = Math.max(1, ...r.topColecciones.map((c) => c.totalPiezas));
-  return (
-    <section className="space-y-3" aria-label="Resumen del inventario">
-      <h3>Resumen</h3>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <div className="kpi-card">
-          <p className="text-xs text-gris-2">Total de piezas</p>
-          <p className="text-2xl font-display font-bold text-azul">{n(r.totalPiezas)}</p>
-        </div>
-        <div className="kpi-card !flex-row items-center gap-3">
-          {r.porcentajeCompletas !== null && <Anillo porcentaje={r.porcentajeCompletas} etiqueta="Fichas completas" tamano={56} />}
-          <div>
-            <p className="text-xs text-gris-2">Completas</p>
-            <p className="text-2xl font-display font-bold text-azul">{n(r.completas)}</p>
-            {r.porcentajeCompletas !== null && <p className="text-xs text-gris-2">{r.porcentajeCompletas.toLocaleString("es-PE", { maximumFractionDigits: 1 })} %</p>}
-          </div>
-        </div>
-        <div className="kpi-card">
-          <p className="text-xs text-gris-2">Por completar</p>
-          <p className="text-2xl font-display font-bold text-azul">{n(r.porCompletar)}</p>
-          <VerPiezas filtro={{ soloIncompletas: true }} onVerPiezas={onVerPiezas} />
-        </div>
-        <div className="kpi-card">
-          <p className="text-xs text-gris-2">Sin código I</p>
-          <p className="text-2xl font-display font-bold text-azul">{n(r.sinCodigoI)}</p>
-          <VerPiezas filtro={{ sinCodigoPrincipal: true }} onVerPiezas={onVerPiezas} />
-        </div>
-        {r.sinColeccion !== null && (
-          <div className="kpi-card">
-            <p className="text-xs text-gris-2">Sin colección</p>
-            <p className="text-2xl font-display font-bold text-azul">{n(r.sinColeccion)}</p>
-          </div>
-        )}
-      </div>
-      {r.topColecciones.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold">Las {r.topColecciones.length} colecciones con más piezas</h4>
-          <BarrasHorizontales items={r.topColecciones.map((c) => ({ clave: c.coleccionId, etiqueta: c.coleccion, total: c.totalPiezas }))} maximo={maximo} />
-        </div>
-      )}
-    </section>
-  );
-}
 
 /** Muestra el reporte tal cual lo arma el backend: no recalcula totales, porcentajes ni faltantes. */
 export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
@@ -236,7 +186,6 @@ export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
     const r = datos as ReporteInventario;
     return (
       <div className="space-y-6">
-      {r.resumen && <ResumenDeInventario r={r.resumen} onVerPiezas={onVerPiezas} />}
       <Tabla columnas={["Código I", "Otros códigos", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
         {r.piezas.map((p) => (
           <tr key={p.id}>
