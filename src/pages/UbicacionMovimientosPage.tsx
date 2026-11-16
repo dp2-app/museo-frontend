@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
 import { usePermisos } from "../hooks/usePermisos";
-import { nombreFicha, type Ficha } from "../lib/ficha";
+import { nombreFicha, piezas as contarPiezas, type Ficha } from "../lib/ficha";
 import type { Pagina } from "../types";
 import { ErrorConsulta } from "../components/FichaComun";
 import { useRecurso } from "../lib/recursosFicha";
@@ -20,7 +20,7 @@ export function UbicacionMovimientosPage() {
     {puede("piezas.ver") && <section className="glass-panel p-5 space-y-3"><form className="flex flex-wrap gap-3 items-end" onSubmit={(e) => { e.preventDefault(); setFiltro({ q, codigo }); setPagina(1); }}>
       <label>Denominación o descripción<input className="glass-input" value={q} onChange={(e) => setQ(e.target.value)} /></label><label>Código de pieza<input className="glass-input" value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label><button className="btn-primary">Buscar pieza</button></form>
       <ErrorConsulta error={piezas.error || pieza.error} /><label>Pieza<select aria-label="Pieza" className="glass-input" value={id} onChange={(e) => setId(e.target.value)}><option value="">Seleccionar…</option>{piezas.data?.items.map((p) => <option key={p.id} value={p.id}>{nombreFicha(p)} · {p.codigos.map((c) => c.valor).join(", ") || p.id.slice(0, 8)}</option>)}</select></label>
-      <div className="flex gap-3 items-center"><button className="btn-glass" disabled={pagina === 1} onClick={() => setPagina(pagina - 1)}>Anterior</button><p>Página {pagina} · {piezas.data?.total ?? 0} piezas</p><button className="btn-glass" disabled={!piezas.data || pagina * 20 >= piezas.data.total} onClick={() => setPagina(pagina + 1)}>Siguiente</button></div>
+      <div className="flex gap-3 items-center"><button className="btn-glass" disabled={pagina === 1} onClick={() => setPagina(pagina - 1)}>Anterior</button><p>Página {pagina} · {contarPiezas(piezas.data?.total ?? 0)}</p><button className="btn-glass" disabled={!piezas.data || pagina * 20 >= piezas.data.total} onClick={() => setPagina(pagina + 1)}>Siguiente</button></div>
     </section>}
     {pieza.data && <><div className="flex gap-4 items-center">{qr?.id === id && <img src={qr.url} width="120" height="120" alt="Código QR de la ficha" />}<div><Link className="text-azul underline" to={`/coleccion/${id}`}>{nombreFicha(pieza.data)}</Link><button className="btn-glass print:hidden" onClick={() => window.print()}>Imprimir QR</button></div></div><EstadoUbicacion key={id} pieza={pieza.data} /></>}
   </div>;
