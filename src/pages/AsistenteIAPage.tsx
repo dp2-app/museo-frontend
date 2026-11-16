@@ -21,9 +21,9 @@ export function AsistenteIAPage() {
       <div className="flex items-center gap-2.5">
         <Bot size={28} className="text-azul" aria-hidden="true" />
         <div>
-          <h1>Asistente IA</h1>
+          <h1>Armar sala</h1>
           <p className="text-sm text-gris-2 max-w-2xl">
-            La IA propone y una persona decide (DA-006): ninguna sugerencia se aplica ni se guarda en la ficha sin que
+            La IA propone y una persona decide: ninguna sugerencia se aplica ni se guarda en la ficha sin que
             alguien la acepte explícitamente.
           </p>
         </div>

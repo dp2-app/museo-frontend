@@ -82,7 +82,7 @@ export function Regimenes() {
       {puede && <button type="button" className="btn-primary" onClick={() => abrir()}><Plus size={20} aria-hidden="true" />Crear régimen</button>}
     </div>
     <p className="f0-notice"><Info size={20} className="shrink-0 mt-0.5" aria-hidden="true" />
-      <span>Una pieza en comodato nunca recibe código I (RN-03). Un préstamo temporal no entra al inventario (RN-04). Los regímenes del sistema no se desactivan.</span></p>
+      <span>Una pieza en comodato nunca recibe código I. Un préstamo temporal no entra al inventario. Los regímenes del sistema no se desactivan.</span></p>
     {aviso && <p role="status" className="font-semibold text-azul">{aviso}</p>}
 
     {abierto && <form onSubmit={(e: FormEvent) => { e.preventDefault(); if (puede) guardar.mutate(); }} className="glass-panel p-4 sm:p-6 space-y-4" aria-label={editado ? "Editar régimen" : "Crear régimen"}>

@@ -80,7 +80,7 @@ export function CambiarRegimen({ piezaId, regimenActual, restringidoActual = fal
         <div><Etiqueta htmlFor={`${id}-documento`}>Documento de referencia</Etiqueta>
           <input id={`${id}-documento`} className="glass-input" value={documento} onChange={(e) => setDocumento(e.target.value)} /></div>
         <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={restringido} onChange={(e) => setRestringido(e.target.checked)} />
-          Publicación restringida (no fotografiar ni publicar, RN-07)</label>
+          Publicación restringida (no fotografiar ni publicar)</label>
       </>}
     </div>
     <button className="btn-glass" disabled={cambiar.isPending || !regimenId || (regimen?.requiereContraparte && !vePropietarios)}>{cambiar.isPending ? "Guardando…" : "Cambiar régimen"}</button>

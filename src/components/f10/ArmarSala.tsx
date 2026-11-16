@@ -23,9 +23,10 @@ export function ArmarSala() {
   const [sala, setSala] = useState<SalaSugerida | null>(null);
   const [elegidas, setElegidas] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [ignoradas, setIgnoradas] = useState<string[]>([]);
 
   const sugerir = useMutation({
-    mutationFn: async () => (await api.post<SalaSugerida>("/ia/salas/sugerir", { pedido, cantidad })).data,
+    mutationFn: async (ignorarCondiciones: string[] = []) => (await api.post<SalaSugerida>("/ia/salas/sugerir", { pedido, cantidad, ignorarCondiciones })).data,
     onSuccess: (data) => {
       setError(null);
       setSala(data);
@@ -52,7 +53,15 @@ export function ArmarSala() {
 
   function onSugerir(e: FormEvent) {
     e.preventDefault();
-    sugerir.mutate();
+    setIgnoradas([]);
+    sugerir.mutate([]);
+  }
+
+  /** Quitar una condición vuelve a pedir la propuesta sin ella: la búsqueda la hace el backend, aquí no se filtra nada. */
+  function quitarCondicion(clave: string) {
+    const nuevas = [...ignoradas, clave];
+    setIgnoradas(nuevas);
+    sugerir.mutate(nuevas);
   }
 
   function alternar(id: string) {
@@ -125,6 +134,21 @@ export function ArmarSala() {
               </p>
             </div>
           </div>
+
+          {sala.condiciones && sala.condiciones.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" aria-label="Condiciones del pedido">
+              <span className="text-sm text-gris-2">Se respetó:</span>
+              {sala.condiciones.filter((c) => c.estado === "aplicado").map((c) => (
+                <span key={c.clave} className="chip inline-flex items-center gap-1">
+                  {c.etiqueta}
+                  <button type="button" className="font-bold" aria-label={`Quitar la condición ${c.etiqueta}`} onClick={() => quitarCondicion(c.clave)}>×</button>
+                </span>
+              ))}
+              {sala.condiciones.filter((c) => c.estado === "quitado").map((c) => (
+                <span key={c.clave} className="chip opacity-60 line-through">{c.etiqueta}</span>
+              ))}
+            </div>
+          )}
 
           {!sala.fueraDeTema && sala.piezas.length > 0 && (
             <div className="glass-panel overflow-hidden">

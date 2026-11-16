@@ -302,6 +302,8 @@ export interface SalaSugerida {
   modeloUsado: string;
   estado: "pendiente" | "aceptado" | "rechazado" | "modificado";
   piezas: PiezaSala[];
+  /** Condiciones del pedido que el backend aplicó como filtros (#210); `quitado` = la persona la quitó. */
+  condiciones?: { clave: string; etiqueta: string; valor: string | null; estado: "aplicado" | "quitado" }[];
 }
 
 export interface SugerenciaIA {
@@ -370,13 +372,19 @@ export interface AlertaPanel {
 
 // Contrato v3 de GET /reportes/panel-principal. `piezasSinUbicacion` es null si el rol no ve el campo de ubicación (F9, RF-57).
 // `alertas` ya no viene en v3: la lista de piezas incompletas está en /reportes/informacion-incompleta.
+export interface MotivoIncompleta { clave: string; etiqueta: string; total: number; filtro: Record<string, string | boolean> }
 export interface ReportePanelPrincipal {
   totalPiezas: number;
+  piezasIncompletas?: number;
   porcentajeCompleto: number;
+  motivosIncompletas?: Record<string, MotivoIncompleta>;
   piezasSinUbicacion: number | null;
   piezasSinFoto: number;
+  piezasSinCodigoI?: number;
+  piezasPorAprobar?: number | null;
   piezasRequierenAtencion: number;
   distribucionPorColeccion: { coleccion: string; total: number }[];
+  filtros?: Record<string, Record<string, string | boolean> | null>;
   alertas?: AlertaPanel[];
 }
 

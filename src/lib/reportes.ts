@@ -7,7 +7,7 @@ export interface FiltrosConsulta {
   q?: string; codigo?: string; coleccionId?: string; ubicacionId?: string; estadoConservacionId?: string;
   estadoPiezaId?: string; materialId?: string; tipoBienId?: string; clasificacionId?: string; autor?: string; procedencia?: string;
   epoca?: string; estadoFicha?: string; soloIncompletas?: boolean;
-  sinFotografia?: boolean; sinUbicacion?: boolean; sinCodigoPrincipal?: boolean;
+  sinFotografia?: boolean; conFotografia?: boolean; faltaCampo?: string; sinUbicacion?: boolean; sinCodigoPrincipal?: boolean;
 }
 
 export interface EncabezadoReporte {
@@ -16,13 +16,8 @@ export interface EncabezadoReporte {
 }
 /** Páginas de un reporte paginado por el servidor: `total` y los porcentajes son siempre del conjunto filtrado completo. */
 export interface PaginacionReporte { pagina: number; tamano: number; paginas: number }
-/** Resumen del Inventario (lo arma el backend sobre todo el conjunto filtrado). `sinColeccion` y las colecciones faltan si el rol no ve la colección. */
-export interface ResumenInventario {
-  totalPiezas: number; completas: number; porCompletar: number; porcentajeCompletas: number | null; sinCodigoI: number;
-  sinColeccion: number | null; topColecciones: { coleccionId: string; coleccion: string; totalPiezas: number }[];
-}
 export interface ReporteInventario extends EncabezadoReporte, PaginacionReporte {
-  total: number; resumen: ResumenInventario;
+  total: number;
   piezas: { id: string; denominacion: string | null; codigoPrincipal: string | null; otrosCodigos: string[]; coleccion: string | null; incompleta: boolean }[];
 }
 export interface GrupoReporte { valorId: string | null; valor: string; total: number }
@@ -127,4 +122,20 @@ export function filasDeImpresion(clave: ClaveReporte, datos: unknown): number {
   if (clave === "inventario") return (datos as ReporteInventario).total;
   if (clave === "informacion-incompleta") return (datos as ReporteIncompletos).piezasIncompletas;
   return 0;
+}
+
+/** Filtros que llegan en la dirección (`/coleccion?soloIncompletas=true`), p. ej. desde Inicio. Solo se aceptan claves conocidas. */
+export function filtrosDeDireccion(consulta: URLSearchParams): Record<string, string | boolean> {
+  const booleanos = ["soloIncompletas", "sinFotografia", "conFotografia", "sinUbicacion", "sinCodigoPrincipal"];
+  const textos = ["q", "codigo", "estadoFicha", "faltaCampo", "coleccionId", "ubicacionId"];
+  const f: Record<string, string | boolean> = {};
+  for (const k of booleanos) if (consulta.get(k) === "true") f[k] = true;
+  for (const k of textos) { const v = consulta.get(k); if (v) f[k] = v; }
+  return f;
+}
+
+/** Enlace a Colección con los filtros que armó el backend: el número y su lista siempre coinciden. */
+export function enlaceColeccion(filtro?: Record<string, string | boolean> | null): string {
+  const consulta = new URLSearchParams(Object.entries(filtro ?? {}).map(([k, v]) => [k, String(v)])).toString();
+  return consulta ? `/coleccion?${consulta}` : "/coleccion";
 }

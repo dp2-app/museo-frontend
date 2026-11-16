@@ -68,7 +68,7 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
         {reglas.reglas.map((r) => <label key={r.clave} className="flex items-start gap-2">
           <input type="checkbox" className="mt-1" checked={r.configurable ? activas.includes(r.clave) : true}
             disabled={!r.configurable || !puedeEditar} onChange={() => alternar(r.clave)} />
-          <span>{r.etiqueta}{!r.configurable && <span className="text-sm text-texto"> (siempre activa: es la regla de RF-32)</span>}</span>
+          <span>{r.etiqueta}{!r.configurable && <span className="text-sm text-texto"> (siempre activa: es la regla del código exacto)</span>}</span>
         </label>)}
       </fieldset>
 
@@ -87,7 +87,7 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
               {opcionesAprobador.map((clave) => <option key={clave} value={clave}>{etiquetas.get(clave) ?? clave}</option>)}
             </select>
           : <p id="reglas-aprobador"><code>{reglas.permisoAprobador}</code></p>}
-        <p className="mt-1 text-sm text-texto">Quien tenga este permiso puede aprobar, también una carga que subió. Aprobar sigue siendo una acción explícita (RN-08).</p>
+        <p className="mt-1 text-sm text-texto">Quien tenga este permiso puede aprobar, también una carga que subió. Aprobar sigue siendo una acción explícita.</p>
       </div>
 
       {reglas.requiereAprobacion && <p className="text-sm text-texto">Toda carga requiere aprobación antes de tocar el catálogo. Esta condición no se puede apagar.</p>}

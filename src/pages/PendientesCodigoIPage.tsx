@@ -96,7 +96,7 @@ export function PendientesCodigoIPage() {
       <ul className="divide-y divide-linea">{asignados.map((a) => <li key={a.codigo.id} className="py-3 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p><Link to={`/coleccion/${a.piezaId}`} className="font-accent italic text-azul hover:underline">{a.denominacion}</Link>
-            {" · "}{a.codigo.tipoNombre} <span className="font-mono">{a.codigo.valor}</span>{a.codigo.bloqueado && <Lock size={14} className="inline ml-1 text-gris-2" aria-label="Bloqueado (RN-02)" />}</p>
+            {" · "}{a.codigo.tipoNombre} <span className="font-mono">{a.codigo.valor}</span>{a.codigo.bloqueado && <Lock size={14} className="inline ml-1 text-gris-2" aria-label="Bloqueado" />}</p>
           {puedeCorregir(a.codigo, puede) && corrigiendo !== a.codigo.id && <button type="button" className="f0-action" onClick={() => setCorrigiendo(a.codigo.id)}>Corregir {a.codigo.valor}</button>}
         </div>
         {corrigiendo === a.codigo.id && <CorregirCodigo piezaId={a.piezaId} codigo={a.codigo} alCancelar={() => setCorrigiendo(null)}
