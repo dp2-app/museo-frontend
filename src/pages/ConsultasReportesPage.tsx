@@ -31,7 +31,7 @@ type Pestana = "busqueda" | ClaveReporte;
 /** Qué es cada pestaña y qué trae su Excel (el (i) de la barra de pestañas). */
 const AYUDA: Record<Pestana, string> = {
   busqueda: "Lista de piezas (20 por página) con los filtros de arriba; no es un reporte. Su Excel trae la ficha completa de todas las piezas que cumplen los filtros, con los campos que tu rol puede ver.",
-  indicadores: "Indicadores de gestión: qué porcentaje del catálogo tiene la ficha completa, fotografía, ubicación y código I, comparado con la línea base y con la semana anterior. Cada número lleva a la lista de piezas que le falta. Su Excel trae las mismas tarjetas y la tabla por colección.",
+  "estado-catalogo": "Estado del catálogo: qué porcentaje del catálogo tiene la ficha completa, fotografía, ubicación y código I, comparado con la línea base y con la semana anterior. Cada número lleva a la lista de piezas que le falta. Su Excel trae las mismas tarjetas y la tabla por colección.",
   inventario: "Inventario: una fila por pieza con su código I, otros códigos, denominación, colección y si le falta información. Su Excel trae las mismas filas.",
   "por-estado": "Cuántas piezas hay por estado de la pieza y por estado de conservación. Los valores se muestran como están registrados. Su Excel trae una hoja por cada grupo.",
   "por-ubicacion": "Cuántas piezas hay en cada ubicación, más las que no tienen ubicación. Su Excel trae la misma tabla.",
@@ -64,7 +64,7 @@ export function ConsultasReportesPage() {
   const verEstado = !camposOcultos.includes("estado_pieza_id");
 
   const pestanas: [Pestana, string][] = [
-    ["busqueda", "Búsqueda"], ["indicadores", "Indicadores"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
+    ["busqueda", "Búsqueda"], ["estado-catalogo", "Estado del catálogo"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
     ...(camposOcultos.includes("ubicacion_actual_id") ? [] : [["por-ubicacion", "Por ubicación"] as [Pestana, string]]),
     ["informacion-incompleta", "Información incompleta"],
   ];

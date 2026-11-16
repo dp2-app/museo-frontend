@@ -89,6 +89,19 @@ export function Indicadores({ reporte, onVerPiezas }: { reporte: ReporteIndicado
         {reporte.indicadores.map((i) => <Tarjeta key={i.clave} i={i} onVer={onVerPiezas} />)}
       </div>
       {!reporte.historia.disponible && reporte.historia.motivo && <p role="note" className="text-sm text-gris-2">{reporte.historia.motivo}</p>}
+      {reporte.faltantes && reporte.faltantes.length > 0 && (
+        <section className="space-y-2" aria-label="Qué falta, campo por campo">
+          <h3>Qué falta, campo por campo</h3>
+          <ul className="divide-y divide-linea glass-panel">
+            {reporte.faltantes.map((f) => (
+              <li key={f.campo} className="px-4 py-2 flex items-center justify-between gap-3">
+                <span className="text-sm">{f.etiqueta}: <strong>{f.total.toLocaleString("es-PE")}</strong> {f.total === 1 ? "pieza" : "piezas"}</span>
+                <button type="button" className="text-azul underline text-sm font-semibold" onClick={() => onVerPiezas(f.filtro)}>{f.verPiezas}</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="space-y-2">
         <h3>Por colección</h3>
         <PorColeccion filas={reporte.porColeccion} indicadores={reporte.indicadores} onVer={onVerPiezas} />

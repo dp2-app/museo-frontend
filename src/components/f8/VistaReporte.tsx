@@ -181,7 +181,7 @@ function Incompletas({ r, etiquetas }: { r: ReporteIncompletos; etiquetas: Recor
 export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
   clave: ClaveReporte; datos: unknown; etiquetas: Record<string, string>; onVerPiezas: (filtro: FiltrosConsulta) => void;
 }) {
-  if (clave === "indicadores") return <Indicadores reporte={datos as ReporteIndicadores} onVerPiezas={onVerPiezas} />;
+  if (clave === "estado-catalogo") return <Indicadores reporte={datos as ReporteIndicadores} onVerPiezas={onVerPiezas} />;
   if (clave === "inventario") {
     const r = datos as ReporteInventario;
     return (

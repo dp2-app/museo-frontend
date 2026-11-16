@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormularioFicha, CamposFaltantes } from "../components/f0/FormularioFicha";
@@ -38,7 +38,9 @@ export function PiezaDetailPage() {
   const p = detalle.data;
   // `?campo=<clave>` (desde «Qué le falta»): abre la edición con ese campo señalado, solo si la persona puede editar.
   const [consulta] = useSearchParams(); const campoPedido = consulta.get("campo");
-  const original = elegido ?? (campoPedido && !cerrado && p && puede("piezas.editar") ? p : null);
+  const esSeccion = campoPedido === "fotografias" || campoPedido === "codigos_externos"; // no son campos del formulario: se lleva a su sección
+  const original = elegido ?? (campoPedido && !esSeccion && !cerrado && p && puede("piezas.editar") ? p : null);
+  useEffect(() => { if (esSeccion && p) document.getElementById(`seccion-${campoPedido}`)?.scrollIntoView({ block: "start" }); }, [esSeccion, campoPedido, p?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!p) return <div><Link to="/coleccion">← Volver a Colección</Link><ErrorConsulta error={detalle.error} />{detalle.isPending && <p>Cargando ficha…</p>}</div>;
   const enviar = (accion: string, motivoRechazo?: string) => op.ejecutar(async () => {
     const r = await api.patch<Ficha>(`/piezas/${piezaId}/estado-ficha`, { accion, motivoRechazo });
@@ -55,8 +57,8 @@ export function PiezaDetailPage() {
       {p.estadoFicha === "en_revision" && <button className="btn-glass" disabled={!puede("piezas.editar") || op.pendiente || !!original} onClick={() => enviar("volver_borrador")}>Volver a borrador</button>}
     </div>{p.incompleta && <p>Completa los datos pendientes para enviar la ficha a revisión.</p>}<p className="text-sm">Creada por {p.creadoPor?.nombre || "Sin responsable"} · {new Date(p.creadoEn).toLocaleString("es-PE")}<br />Última actualización: {p.actualizadoPor?.nombre || "Sin responsable"} · {new Date(p.actualizadoEn).toLocaleString("es-PE")}</p></Panel>
     {original && <EditorFicha original={original} enfocar={campoPedido} terminar={() => { setOriginal(null); setCerrado(true); }} />}
-    <Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} codigosIniciales={p.codigosDetalle} tenenciasIniciales={p.tenencias} /></Panel>
-    <ArchivosFicha piezaId={piezaId} inicial={p.fotografias} /><ArchivosFicha piezaId={piezaId} documentos inicial={p.documentos} /><EstadoUbicacion key={piezaId} pieza={p} movimientosIniciales={p.movimientos} estadosIniciales={p.estados} />
+    <div id="seccion-codigos_externos"><Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} codigosIniciales={p.codigosDetalle} tenenciasIniciales={p.tenencias} /></Panel></div>
+    <div id="seccion-fotografias"><ArchivosFicha piezaId={piezaId} inicial={p.fotografias} /></div><ArchivosFicha piezaId={piezaId} documentos inicial={p.documentos} /><EstadoUbicacion key={piezaId} pieza={p} movimientosIniciales={p.movimientos} estadosIniciales={p.estados} />
     <Panel titulo="Historial de cambios"><ErrorConsulta error={auditoria.error} /><ul className="space-y-2 text-sm">{auditoria.data?.map((r, i) => <li key={i} className="border-b border-linea pb-2"><p>{r.fecha ? new Date(r.fecha).toLocaleString("es-PE") : ""} · {r.accion} · {r.campo}</p><p className="break-words">{r.valorAnterior ?? "Sin dato"} → {r.valorNuevo ?? "Sin dato"}</p></li>)}</ul>{auditoria.data?.length === 0 && <p>Sin cambios registrados.</p>}</Panel>
     <Panel titulo="Baja de la pieza"><p>La ficha y sus historiales se conservan. La restauración está disponible en Administración.</p><ConMotivo etiqueta="Dar de baja" pendiente={!puede("piezas.baja") || op.pendiente || !!original} ejecutar={(motivo) => op.ejecutar(async () => { await api.post(`/piezas/${piezaId}/baja`, { motivo }); navegar("/coleccion"); })} /></Panel>
   </div>;

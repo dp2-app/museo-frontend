@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormularioFicha } from "../components/f0/FormularioFicha";
+import { PreguntarColeccion } from "../components/f10/PreguntarColeccion";
 import { Colecciones } from "../components/Colecciones";
 import { FiltrosReporte } from "../components/f8/FiltrosReporte";
 import { useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
@@ -35,6 +36,7 @@ export function PiezasPage() {
   return <div className="space-y-6"><h1>Colección</h1><p>Registra piezas y completa las fichas del inventario.</p>
     <AccesosF1 />
     {puede("colecciones.gestionar") && <details><summary className="cursor-pointer font-semibold">Gestionar colecciones</summary><Colecciones /></details>}
+    <details><summary className="cursor-pointer font-semibold">Buscar con IA</summary><div className="pt-3"><PreguntarColeccion /></div></details>
     <button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button>
     {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={(v, p) => { setComplementos(v); setProblemas(p); }} /><FormularioFicha onGuardar={async (datos) => { if (problemas.length) throw errorLocal(problemas); const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
     <FiltrosReporte key={JSON.stringify(direccion.toString())} inicial={filtros as FiltrosConsulta} opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
