@@ -291,3 +291,10 @@ Los endpoints (`/ia/sugerencias`, `/ia/extraccion-observaciones/*`, `/ia/detecci
 - **Segunda entrega (#119, #120, #121, #208):** Gestionar colecciones es una tabla con panel lateral; **Ubicación y movimientos** tiene el árbol sede › ubicación a la izquierda y la tabla de piezas con casillas a la derecha: sobre las marcadas se «Mueve» (motivo obligatorio) o se «Cambia el estado», una a una contra `POST /piezas/{id}/movimientos|estados` (no hay endpoint masivo) y se informa cuáles fallaron; sedes y ubicaciones tienen su pantalla (`/ubicacion-y-movimientos/sedes`).
   «Preguntar» pasó a **«Buscar con IA»** dentro de Colección (`piezas.ver`); `/asistente-ia` (Armar sala) pide solo `ia.usar`. La pestaña «Indicadores» pasó a **«Estado del catálogo»** (`GET /reportes/estado-catalogo`, `faltantes` campo por campo con su «Ver piezas»).
   `?campo=fotografias|codigos_externos` lleva a esa sección de la ficha (no son campos del formulario). Sin vista previa del próximo código de la colección: el backend no tiene ese endpoint.
+
+## F10 · prueba de punta a punta (17/11/2026)
+
+`npm run test:f10` (`tests/f10.e2e.cjs`, guía en `docs/f10/README.md`) recorre Buscar con IA, Armar sala, los permisos de F10 por rol, el límite de
+consultas y RIA-01 contra el backend local con Groq real. La evidencia (capturas con datos reales del inventario) **no se sube aquí, que es público**:
+va a `Base-de-conocimiento/flujos/evidencias/`. La CI corre `npm run test:unit`; las pruebas e2e necesitan backend y Chrome y se corren a mano.
+
