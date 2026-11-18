@@ -186,14 +186,17 @@ export function CuerpoReporte({ clave, datos, etiquetas, onVerPiezas }: {
     const r = datos as ReporteInventario;
     return (
       <div className="space-y-6">
-      <Tabla columnas={["Código I", "Otros códigos", "Denominación", "Colección", "Información"]} vacio="Ninguna pieza cumple los filtros.">
+      <p className="text-sm"><strong className="text-base">{r.total.toLocaleString("es-PE")} piezas</strong> · el porcentaje de avance vive en «Estado del catálogo».</p>
+      <Tabla columnas={["Código", "Otros códigos", "Denominación", "Colección", "Ficha"]} vacio="Ninguna pieza cumple los filtros.">
         {r.piezas.map((p) => (
           <tr key={p.id}>
-            <td className="px-4 py-2">{p.codigoPrincipal ?? "Sin código I"}</td>
-            <td className="px-4 py-2">{p.otrosCodigos?.join(" · ") || "—"}</td>
-            <td className="px-4 py-2"><Link className="text-azul underline" to={`/coleccion/${p.id}`}>{p.denominacion ?? "Sin denominación"}</Link></td>
+            <td className="px-4 py-2 font-semibold">{p.codigoPrincipal ?? "—"}</td>
+            <td className="px-4 py-2 text-gris-2">{p.otrosCodigos?.join(" · ") || "—"}</td>
+            <td className="px-4 py-2"><Link className="text-azul underline font-semibold" to={`/coleccion/${p.id}`}>{p.denominacion ?? "Sin denominación"}</Link></td>
             <td className="px-4 py-2">{p.coleccion ?? "—"}</td>
-            <td className="px-4 py-2">{p.incompleta ? "Por completar" : "Completa"}</td>
+            <td className="px-4 py-2">
+              <span className={`chip !py-0 !px-2 !text-xs ${p.incompleta ? "!text-rojo-oscuro" : "!text-verde"}`}>{p.incompleta ? "Incompleta" : "Completa"}</span>
+            </td>
           </tr>
         ))}
       </Tabla>

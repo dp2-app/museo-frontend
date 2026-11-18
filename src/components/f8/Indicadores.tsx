@@ -85,6 +85,7 @@ function PorColeccion({ filas, indicadores, onVer }: { filas: IndicadorColeccion
 export function Indicadores({ reporte, onVerPiezas }: { reporte: ReporteIndicadores; onVerPiezas: (filtro: FiltrosConsulta) => void }) {
   return (
     <div className="space-y-6">
+      <h3>Indicadores con historia</h3>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {reporte.indicadores.map((i) => <Tarjeta key={i.clave} i={i} onVer={onVerPiezas} />)}
       </div>
@@ -92,19 +93,29 @@ export function Indicadores({ reporte, onVerPiezas }: { reporte: ReporteIndicado
       {reporte.faltantes && reporte.faltantes.length > 0 && (
         <section className="space-y-2" aria-label="Qué falta, campo por campo">
           <h3>Qué falta, campo por campo</h3>
+          <p className="text-sm text-gris-2">En Inicio ves los motivos agrupados; aquí, cada campo por separado.</p>
           <ul className="divide-y divide-linea glass-panel">
             {reporte.faltantes.map((f) => (
-              <li key={f.campo} className="px-4 py-2 flex items-center justify-between gap-3">
-                <span className="text-sm">{f.etiqueta}: <strong>{f.total.toLocaleString("es-PE")}</strong> {f.total === 1 ? "pieza" : "piezas"}</span>
-                <button type="button" className="text-azul underline text-sm font-semibold" onClick={() => onVerPiezas(f.filtro)}>{f.verPiezas}</button>
+              <li key={f.campo} className="px-4 py-2 grid grid-cols-[minmax(0,10rem)_1fr_auto_auto] items-center gap-3 text-sm">
+                <span className="truncate" title={f.etiqueta}>{f.etiqueta}</span>
+                <div role="progressbar" aria-label={`Piezas a las que les falta ${f.etiqueta}`} aria-valuemin={0} aria-valuemax={reporte.totalPiezas} aria-valuenow={f.total}
+                     className="h-2.5 rounded-pill bg-fondo-suave overflow-hidden">
+                  <div className="h-full bg-rojo" style={{ width: `${reporte.totalPiezas ? Math.min(100, (f.total / reporte.totalPiezas) * 100) : 0}%`, minWidth: f.total > 0 ? "2px" : 0 }} />
+                </div>
+                <strong className="tabular-nums text-right w-14">{f.total.toLocaleString("es-PE")}</strong>
+                <button type="button" className="text-azul underline font-semibold print:hidden" onClick={() => onVerPiezas(f.filtro)}>{f.verPiezas}</button>
               </li>
             ))}
           </ul>
         </section>
       )}
       <section className="space-y-2">
-        <h3>Por colección</h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3>Por colección</h3>
+          <p className="text-sm text-gris-2">Ordenado por piezas · {reporte.porColeccion.length} {reporte.porColeccion.length === 1 ? "colección" : "colecciones"}</p>
+        </div>
         <PorColeccion filas={reporte.porColeccion} indicadores={reporte.indicadores} onVer={onVerPiezas} />
+        <p className="text-xs text-gris-2">Las cifras salen del mismo servicio que Inicio: nunca pueden dar números distintos.</p>
       </section>
     </div>
   );

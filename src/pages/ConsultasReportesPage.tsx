@@ -37,6 +37,15 @@ const AYUDA: Record<Pestana, string> = {
   "por-ubicacion": "Cuántas piezas hay en cada ubicación, más las que no tienen ubicación. Su Excel trae la misma tabla.",
   "informacion-incompleta": "Qué piezas tienen campos obligatorios, código del museo o fotografía sin completar, cuántas son por colección y qué falta más. Su Excel trae el resumen por colección, qué falta más y el detalle por pieza.",
 };
+/** Subtítulo de la página según la pestaña: dice a qué ir para otra cosa (propuesta de mejoras F8). */
+const SUBTITULO: Record<Pestana, string> = {
+  busqueda: "Busca con filtros combinados, genera reportes y expórtalos sin los campos restringidos para tu rol.",
+  "estado-catalogo": "El mismo estado que ves en Inicio, con todo el detalle: historia, desglose por campo y por colección, filtros y exportación.",
+  inventario: "El Inventario es el padrón de piezas: una fila por pieza. Para porcentajes y avance, ve a «Estado del catálogo».",
+  "por-estado": "Cuántas piezas hay por estado de la pieza y por estado de conservación, con los filtros de arriba.",
+  "por-ubicacion": "Cuántas piezas hay en cada ubicación, con los filtros de arriba.",
+  "informacion-incompleta": "Qué piezas tienen información sin completar y qué falta más, con los filtros de arriba.",
+};
 const TAMANO = 20;
 
 // F8 · Consultas y reportes (RF-45..RF-49) sobre el contrato v3. La búsqueda y los reportes usan los mismos filtros
@@ -138,7 +147,7 @@ export function ConsultasReportesPage() {
         <Search size={28} className="text-azul" aria-hidden="true" />
         <div>
           <h1>Consultas y reportes</h1>
-          <p className="text-sm text-gris-2">Busca con filtros combinados, genera reportes y expórtalos sin los campos restringidos para tu rol.</p>
+          <p className="text-sm text-gris-2">{SUBTITULO[pestana]}</p>
         </div>
       </div>
 
@@ -247,9 +256,12 @@ export function ConsultasReportesPage() {
                 <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} onVerPiezas={verPiezas} />
                 {paginado && hayVariasPaginas && (
                   <div className="flex flex-wrap gap-3 items-center print:hidden">
-                    <button type="button" className="btn-glass" disabled={paginaReporte <= 1} onClick={() => setPaginaReporte(paginaReporte - 1)}>Anterior</button>
-                    <p>Página {reporte.data.pagina} de {reporte.data.paginas} · {filasImpresion.toLocaleString("es-PE")} piezas</p>
-                    <button type="button" className="btn-glass" disabled={paginaReporte >= (reporte.data.paginas ?? 1)} onClick={() => setPaginaReporte(paginaReporte + 1)}>Siguiente</button>
+                    <button type="button" className="btn-glass" disabled={paginaReporte <= 1} onClick={() => setPaginaReporte(paginaReporte - 1)}>← Anterior</button>
+                    <p>
+                      Mostrando {(((reporte.data.pagina ?? 1) - 1) * TAMANO_PAGINA_REPORTE + 1).toLocaleString("es-PE")}–{Math.min((reporte.data.pagina ?? 1) * TAMANO_PAGINA_REPORTE, filasImpresion).toLocaleString("es-PE")} de {filasImpresion.toLocaleString("es-PE")}
+                      {" · "}<strong>Página {reporte.data.pagina} de {reporte.data.paginas}</strong>
+                    </p>
+                    <button type="button" className="btn-glass" disabled={paginaReporte >= (reporte.data.paginas ?? 1)} onClick={() => setPaginaReporte(paginaReporte + 1)}>Siguiente →</button>
                   </div>
                 )}
               </div>

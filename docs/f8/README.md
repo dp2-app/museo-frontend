@@ -39,3 +39,11 @@ vista de impresión y móvil (390 px), sin errores de consola. Nunca contra Supa
 | `f8-movil.png` | Inventario en móvil |
 | `f8-encabezado.png` | Encabezado con el logo, el nombre y la dirección de la institución (RF-59) |
 | `f8-indicadores.png` | Pestaña Indicadores con la tabla por colección (04/11) |
+
+## Ajustes de la propuesta de mejoras (18/11/2026)
+
+Solo frontend, sin cambios de contrato. Estado del catálogo: título «Indicadores con historia», «Qué falta, campo por campo» con barras proporcionales
+al total y «Ver piezas», «Por colección» con el número de colecciones y la nota de que las cifras salen del mismo servicio que Inicio. Inventario: el total
+arriba, la columna «Ficha» como etiqueta (Completa/Incompleta), «—» cuando no hay código y paginación «Mostrando a–b de N · Página x de y». El subtítulo
+de la página cambia con la pestaña. **Pendiente de backend:** las columnas Ubicación y Estado del Inventario y «solo piezas en propiedad» en el código I
+no llegan en el contrato actual (`/reportes/inventario` no las devuelve); el selector «Comparar con» y «Sede» de la maqueta tampoco existen en la API.
