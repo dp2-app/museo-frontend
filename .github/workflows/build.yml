@@ -16,4 +16,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Pruebas unitarias (sin backend ni navegador). Las e2e (test:f0, test:f9…) necesitan backend y Chrome: van aparte.
+      - run: npm run test:unit
       - run: npm run build
