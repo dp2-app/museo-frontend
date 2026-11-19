@@ -12,12 +12,22 @@ import { seccionesPara } from "../lib/secciones";
 // filtrada por permiso (RBAC visual, spec §5), menú móvil a pantalla completa y
 // footer institucional.
 
-function NavEnlaces({ className, onNavigate }: { className?: string; onNavigate?: () => void }) {
+// Escritorio: solo texto, todas las secciones en azul pleno y la activa subrayada en rojo (prototipo de
+// mejoras del 15/11, Base de conocimiento prototipos/mejoras-ux-2026-11). Móvil: con íconos, para tocar.
+function NavEnlaces({
+  className,
+  onNavigate,
+  conIconos = false,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+  conIconos?: boolean;
+}) {
   const { puedeAlguno } = usePermisos();
   const secciones = seccionesPara(puedeAlguno);
 
   return (
-    <nav className={className}>
+    <nav aria-label="Principal" className={className}>
       {secciones.map(({ ruta, nombre, Icono }) => (
         <NavLink
           key={ruta}
@@ -25,12 +35,12 @@ function NavEnlaces({ className, onNavigate }: { className?: string; onNavigate?
           end={ruta === "/"}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `flex items-center gap-2 border-b-2 px-1 py-1 transition ${
-              isActive ? "border-rojo text-azul font-semibold" : "border-transparent text-azul/80 hover:text-azul"
+            `flex items-center gap-2 whitespace-nowrap border-b-[3px] py-1.5 font-semibold transition-colors ${
+              isActive ? "border-rojo text-azul" : "border-transparent text-azul hover:text-rojo-oscuro"
             }`
           }
         >
-          <Icono size={18} aria-hidden="true" />
+          {conIconos && <Icono size={18} aria-hidden="true" className="shrink-0" />}
           {nombre}
         </NavLink>
       ))}
@@ -65,8 +75,9 @@ function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => vo
         </button>
       </div>
       <NavEnlaces
+        conIconos
         onNavigate={onCerrar}
-        className="flex flex-col gap-1 px-6 pb-8 text-[24px] font-semibold text-white [&_a]:text-white/90 [&_a.font-semibold]:text-white [&_a]:border-b-0 [&_a]:py-3"
+        className="flex flex-col gap-1 px-6 pb-8 text-[24px] font-semibold text-white [&_a]:text-white/75 [&_a:hover]:text-white [&_a[aria-current=page]]:text-white [&_a[aria-current=page]]:underline [&_a]:decoration-rojo [&_a]:decoration-[3px] [&_a]:underline-offset-8 [&_a]:border-b-0 [&_a]:whitespace-normal [&_a]:py-3"
       />
     </dialog>
   );
@@ -91,7 +102,7 @@ export function Layout() {
           />
           <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-9 md:hidden" />
 
-          <NavEnlaces className="hidden lg:flex order-last w-full justify-between xl:order-none xl:w-auto items-center gap-3 text-sm font-semibold" />
+          <NavEnlaces className="hidden lg:flex order-last w-full flex-wrap items-center gap-x-[22px] gap-y-1 text-[15px] xl:order-none xl:w-auto xl:flex-1 xl:justify-center" />
 
           <div className="flex items-center gap-3">
             <span className="hidden md:inline xl:hidden text-xs font-semibold uppercase tracking-wide text-gris-2">
