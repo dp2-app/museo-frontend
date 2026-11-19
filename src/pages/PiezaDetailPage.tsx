@@ -6,6 +6,7 @@ import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { ArchivosFicha } from "../components/ArchivosFicha";
 import { CodigosFicha } from "../components/IdentificacionFicha";
 import { EstadoUbicacion } from "../components/EstadoUbicacion";
+import { DatosOrigen } from "../components/DatosOrigen";
 import { Aviso, ConMotivo, ErrorConsulta, Panel } from "../components/FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
 import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
@@ -59,6 +60,7 @@ export function PiezaDetailPage() {
     {original && <EditorFicha original={original} enfocar={campoPedido} terminar={() => { setOriginal(null); setCerrado(true); }} />}
     <div id="seccion-codigos_externos"><Panel titulo="Ficha de inventario"><ErrorConsulta error={catalogo.error} /><dl className="grid gap-4 sm:grid-cols-2">{catalogo.data?.filter((c) => c.activo && (c.clave in p.campos || c.clave in p.listas)).map((c) => <div key={c.id} className="border-b border-linea pb-2 min-w-0"><dt className="font-semibold text-azul">{c.etiqueta}</dt><dd className="whitespace-pre-wrap break-words">{p.listas[c.clave] ? p.listas[c.clave].map((v) => v.etiqueta || "Sin etiqueta").join(", ") || "Sin dato" : p.etiquetas[c.clave] ?? (p.campos[c.clave] == null || p.campos[c.clave] === "" ? "Sin dato" : typeof p.campos[c.clave] === "object" ? JSON.stringify(p.campos[c.clave]) : String(p.campos[c.clave]))}</dd></div>)}</dl><CodigosFicha pieza={p} codigosIniciales={p.codigosDetalle} tenenciasIniciales={p.tenencias} /></Panel></div>
     <div id="seccion-fotografias"><ArchivosFicha piezaId={piezaId} inicial={p.fotografias} /></div><ArchivosFicha piezaId={piezaId} documentos inicial={p.documentos} /><EstadoUbicacion key={piezaId} pieza={p} movimientosIniciales={p.movimientos} estadosIniciales={p.estados} />
+    <DatosOrigen procedencia={p.procedencia} />
     <Panel titulo="Historial de cambios"><ErrorConsulta error={auditoria.error} /><ul className="space-y-2 text-sm">{auditoria.data?.map((r, i) => <li key={i} className="border-b border-linea pb-2"><p>{r.fecha ? new Date(r.fecha).toLocaleString("es-PE") : ""} · {r.accion} · {r.campo}</p><p className="break-words">{r.valorAnterior ?? "Sin dato"} → {r.valorNuevo ?? "Sin dato"}</p></li>)}</ul>{auditoria.data?.length === 0 && <p>Sin cambios registrados.</p>}</Panel>
     <Panel titulo="Baja de la pieza"><p>La ficha y sus historiales se conservan. La restauración está disponible en Administración.</p><ConMotivo etiqueta="Dar de baja" pendiente={!puede("piezas.baja") || op.pendiente || !!original} ejecutar={(motivo) => op.ejecutar(async () => { await api.post(`/piezas/${piezaId}/baja`, { motivo }); navegar("/coleccion"); })} /></Panel>
   </div>;
