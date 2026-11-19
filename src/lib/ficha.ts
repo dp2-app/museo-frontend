@@ -18,6 +18,14 @@ export interface HistorialFicha {
   id: string; fecha: string; motivo: string | null; responsable?: string | null;
   ubicacionAnterior?: string | null; ubicacionNueva?: string | null; estadoAnterior?: string | null; estadoNuevo?: string | null;
 }
+/** Procedencia de una pieza importada (RF-37): de qué archivo, hoja y fila vino y qué valores no se mapearon a la ficha.
+ * `redactado`: el rol tiene campos ocultos y el backend no envía los valores originales (RF-57). */
+export interface OrigenImportacion {
+  id: string; cargaId: string | null; filaId: string | null;
+  archivoNombre: string | null; hojaNombre: string | null; numeroFila: number | null;
+  datosOriginales: Record<string, unknown>; camposNoMapeados: Record<string, unknown>;
+  redactado?: boolean; creadoEn: string;
+}
 export interface FichaCompleta extends Ficha {
   codigosDetalle: Codigo[];
   tenencias: Tenencia[];
@@ -25,6 +33,8 @@ export interface FichaCompleta extends Ficha {
   documentos: Archivo[];
   movimientos: HistorialFicha[];
   estados: HistorialFicha[];
+  /** Vacía si la pieza no se importó o si el rol no tiene `importacion.ver_procedencia`. */
+  procedencia?: OrigenImportacion[];
 }
 export interface Ubicacion {
   id: string; parentId: string | null; nivelTipo: "sede" | "ubicacion"; nombre: string;
