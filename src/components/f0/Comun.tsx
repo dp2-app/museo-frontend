@@ -4,7 +4,7 @@ import { extraerMensajeError } from "../../lib/api";
 
 export function ErrorOperacion({ error }: { error: unknown }) {
   if (!error) return null;
-  return <p role="alert" className="flex gap-2 rounded-card border border-rojo p-3 text-texto">
+  return <p role="alert" className="ui-error">
     <TriangleAlert size={20} className="shrink-0 text-rojo" aria-hidden="true" />{extraerMensajeError(error)}</p>;
 }
 export function ErrorCampo({ id, mensaje }: { id: string; mensaje?: string }) {

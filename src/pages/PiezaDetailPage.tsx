@@ -1,3 +1,4 @@
+import { FotoPieza } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,14 @@ export function PiezaDetailPage() {
     return asignado ? `Ficha aprobada. Se asignó el código ${asignado.valor}: escríbalo en la pieza.` : r;
   });
   return <div className="space-y-6"><Link to="/coleccion" className="text-azul underline">← Volver a Colección</Link>
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="font-accent italic">{nombreFicha(p)}</h1><ChipEstadoFicha estado={p.estadoFicha} /></div>{!original && <button className="btn-primary" disabled={!puede("piezas.editar")} onClick={() => setOriginal(p)}>Editar ficha</button>}</div>
+    <section className="piece-feature" aria-label="Presentación de la pieza">
+      <FotoPieza url={(p.fotografias.find((f) => f.esPrincipal) ?? p.fotografias[0])?.url} nombre={nombreFicha(p)} ampliable />
+      <div className="piece-feature-summary"><div><ChipEstadoFicha estado={p.estadoFicha} /><h1 className="font-accent italic mt-4">{nombreFicha(p)}</h1></div>
+        <p className="text-gris-2 break-words">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código registrado"}</p>
+        {p.etiquetas.coleccion_id && <p className="text-sm text-azul">{p.etiquetas.coleccion_id}</p>}
+        {!original && <div><button className="btn-primary" disabled={!puede("piezas.editar")} onClick={() => setOriginal(p)}>Editar ficha</button></div>}
+      </div>
+    </section>
     <Aviso mensaje={op.mensaje} />{p.motivoRechazo && <p className="text-rojo">Motivo de rechazo: {p.motivoRechazo}</p>}<CamposFaltantes incompleta={p.incompleta} camposFaltantes={p.camposFaltantes} />
     <Panel titulo="Revisión de la ficha"><div className="flex flex-wrap gap-3">
       {["borrador", "rechazada"].includes(p.estadoFicha) && <button className="btn-primary" disabled={!puede("piezas.editar") || op.pendiente || p.incompleta || !!original} onClick={() => enviar("enviar_revision")}>Enviar a revisión</button>}

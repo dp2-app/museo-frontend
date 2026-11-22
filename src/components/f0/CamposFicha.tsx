@@ -93,7 +93,7 @@ export function CamposFicha() {
       </div>
       <p className="px-4 pb-4 text-sm text-texto/70" role="status">{visibles.length} de {ordenados.length} campos · {ordenados.filter((c) => c.activo && c.obligatorio).length} obligatorios activos</p>
       <div className="overflow-x-auto [contain:paint]" role="region" aria-label="Catálogo de campos" tabIndex={0}>
-        <table className="f0-table"><thead><tr>{["Campo", "Tipo / lista", "Orden", "Obligatorio", "Estado", "Acciones"].map((t) => <th scope="col" key={t}>{t}</th>)}</tr></thead>
+        <div className="overflow-x-auto" role="region" aria-label="Campos configurados" tabIndex={0}><table className="f0-table"><thead><tr>{["Campo", "Tipo / lista", "Orden", "Obligatorio", "Estado", "Acciones"].map((t) => <th scope="col" key={t}>{t}</th>)}</tr></thead>
           {grupos.map((grupo) => <tbody key={grupo}>
             <tr className="f0-group"><th scope="rowgroup" colSpan={6}>{grupo}<span className="ml-2 font-normal text-texto/60">{visibles.filter((c) => c.grupo === grupo).length}</span></th></tr>
             {visibles.filter((c) => c.grupo === grupo).map((c) => <tr key={c.id}>
@@ -104,7 +104,7 @@ export function CamposFicha() {
               <td>{puede && <button type="button" className="f0-action" onClick={() => abrir(c)} aria-label={`Editar ${c.etiqueta}`}><Pencil size={20} aria-hidden="true" /><span className="sr-only">Editar</span></button>}</td>
             </tr>)}
           </tbody>)}
-        </table>
+        </table></div>
       </div>
       {!visibles.length && ordenados.length > 0 && <div className="p-8 text-center"><p className="font-semibold text-azul">No se encontraron campos</p><p className="mt-2 text-sm">Prueba otro nombre o cambia el filtro de estado.</p><button type="button" className="f0-action mt-4" onClick={() => { setBusqueda(""); setEstado("todos"); }}>Limpiar filtros</button></div>}
     </div>

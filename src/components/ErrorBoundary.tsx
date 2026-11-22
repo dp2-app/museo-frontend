@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, Estado> {
           <TriangleAlert size={22} className="shrink-0 text-rojo" aria-hidden="true" />Esta pantalla no se pudo mostrar
         </p>
         <p className="text-texto">
-          Es posible que todavía no esté adaptada a la versión actual de la API. El resto de las secciones del menú siguen funcionando.
+          Intenta cargarla de nuevo. Si el problema continúa, puedes seguir trabajando en las otras secciones e informar al administrador.
         </p>
         <button type="button" className="btn-glass" onClick={() => this.setState({ error: null })}>Reintentar</button>
       </div>

@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Database, FileDown, Info, Printer, Search } from "lucide-react";
@@ -143,13 +144,7 @@ export function ConsultasReportesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2.5 print:hidden">
-        <Search size={28} className="text-azul" aria-hidden="true" />
-        <div>
-          <h1>Consultas y reportes</h1>
-          <p className="text-sm text-gris-2">{SUBTITULO[pestana]}</p>
-        </div>
-      </div>
+      <CabeceraPagina titulo="Consultas y reportes" icono={Search} descripcion={SUBTITULO[pestana]} className="print:hidden" />
 
       <FiltrosReporte key={versionFormulario} inicial={filtros} opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
                       onAplicar={(f) => { setFiltros(f); setPagina(1); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }} />

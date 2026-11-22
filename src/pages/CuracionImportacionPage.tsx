@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -41,8 +42,7 @@ export function CuracionImportacionPage() {
     <div className="space-y-6 f5-importacion">
       <header>
         <Link to="/importacion" className="text-azul underline">Volver a importación</Link>
-        <h1 className="font-display text-2xl font-bold mt-2">Cola de curación</h1>
-        <p className="text-sm mt-1">Registros que entraron al catálogo con advertencias o marcados por quien revisó la carga. Cada uno espera una validación posterior.</p>
+        <div className="mt-4"><CabeceraPagina titulo="Cola de curación" descripcion="Registros que entraron al catálogo con advertencias o marcados por quien revisó la carga. Cada uno espera una validación posterior." /></div>
       </header>
 
       <div className="glass-panel p-4 flex flex-wrap items-end gap-4">

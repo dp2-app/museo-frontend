@@ -26,3 +26,6 @@ dist-ssr
 
 # Evidencia de las pruebas e2e: muestra datos reales del inventario (este repo es público)
 evidencia-*/
+
+# Resultados sintéticos de la revisión visual
+test-results/

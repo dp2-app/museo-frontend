@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
+import { Info, TriangleAlert } from "lucide-react";
 import { extraerMensajeError } from "../lib/api";
 
 export function Panel({ titulo, children }: { titulo: string; children: ReactNode }) {
   return <section className="glass-panel p-5 space-y-4 min-w-0"><h2 className="section-title">{titulo}</h2>{children}</section>;
 }
-export function Aviso({ mensaje }: { mensaje: string }) { return mensaje ? <p role="status" className="rounded-btn border border-linea p-3 text-sm">{mensaje}</p> : null; }
-export function ErrorConsulta({ error }: { error: unknown }) { return error ? <p role="alert" className="text-rojo">{extraerMensajeError(error)}</p> : null; }
+export function Aviso({ mensaje }: { mensaje: string }) { return mensaje ? <p role="status" className="ui-notice"><Info size={20} className="shrink-0 text-azul" aria-hidden="true" />{mensaje}</p> : null; }
+export function ErrorConsulta({ error }: { error: unknown }) { return error ? <p role="alert" className="ui-error"><TriangleAlert size={20} className="shrink-0 text-rojo-oscuro" aria-hidden="true" />{extraerMensajeError(error)}</p> : null; }
 /** Confirmación explícita con motivo; ningún registro se elimina físicamente. */
 export function ConMotivo({ etiqueta, ejecutar, pendiente = false }: { etiqueta: string; ejecutar: (motivo: string) => void; pendiente?: boolean }) {
   const [abierto, setAbierto] = useState(false); const [motivo, setMotivo] = useState("");

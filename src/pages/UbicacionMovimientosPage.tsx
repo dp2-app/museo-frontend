@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -12,7 +13,7 @@ import { GestionUbicaciones } from "../components/GestionUbicaciones";
 
 /** Pantalla propia de sedes y ubicaciones (antes un plegable dentro de Ubicación y movimientos). */
 export function SedesPage() {
-  return <div className="space-y-6"><Link to="/ubicacion-y-movimientos" className="text-azul underline">← Volver a Ubicación y movimientos</Link><h1>Sedes y ubicaciones</h1><GestionUbicaciones /></div>;
+  return <div className="space-y-6"><Link to="/ubicacion-y-movimientos" className="text-azul underline">← Volver a Ubicación y movimientos</Link><CabeceraPagina titulo="Sedes y ubicaciones" descripcion="Organiza los lugares donde se conservan las piezas." /><GestionUbicaciones /></div>;
 }
 
 const SIN_UBICACION = "__sin__";
@@ -66,9 +67,8 @@ export function UbicacionMovimientosPage() {
     if (!fallos.length) { setDestino(""); setMotivoMov(""); setEstado(""); setMotivoEst(""); }
   }
 
-  return <div className="space-y-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1>Ubicación y movimientos</h1><p>Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez.</p></div>
-    {puede("ubicaciones.gestionar") && <Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link>}</div>
-    {puede("piezas.ver") && <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+  return <div className="space-y-6"><CabeceraPagina titulo="Ubicación y movimientos" descripcion="Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez." acciones={puede("ubicaciones.gestionar") && <Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link>} />
+    {puede("piezas.ver") && <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
       {veUbicacion && <nav aria-label="Sedes y ubicaciones" className="glass-panel p-3 space-y-2 self-start"><h2 className="section-title">Dónde</h2>
         <button type="button" aria-pressed={lugar === ""} onClick={() => elegir("")} className={`w-full text-left rounded-btn px-2 py-1 text-sm ${lugar === "" ? "bg-azul text-white font-semibold" : "hover:bg-fondo-suave"}`}>Todas las piezas</button>
         <button type="button" aria-pressed={lugar === SIN_UBICACION} onClick={() => elegir(SIN_UBICACION)} className={`w-full text-left rounded-btn px-2 py-1 text-sm ${lugar === SIN_UBICACION ? "bg-azul text-white font-semibold" : "hover:bg-fondo-suave"}`}>Sin ubicación</button>

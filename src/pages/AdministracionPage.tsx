@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useState } from "react";
 import { Eye, Hash, History, Landmark, List, Scale, Settings, ShieldCheck, SlidersHorizontal, UserRound, Users, type LucideIcon } from "lucide-react";
 import { Bitacora } from "../components/f9/Bitacora";
@@ -65,13 +66,7 @@ export function AdministracionPage() {
 
   return (
     <div className="f0-admin space-y-6">
-      <div className="flex items-center gap-4">
-        <span className="hidden sm:flex h-14 w-14 items-center justify-center rounded-card bg-white border border-linea"><Settings size={24} className="text-azul" aria-hidden="true" /></span>
-        <div>
-          <h1>Administración</h1>
-          <p className="text-sm text-gris-2">Configura la ficha, los códigos, la tenencia y los datos de la institución; administra usuarios, roles y permisos.</p>
-        </div>
-      </div>
+      <CabeceraPagina titulo="Administración" icono={Settings} descripcion="Configura la ficha, los códigos, la tenencia y los datos de la institución; administra usuarios, roles y permisos." />
 
       {pestana === null ? (
         <p role="status">Tu rol no tiene secciones de administración habilitadas.</p>

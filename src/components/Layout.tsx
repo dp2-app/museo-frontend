@@ -1,175 +1,52 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { CircleUser, LogOut, Menu, X } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { ChevronDown, CircleUser, LogOut, Menu, X } from "lucide-react";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermisos } from "../hooks/usePermisos";
 import { seccionesPara } from "../lib/secciones";
 
-// Header/nav/footer per la especificación de diseño §6. El nombre del
-// archivo/export se conserva (Layout) para no tocar App.tsx ni los imports
-// existentes; lo que cambia es el shell completo: logo oficial, navegación
-// filtrada por permiso (RBAC visual, spec §5), menú móvil a pantalla completa y
-// footer institucional.
-
-// Escritorio: solo texto, todas las secciones en azul pleno y la activa subrayada en rojo (prototipo de
-// mejoras del 15/11, Base de conocimiento prototipos/mejoras-ux-2026-11). Móvil: con íconos, para tocar.
-function NavEnlaces({
-  className,
-  onNavigate,
-  conIconos = false,
-}: {
-  className?: string;
-  onNavigate?: () => void;
-  conIconos?: boolean;
-}) {
+function NavEnlaces({ className, onNavigate }: { className: string; onNavigate?: () => void }) {
   const { puedeAlguno } = usePermisos();
-  const secciones = seccionesPara(puedeAlguno);
-
-  return (
-    <nav aria-label="Principal" className={className}>
-      {secciones.map(({ ruta, nombre, Icono }) => (
-        <NavLink
-          key={ruta}
-          to={ruta}
-          end={ruta === "/"}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            `flex items-center gap-2 whitespace-nowrap border-b-[3px] py-1.5 font-semibold transition-colors ${
-              isActive ? "border-rojo text-azul" : "border-transparent text-azul hover:text-rojo-oscuro"
-            }`
-          }
-        >
-          {conIconos && <Icono size={18} aria-hidden="true" className="shrink-0" />}
-          {nombre}
-        </NavLink>
-      ))}
-    </nav>
-  );
+  return <nav aria-label="Principal" className={className}>{seccionesPara(puedeAlguno).map(({ ruta,nombre,Icono }) =>
+    <NavLink key={ruta} to={ruta} end={ruta === "/"} onClick={onNavigate}><Icono size={18} aria-hidden="true" /><span>{nombre}</span></NavLink>)}</nav>;
 }
 
 function MenuMovil({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (abierto && !dialog.open) dialog.showModal();
-    if (!abierto && dialog.open) dialog.close();
-  }, [abierto]);
-
-  return (
-    <dialog
-      ref={dialogRef}
-      onClose={onCerrar}
-      className="m-0 h-full max-h-none w-full max-w-none bg-azul p-0 backdrop:bg-azul/60"
-    >
-      <div className="flex justify-end p-4">
-        <button
-          type="button"
-          onClick={onCerrar}
-          className="rounded-btn p-2 text-white hover:bg-white/10"
-          aria-label="Cerrar menú"
-        >
-          <X size={28} aria-hidden="true" />
-        </button>
-      </div>
-      <NavEnlaces
-        conIconos
-        onNavigate={onCerrar}
-        className="flex flex-col gap-1 px-6 pb-8 text-[24px] font-semibold text-white [&_a]:text-white/75 [&_a:hover]:text-white [&_a[aria-current=page]]:text-white [&_a[aria-current=page]]:underline [&_a]:decoration-rojo [&_a]:decoration-[3px] [&_a]:underline-offset-8 [&_a]:border-b-0 [&_a]:whitespace-normal [&_a]:py-3"
-      />
-    </dialog>
-  );
+  const ref = useRef<HTMLDialogElement>(null);const { logout } = useAuth();
+  useEffect(() => { const d=ref.current;if (!d) return;if (abierto && !d.open) d.showModal();if (!abierto && d.open) d.close(); },[abierto]);
+  return <dialog ref={ref} onClose={onCerrar} aria-label="Navegación del museo" className="m-0 h-full max-h-none w-full max-w-none bg-white p-0 backdrop:bg-azul/60">
+    <div className="flex items-center justify-between border-b border-linea p-4"><img src="/brand/matp_lockup_positivo.svg" alt="Museo Luis Repetto Málaga" className="h-10" />
+      <button type="button" onClick={onCerrar} className="rounded-btn p-3 text-azul" aria-label="Cerrar menú"><X size={24} aria-hidden="true" /></button></div>
+    <NavEnlaces onNavigate={onCerrar} className="flex flex-col p-4 gap-2 [&_a]:flex [&_a]:items-center [&_a]:gap-3 [&_a]:p-4 [&_a]:rounded-btn [&_a]:text-azul [&_a]:font-semibold [&_a[aria-current=page]]:bg-fondo-suave" />
+    <div className="border-t border-linea p-4"><button type="button" className="btn-glass w-full" onClick={() => { onCerrar();logout(); }}><LogOut size={18} aria-hidden="true" />Cerrar sesión</button></div>
+  </dialog>;
 }
 
 export function Layout() {
-  const { logout } = useAuth();
-  const { rol } = usePermisos();
-  const { pathname } = useLocation();
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [cuentaAbierta, setCuentaAbierta] = useState(false);
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-20 bg-white border-b border-linea print:hidden">
-        <div className="max-w-contenido mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
-          {/* Escritorio: lockup completo. Móvil: solo isotipo + rol activo (spec §6). */}
-          <img
-            src="/brand/matp_lockup_positivo.svg"
-            alt='Museo de Artes y Tradiciones Populares "Luis Repetto Málaga"'
-            className="h-10 xl:h-12 hidden md:block shrink-0"
-          />
-          <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-9 md:hidden" />
-
-          <NavEnlaces className="hidden lg:flex order-last w-full flex-wrap items-center gap-x-[22px] gap-y-1 text-[15px] xl:order-none xl:w-auto xl:flex-1 xl:justify-center" />
-
-          <div className="flex items-center gap-3">
-            <span className="hidden md:inline xl:hidden text-xs font-semibold uppercase tracking-wide text-gris-2">
-              {rol ?? ""}
-            </span>
-
-            <div className="relative hidden lg:block">
-              <button
-                type="button"
-                onClick={() => setCuentaAbierta((v) => !v)}
-                className="flex items-center gap-1.5 rounded-btn p-1.5 text-azul hover:bg-fondo-suave"
-                aria-haspopup="menu"
-                aria-expanded={cuentaAbierta}
-                aria-label="Menú de cuenta"
-              >
-                <CircleUser size={24} aria-hidden="true" />
-              </button>
-              {cuentaAbierta && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 w-48 glass-panel-sm py-2 text-sm"
-                  onMouseLeave={() => setCuentaAbierta(false)}
-                >
-                  <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-gris-2">
-                    {rol ?? ""}
-                  </p>
-                  <button
-                    role="menuitem"
-                    onClick={logout}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-left text-azul hover:bg-fondo-suave"
-                  >
-                    <LogOut size={16} aria-hidden="true" /> Cerrar sesión
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setMenuAbierto(true)}
-              className="lg:hidden rounded-btn p-2 text-azul hover:bg-fondo-suave"
-              aria-label="Abrir menú"
-            >
-              <Menu size={28} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <MenuMovil abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
-
-      <main className="flex-1 max-w-contenido w-full mx-auto px-4 py-6 sm:px-6 sm:py-8 overflow-x-hidden">
-        <ErrorBoundary key={pathname}>
-          <Outlet />
-        </ErrorBoundary>
-      </main>
-
-      <footer className="bg-azul text-white/80 mt-auto print:hidden">
-        <div className="max-w-contenido mx-auto px-4 sm:px-6 py-6 flex flex-col items-center gap-3 text-center">
-          <img src="/brand/matp_lockup_sobre_azul_blanco.svg" alt="" aria-hidden="true" className="h-8" />
-          <p className="text-xs leading-relaxed">
-            Sistema de Gestión y Digitalización de Colecciones Museográficas · v1.0
-            <br />
-            Instituto Riva-Agüero · Dirección de Asuntos Culturales · Pontificia Universidad Católica del Perú
-          </p>
-        </div>
-      </footer>
-    </div>
-  );
+  const { logout }=useAuth();const { rol }=usePermisos();const { pathname }=useLocation();
+  const [menuAbierto,setMenuAbierto]=useState(false);const [cuentaAbierta,setCuentaAbierta]=useState(false);const cuenta=useRef<HTMLDivElement>(null);const botonCuenta=useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!cuentaAbierta) return;
+    const pointer=(e:PointerEvent) => { if (!cuenta.current?.contains(e.target as Node)) setCuentaAbierta(false); };
+    const key=(e:KeyboardEvent) => { if (e.key === "Escape") { setCuentaAbierta(false);botonCuenta.current?.focus(); } };
+    document.addEventListener("pointerdown",pointer);document.addEventListener("keydown",key);
+    return () => { document.removeEventListener("pointerdown",pointer);document.removeEventListener("keydown",key); };
+  },[cuentaAbierta]);
+  return <div className="museum-app min-h-screen flex flex-col">
+    <a href="#contenido-principal" className="skip-link">Saltar al contenido</a>
+    <header className="workspace-header"><div className="workspace-brandbar">
+      <Link to="/" aria-label="Museo Luis Repetto Málaga · Inicio"><img src="/brand/matp_lockup_positivo.svg" alt="" className="h-10 sm:h-12" /></Link>
+      <p className="hidden xl:block text-sm text-gris-2 mr-auto pl-5 border-l border-linea">Sistema de gestión de colecciones</p>
+      <div ref={cuenta} className="relative hidden lg:block"><button ref={botonCuenta} type="button" onClick={() => setCuentaAbierta(!cuentaAbierta)} className="workspace-account" aria-expanded={cuentaAbierta} aria-controls="cuenta-opciones" aria-label="Menú de cuenta">
+        <CircleUser size={22} aria-hidden="true" /><span className="text-sm font-semibold">{rol || "Mi cuenta"}</span><ChevronDown size={16} aria-hidden="true" /></button>
+        {cuentaAbierta && <div id="cuenta-opciones" className="absolute right-0 mt-2 w-56 glass-panel p-2 shadow-sombra">
+          <p className="px-3 py-2 text-sm text-gris-2">{rol}</p><button type="button" onClick={logout} className="flex items-center gap-2 rounded-btn px-3 min-h-11 w-full text-sm text-azul hover:bg-fondo-suave"><LogOut size={18} aria-hidden="true" />Cerrar sesión</button></div>}
+      </div>
+      <button type="button" className="lg:hidden rounded-btn p-3 text-azul" aria-label="Abrir menú" onClick={() => setMenuAbierto(true)}><Menu size={24} aria-hidden="true" /></button>
+    </div><NavEnlaces className="workspace-nav" /></header>
+    <MenuMovil abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
+    <main id="contenido-principal" tabIndex={-1} className="workspace-main"><ErrorBoundary key={pathname}><Outlet /></ErrorBoundary></main>
+    <footer className="workspace-footer"><div><span>Museo de Artes y Tradiciones Populares · Luis Repetto Málaga</span><span>Instituto Riva-Agüero · PUCP</span></div></footer>
+  </div>;
 }

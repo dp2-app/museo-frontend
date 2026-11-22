@@ -17,11 +17,14 @@ export default {
         rojo: "#EB3156",
         "rojo-oscuro": "#C3094A",
         "gris-1": "#BDC3C9",
-        "gris-2": "#959EA9",
+        "gris-2": "#53627A", // Texto secundario accesible (§26); los SVG institucionales se conservan.
         arcilla: "#FF6E26",
         paja: "#F0AE19",
         verde: "#009A73",
         texto: "#1B2B4B",
+        control: "#7A8799", // Límite del campo distinguible sobre blanco.
+        "estado-verde": "#006B50",
+        "estado-ambar": "#795100",
         "fondo-suave": "#F3F5F8",
         linea: "#E3E7EC",
         foco: "#5366FF",

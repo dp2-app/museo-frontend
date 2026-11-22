@@ -42,13 +42,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-fondo-suave">
-      <form onSubmit={onSubmit} className="glass-panel w-full max-w-sm p-8 space-y-5">
-        <div className="flex flex-col items-center text-center gap-3">
-          <img src="/brand/pucp_isotipo_positivo.svg" alt="" aria-hidden="true" className="h-14" />
+    <div className="login-shell">
+      <aside className="login-story" aria-label="Museo Luis Repetto Málaga">
+        <img src="/brand/matp_lockup_sobre_azul_blanco.svg" alt="Museo de Artes y Tradiciones Populares Luis Repetto Málaga" className="w-64" />
+        <div className="space-y-6"><img src="/brand/matp_emblema_retablo.svg" alt="" aria-hidden="true" className="h-32 w-32 brightness-0 invert opacity-75" />
+          <p className="login-story-title">Cada pieza tiene una historia.</p><p className="text-white/80 max-w-md">Un espacio de trabajo para documentar, cuidar y conocer las colecciones del museo.</p></div>
+        <p className="text-sm text-white/80">Instituto Riva-Agüero · Pontificia Universidad Católica del Perú</p>
+      </aside>
+      <div className="login-entry"><form onSubmit={onSubmit} className="login-form">
+        <div className="flex flex-col items-start gap-4">
+          <img src="/brand/matp_lockup_positivo.svg" alt="Museo Luis Repetto Málaga" className="h-12 lg:hidden" />
           <div>
-            <h1 className="text-lg leading-snug">Museo "Luis Repetto Málaga"</h1>
-            <p className="text-sm text-gris-2">Sistema de gestión de colecciones</p>
+            <h1>Ingresar</h1>
+            <p className="text-sm text-gris-2">Accede a tu espacio de trabajo del museo.</p>
           </div>
         </div>
 
@@ -59,7 +65,7 @@ export function LoginPage() {
         )}
 
         {error && (
-          <p className="text-sm text-rojo bg-rojo/10 border border-rojo/30 rounded-btn px-3 py-2">{error}</p>
+          <p role="alert" className="ui-error">{error}</p>
         )}
 
         <div className="space-y-1.5">
@@ -69,6 +75,7 @@ export function LoginPage() {
           <input
             id="login-email"
             type="email"
+            autoComplete="username"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -82,6 +89,7 @@ export function LoginPage() {
           <input
             id="login-password"
             type="password"
+            autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -92,7 +100,7 @@ export function LoginPage() {
           {cargando ? "Ingresando..." : "Ingresar"}
         </button>
         {lento && <p role="status" className="text-sm">El servidor estaba inactivo y está despertando. Puede tardar hasta un minuto: espera sin recargar la página.</p>}
-      </form>
+      </form></div>
     </div>
   );
 }

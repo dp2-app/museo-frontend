@@ -1,8 +1,11 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Info, LayoutDashboard } from "lucide-react";
 import { api } from "../lib/api";
 import { enlaceColeccion } from "../lib/reportes";
+import { Cargando } from "../components/SistemaVisual";
+import { ErrorConsulta } from "../components/FichaComun";
 import type { ReportePanelPrincipal } from "../types";
 
 function TarjetaPendiente({ etiqueta, valor, filtro }: { etiqueta: string; valor: number | null | undefined; filtro?: Record<string, string | boolean> | null }) {
@@ -18,7 +21,7 @@ function TarjetaPendiente({ etiqueta, valor, filtro }: { etiqueta: string; valor
 
 /** Inicio: un resumen de las mismas cifras de Consultas y reportes (un solo servicio en el backend, #208). */
 export function PanelPrincipalPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["reportes", "panel-principal"],
     queryFn: async () => (await api.get<ReportePanelPrincipal>("/reportes/panel-principal")).data,
   });
@@ -28,24 +31,18 @@ export function PanelPrincipalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2.5">
-        <LayoutDashboard size={28} className="text-azul" aria-hidden="true" />
-        <div>
-          <h1>Inicio</h1>
-          <p className="text-sm text-gris-2">Cómo va la catalogación del museo y qué conviene completar primero.</p>
-        </div>
-      </div>
+      <CabeceraPagina titulo="Inicio" icono={LayoutDashboard} descripcion="Cómo va la catalogación del museo y qué conviene completar primero." />
 
-      {isLoading || !data ? (
-        <p className="text-sm text-gris-2">Cargando…</p>
+      {error ? <div className="space-y-3"><ErrorConsulta error={error} /><button className="btn-glass" onClick={() => void refetch()}>Reintentar</button></div> : isLoading || !data ? (
+        <Cargando />
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="kpi-card">
+            <div className="kpi-card dashboard-summary">
               <p className="text-xs font-semibold uppercase tracking-wide text-gris-2">Total de piezas</p>
               <p className="font-display text-3xl font-extrabold text-azul">{data.totalPiezas.toLocaleString("es-PE")}</p>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card dashboard-summary">
               <p className="text-xs font-semibold uppercase tracking-wide text-gris-2 flex items-center gap-1">
                 Fichas completas
                 <span title="Una ficha está completa cuando tiene todos los datos que el museo exige: campos obligatorios, código del museo y fotografía." className="inline-flex" tabIndex={0} aria-label="Qué es una ficha completa">
