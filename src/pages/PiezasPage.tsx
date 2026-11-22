@@ -1,5 +1,5 @@
-import { Cargando, EstadoVacio } from "../components/SistemaVisual";
-import { ArrowUpRight, Landmark, LayoutGrid, List } from "lucide-react";
+import { Cargando, EstadoVacio, FotoPieza } from "../components/SistemaVisual";
+import { ArrowUpRight, LayoutGrid, List, Upload } from "lucide-react";
 import { CabeceraPagina } from "../components/SistemaVisual";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -26,7 +26,7 @@ import type { Pagina } from "../types";
 const ETIQUETAS_FALTA: Record<string, string> = { codigos_externos: "código del museo", fotografias: "fotografía" };
 
 export function PiezasPage() {
-  const { puede, sesion } = usePermisos(); const navegar = useNavigate(); const cache = useQueryClient();
+  const { puede, puedeAlguno, sesion } = usePermisos(); const navegar = useNavigate(); const cache = useQueryClient();
   const [vista, setVista] = useState<"tarjetas" | "tabla">("tarjetas");
   const [nueva, setNueva] = useState(false); const [complementos, setComplementos] = useState<Complementos>({ codigos: [] }); const [problemas, setProblemas] = useState<string[]>([]);
   const [pagina, setPagina] = useState(1); const [direccion] = useSearchParams(); const [filtros, setFiltros] = useState<Record<string, unknown>>(() => filtrosDeDireccion(direccion));
@@ -37,10 +37,11 @@ export function PiezasPage() {
   const completitud = (p: Ficha) => p.camposFaltantes.length === 0 && !p.incompleta ? <span>Completa</span>
     : p.camposFaltantes.length === 0 ? <span>Por completar</span>
     : <span className="flex flex-wrap gap-1">{p.camposFaltantes.map((c) => <Link key={c} className="chip !py-0 !px-2 !text-xs" to={`/coleccion/${p.id}?campo=${c}`} title={`Completar: ${etiquetaFalta(c)}`}>{etiquetaFalta(c)}</Link>)}</span>;
-  return <div className="space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button>} />
-    <AccesosF1 />
-    {puede("colecciones.gestionar") && <details><summary className="cursor-pointer font-semibold">Gestionar colecciones</summary><Colecciones /></details>}
-    <details><summary className="cursor-pointer font-semibold">Buscar con IA</summary><div className="pt-3"><PreguntarColeccion /></div></details>
+  return <div className="collection-page space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<>{puedeAlguno("importacion.ver", "importacion.cargar") && <Link to="/importacion" className="btn-carga-masiva"><Upload size={18} aria-hidden="true" />Carga masiva</Link>}<button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button></>} />
+    <div className="collection-utilities"><AccesosF1 />
+      {puede("colecciones.gestionar") && <details><summary>Gestionar colecciones</summary><Colecciones /></details>}
+      <details><summary>Buscar con IA</summary><div className="pt-3"><PreguntarColeccion /></div></details>
+    </div>
 
     {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={(v, p) => { setComplementos(v); setProblemas(p); }} /><FormularioFicha onGuardar={async (datos) => { if (problemas.length) throw errorLocal(problemas); const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
     <FiltrosReporte key={JSON.stringify(direccion.toString())} inicial={filtros as FiltrosConsulta} opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
@@ -49,7 +50,8 @@ export function PiezasPage() {
       <div className="view-switch" role="group" aria-label="Vista de la colección"><button type="button" aria-pressed={vista === "tarjetas"} onClick={() => setVista("tarjetas")}><LayoutGrid size={18} aria-hidden="true" />Tarjetas</button><button type="button" aria-pressed={vista === "tabla"} onClick={() => setVista("tabla")}><List size={18} aria-hidden="true" />Tabla</button></div>
     </div>
     {vista === "tarjetas" && <div className="collection-grid">{piezas.data?.items.map((p) => <article key={p.id} className="piece-card">
-      <div className="piece-card-top"><span className="rounded-btn bg-fondo-suave p-2 text-azul"><Landmark size={22} aria-hidden="true" /></span><ChipEstadoFicha estado={p.estadoFicha} /></div>
+      <Link to={`/coleccion/${p.id}`} className="catalog-photo" aria-label={`Ver fotografía y ficha de ${nombreFicha(p)}`}><FotoPieza url={p.fotoPrincipal?.url} nombre={nombreFicha(p)} /></Link>
+      <div className="piece-card-top"><span className="catalog-eyebrow">Registro de colección</span><ChipEstadoFicha estado={p.estadoFicha} /></div>
       <h2 className="piece-card-title"><Link to={`/coleccion/${p.id}`}>{nombreFicha(p)}</Link></h2>
       <p className="text-sm text-gris-2 break-words">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</p>
       {"coleccion_id" in p.campos && <p className="text-sm text-azul">{p.etiquetas.coleccion_id || "Sin colección"}</p>}

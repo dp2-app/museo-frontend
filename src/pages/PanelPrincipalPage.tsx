@@ -4,6 +4,11 @@ import { Link } from "react-router-dom";
 import { Info, LayoutDashboard } from "lucide-react";
 import { api } from "../lib/api";
 import { enlaceColeccion } from "../lib/reportes";
+import { FotoPieza } from "../components/SistemaVisual";
+import { usePermisos } from "../hooks/usePermisos";
+import { useRecurso } from "../lib/recursosFicha";
+import { nombreFicha, type Ficha } from "../lib/ficha";
+import type { Pagina } from "../types";
 import { Cargando } from "../components/SistemaVisual";
 import { ErrorConsulta } from "../components/FichaComun";
 import type { ReportePanelPrincipal } from "../types";
@@ -21,6 +26,8 @@ function TarjetaPendiente({ etiqueta, valor, filtro }: { etiqueta: string; valor
 
 /** Inicio: un resumen de las mismas cifras de Consultas y reportes (un solo servicio en el backend, #208). */
 export function PanelPrincipalPage() {
+  const { puede } = usePermisos();
+  const seleccion = useRecurso<Pagina<Ficha>>("panel-seleccion", "/piezas", puede("piezas.ver"), { pagina: 1, tamano: 3 });
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["reportes", "panel-principal"],
     queryFn: async () => (await api.get<ReportePanelPrincipal>("/reportes/panel-principal")).data,
@@ -70,6 +77,10 @@ export function PanelPrincipalPage() {
             </section>
           )}
 
+          {seleccion.data && seleccion.data.items.length > 0 && <section className="dashboard-gallery" aria-label="Explora la colección">
+            <div className="dashboard-gallery-copy"><span className="catalog-eyebrow">El patrimonio, de cerca</span><h2>Explora la colección</h2><p>Cada ficha reúne una pieza, su historia y el trabajo para conservarla.</p><Link to="/coleccion" className="btn-primary">Abrir catálogo</Link></div>
+            <div className="dashboard-gallery-pieces">{seleccion.data.items.slice(0,3).map((p) => <Link key={p.id} to={`/coleccion/${p.id}`}><FotoPieza url={p.fotoPrincipal?.url} nombre={nombreFicha(p)} /><span>{nombreFicha(p)}</span></Link>)}</div>
+          </section>}
           <section className="space-y-2" aria-label="Pendientes">
             <h2 className="section-title">Pendientes</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

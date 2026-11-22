@@ -6,7 +6,7 @@ import { ArmarSala } from "../components/f10/ArmarSala";
 // La antigua pestaña «Calidad de datos» se retiró el 03/11/2026. Roles: los que la matriz de permisos defina (F9).
 export function AsistenteIAPage() {
   return (
-    <div className="space-y-6">
+    <div className="sala-page space-y-6">
       <CabeceraPagina titulo="Armar sala" icono={Bot} descripcion="La IA propone y una persona decide: ninguna sugerencia se aplica ni se guarda en la ficha sin que alguien la acepte explícitamente." />
       <ArmarSala />
     </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { type Ficha, nombreFicha } from "../lib/ficha";
+import { FotoPieza } from "./SistemaVisual";
 import { Aviso, ConMotivo, ErrorConsulta, Panel } from "./FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
 
@@ -46,11 +47,11 @@ type FichaDadaDeBaja = Ficha & { baja?: { motivo: string | null; fecha: string; 
 export function PiezasBaja() {
   const lista = useRecurso<FichaDadaDeBaja[]>("piezas-baja", "/piezas/eliminadas"); const op = useOperacion();
   return <Panel titulo="Piezas dadas de baja"><ErrorConsulta error={lista.error} /><Aviso mensaje={op.mensaje} />{lista.isPending && <p>Cargando…</p>}
-    <ul className="space-y-4">{lista.data?.map((p) => <li key={p.id} className="border-b border-linea pb-4"><p className="font-semibold">{nombreFicha(p)}{p.codigos.length > 0 && ` · ${p.codigos.map((c) => c.valor).join(", ")}`}</p>
+    <ul className="space-y-4">{lista.data?.map((p) => <li key={p.id} className="retired-piece-row"><div className="retired-piece-photo"><FotoPieza url={p.fotoPrincipal?.url} nombre={nombreFicha(p)} /></div><div className="min-w-0 flex-1 space-y-3"><p className="font-semibold break-words">{nombreFicha(p)}{p.codigos.length > 0 && ` · ${p.codigos.map((c) => c.valor).join(", ")}`}</p>
       {/* frontend#61 P7: quién, cuándo y por qué se dio de baja, para decidir si restaurar */}
       {p.baja ? <dl className="text-sm grid grid-cols-[auto_1fr] gap-x-3"><dt className="text-gris-2">Motivo</dt><dd>{p.baja.motivo || "Sin motivo registrado"}</dd>
         <dt className="text-gris-2">Fecha</dt><dd>{new Date(p.baja.fecha).toLocaleString("es-PE")}</dd>
         <dt className="text-gris-2">Responsable</dt><dd>{p.baja.responsable || "Sin responsable registrado"}</dd></dl>
-        : <p className="text-sm text-gris-2">Sin registro de la baja en la auditoría.</p>}<ConMotivo etiqueta="Restaurar" pendiente={op.pendiente} ejecutar={(motivo) => op.ejecutar(() => api.post(`/piezas/${p.id}/restaurar`, { motivo }))} /></li>)}</ul>{lista.data?.length === 0 && <p>No hay piezas dadas de baja.</p>}
+        : <p className="text-sm text-gris-2">Sin registro de la baja en la auditoría.</p>}<ConMotivo etiqueta="Restaurar" pendiente={op.pendiente} ejecutar={(motivo) => op.ejecutar(() => api.post(`/piezas/${p.id}/restaurar`, { motivo }))} /></div></li>)}</ul>{lista.data?.length === 0 && <p>No hay piezas dadas de baja.</p>}
   </Panel>;
 }

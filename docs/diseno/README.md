@@ -1,12 +1,12 @@
 # Refinamiento visual del museo
 
-La fuente de diseño es `prototipo-frontend/FRONTEND_DESIGN_SPEC.md`, §26, en la rama documental `docs/refinamiento-visual-20261122`. Este archivo explica la implementación y su verificación; no mantiene una segunda especificación.
+La segunda pasada incorpora navegación lateral y paleta petróleo/cobre/marfil. La fuente de diseño es `prototipo-frontend/FRONTEND_DESIGN_SPEC.md`, §26/§27, en la rama documental `docs/refinamiento-visual-20261122`. Este archivo explica la implementación y su verificación; no mantiene una segunda especificación.
 
 ## Implementación
 
 `SistemaVisual.tsx` reúne cabeceras, carga, estado vacío y fotografía ampliable. `Layout.tsx` mantiene los siete destinos y sus permisos, ofrece salto al contenido, menú móvil y cuenta cerrable por Escape. `index.css` y el tema centralizan controles, tipografía, tablas, estados y movimiento reducido para todas las páginas y los subflujos de F0/F1/F5/F6/F8/F9/F10.
 
-El catálogo permite alternar tarjetas y tabla sobre los mismos resultados, filtros y paginación. No solicita una fotografía por cada pieza: el listado no incluye ese dato. La ficha completa presenta la foto principal recibida por API con ampliación nativa y conserva los editores de archivos, sus metadatos y los permisos existentes. Los SVG institucionales no se alteran.
+El catálogo permite alternar tarjetas y tabla sobre los mismos resultados, filtros y paginación. Las tarjetas consumen `fotoPrincipal` de la misma respuesta paginada del listado, sin consultas por pieza. La ficha completa presenta la foto principal recibida por API con ampliación nativa y conserva los editores de archivos, sus metadatos y los permisos existentes. Los SVG institucionales no se alteran.
 
 ## Comprobaciones
 

@@ -20,6 +20,8 @@ export interface Seccion {
   Icono: ComponentType<LucideProps> | typeof IconoRetablo;
   /** Basta uno. Lista vacía: cualquier usuario con sesión. */
   permisos: string[];
+  /** Algunas rutas se abren desde acciones de su sección, sin enlace en el menú. */
+  mostrarEnMenu?: boolean;
 }
 
 /** Permisos que dan acceso a cada pantalla de Administración (ver AdministracionPage). */
@@ -39,7 +41,7 @@ export const SECCIONES: Seccion[] = [
     Icono: Warehouse,
     permisos: ["movimientos.registrar", "estados.cambiar", "ubicaciones.gestionar"],
   },
-  { ruta: "/importacion", nombre: "Importación", Icono: Upload, permisos: ["importacion.ver", "importacion.cargar"] },
+  { ruta: "/importacion", nombre: "Importación", Icono: Upload, mostrarEnMenu: false, permisos: ["importacion.ver", "importacion.cargar"] },
   { ruta: "/consultas-y-reportes", nombre: "Consultas y reportes", Icono: Search, permisos: ["reportes.ver"] },
   { ruta: "/asistente-ia", nombre: "Armar sala", Icono: Bot, permisos: ["ia.usar"] },
   { ruta: "/administracion", nombre: "Administración", Icono: Settings, permisos: PERMISOS_ADMINISTRACION },
@@ -48,5 +50,5 @@ export const SECCIONES: Seccion[] = [
 type PuedeAlguno = (...permisos: string[]) => boolean;
 
 export function seccionesPara(puedeAlguno: PuedeAlguno): Seccion[] {
-  return SECCIONES.filter((s) => puedeAlguno(...s.permisos));
+  return SECCIONES.filter((s) => s.mostrarEnMenu !== false && puedeAlguno(...s.permisos));
 }

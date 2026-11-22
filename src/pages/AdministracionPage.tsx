@@ -89,7 +89,7 @@ export function AdministracionPage() {
                 {g.secciones.map(({ clave, etiqueta, Icono }) => (
                   <button key={clave} aria-pressed={pestana === clave} onClick={() => setElegida(clave)}
                     className={`f0-nav-item ${pestana === clave ? "f0-nav-active" : ""}`}>
-                    <Icono size={20} aria-hidden="true" />{etiqueta}
+                    <Icono size={20} aria-hidden="true" /><span>{etiqueta}</span>
                   </button>
                 ))}
               </div>

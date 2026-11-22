@@ -1,7 +1,7 @@
 import { useConsultaF0 as useQuery } from "../../hooks/useConsultaF0";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, X, Search, Info } from "lucide-react";
+import { Pencil, Plus, X, Search } from "lucide-react";
 import { api, erroresPorCampo } from "../../lib/api";
 import { usePermisos } from "../../hooks/usePermisos";
 import type { CampoFicha, TipoLista } from "../../types";
@@ -65,7 +65,6 @@ export function CamposFicha() {
   return <section className="space-y-5" aria-label="Configuración de campos">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="section-title">Campos de la ficha</h2><p className="text-texto">{puede ? "Configura la información que recoge el museo." : "Consulta la información que recoge el museo. Tu rol no puede modificarla."}</p></div>
       {puede && <button type="button" className="btn-primary" onClick={() => abrir()}><Plus size={20} aria-hidden="true" />Crear campo adicional</button>}</div>
-    <p className="f0-notice"><Info size={20} className="shrink-0 mt-0.5" aria-hidden="true" /><span>Denominación es obligatoria provisionalmente (P30 sin respuesta del museo).</span></p>
     {aviso && <p role="status" className="font-semibold text-azul">{aviso}</p>}
     {abierto && <form ref={editor} onSubmit={enviar} className="scroll-mt-40 glass-panel p-4 sm:p-6 space-y-4" aria-label={seleccionado ? "Editar campo" : "Crear campo"}>
       <div className="flex items-center justify-between gap-2"><h3 className="section-title">{seleccionado ? `Editar: ${seleccionado.etiqueta}` : "Nuevo campo adicional"}</h3><button type="button" className="btn-glass" aria-label="Cerrar editor" onClick={() => setAbierto(false)}><X size={20} aria-hidden="true" /></button></div>
@@ -106,7 +105,7 @@ export function CamposFicha() {
           </tbody>)}
         </table></div>
       </div>
-      {!visibles.length && ordenados.length > 0 && <div className="p-8 text-center"><p className="font-semibold text-azul">No se encontraron campos</p><p className="mt-2 text-sm">Prueba otro nombre o cambia el filtro de estado.</p><button type="button" className="f0-action mt-4" onClick={() => { setBusqueda(""); setEstado("todos"); }}>Limpiar filtros</button></div>}
+      {!visibles.length && ordenados.length > 0 && <div className="p-8 text-left"><p className="font-semibold text-azul">No se encontraron campos</p><p className="mt-2 text-sm">Prueba otro nombre o cambia el filtro de estado.</p><button type="button" className="f0-action mt-4" onClick={() => { setBusqueda(""); setEstado("todos"); }}>Limpiar filtros</button></div>}
     </div>
     {!ordenados.length && <p>No hay campos configurados.</p>}
   </section>;
