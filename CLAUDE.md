@@ -298,3 +298,7 @@ Los endpoints (`/ia/sugerencias`, `/ia/extraccion-observaciones/*`, `/ia/detecci
 consultas y RIA-01 contra el backend local con Groq real. La evidencia (capturas con datos reales del inventario) **no se sube aquí, que es público**:
 va a `Base-de-conocimiento/flujos/evidencias/`. La CI corre `npm run test:unit`; las pruebas e2e necesitan backend y Chrome y se corren a mano.
 
+
+## Refinamiento visual unificado · 22/11/2026
+
+La rama `Refactorización` aplica el estándar de `../prototipo-frontend/FRONTEND_DESIGN_SPEC.md` §26 (rama documental `docs/refinamiento-visual-20261122`). La especificación sigue teniendo una sola fuente. Componentes comunes, controles de 44px, texto secundario accesible, primario rojo oscuro y fotografía completa; Dub/ORYZO son referencias, no dependencias. Se conservan contratos, permisos, siete destinos y formato de impresión. No crear consultas por cada pieza del catálogo para obtener una miniatura: la respuesta actual del listado no incluye fotografías. Las pruebas visuales usan datos sintéticos aislados y no certifican mutaciones del backend.
