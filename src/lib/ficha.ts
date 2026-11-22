@@ -4,6 +4,7 @@ import type { Codigo, Tenencia } from "../types/f1";
 export interface Archivo { id: string; url: string; titulo?: string; descripcion?: string; fechaDocumento?: string; restringidoUso: boolean; esPrincipal?: boolean; tipoVistaId?: string; fotografoId?: string; fechaFotografia?: string; orden?: number; }
 
 export interface Ficha {
+  fotoPrincipal?: { id: string; url: string } | null;
   id: string; version: string; estadoFicha: EstadoFicha; motivoRechazo: string | null;
   incompleta: boolean; camposFaltantes: string[]; campos: Record<string, unknown>;
   listas: Record<string, { id: string; etiqueta: string | null }[]>;

@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -8,23 +9,16 @@ import type { Pagina, ValorLista } from "../types";
 import { Aviso, ErrorConsulta } from "../components/FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
 import { EstadoUbicacion } from "../components/EstadoUbicacion";
+import { MapPin, X } from "lucide-react";
+import { SelectorUbicaciones } from "../components/SelectorUbicaciones";
 import { GestionUbicaciones } from "../components/GestionUbicaciones";
 
 /** Pantalla propia de sedes y ubicaciones (antes un plegable dentro de Ubicación y movimientos). */
 export function SedesPage() {
-  return <div className="space-y-6"><Link to="/ubicacion-y-movimientos" className="text-azul underline">← Volver a Ubicación y movimientos</Link><h1>Sedes y ubicaciones</h1><GestionUbicaciones /></div>;
+  return <div className="space-y-6"><Link to="/ubicacion-y-movimientos" className="text-azul underline">← Volver a Ubicación y movimientos</Link><CabeceraPagina titulo="Sedes y ubicaciones" descripcion="Organiza los lugares donde se conservan las piezas." /><GestionUbicaciones /></div>;
 }
 
 const SIN_UBICACION = "__sin__";
-
-/** Árbol sede › ubicación: elegir un nodo filtra la tabla de piezas por ese lugar. */
-function Arbol({ nodos, elegido, onElegir, nivel = 0 }: { nodos: Ubicacion[]; elegido: string; onElegir: (id: string) => void; nivel?: number }) {
-  return <ul className={nivel ? "ml-4 border-l border-linea pl-2" : "space-y-0.5"}>{nodos.filter((n) => n.activo).map((n) => <li key={n.id}>
-    <button type="button" aria-pressed={elegido === n.id} onClick={() => onElegir(n.id)}
-      className={`w-full text-left rounded-btn px-2 py-1 text-sm ${elegido === n.id ? "bg-azul text-white font-semibold" : "hover:bg-fondo-suave text-texto"} ${n.nivelTipo === "sede" ? "font-semibold" : ""}`}>{n.nombre}</button>
-    {n.hijos && n.hijos.length > 0 && <Arbol nodos={n.hijos} elegido={elegido} onElegir={onElegir} nivel={nivel + 1} />}
-  </li>)}</ul>;
-}
 
 export function UbicacionMovimientosPage() {
   const { puede, sesion } = usePermisos();
@@ -66,14 +60,11 @@ export function UbicacionMovimientosPage() {
     if (!fallos.length) { setDestino(""); setMotivoMov(""); setEstado(""); setMotivoEst(""); }
   }
 
-  return <div className="space-y-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1>Ubicación y movimientos</h1><p>Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez.</p></div>
-    {puede("ubicaciones.gestionar") && <Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link>}</div>
-    {puede("piezas.ver") && <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
-      {veUbicacion && <nav aria-label="Sedes y ubicaciones" className="glass-panel p-3 space-y-2 self-start"><h2 className="section-title">Dónde</h2>
-        <button type="button" aria-pressed={lugar === ""} onClick={() => elegir("")} className={`w-full text-left rounded-btn px-2 py-1 text-sm ${lugar === "" ? "bg-azul text-white font-semibold" : "hover:bg-fondo-suave"}`}>Todas las piezas</button>
-        <button type="button" aria-pressed={lugar === SIN_UBICACION} onClick={() => elegir(SIN_UBICACION)} className={`w-full text-left rounded-btn px-2 py-1 text-sm ${lugar === SIN_UBICACION ? "bg-azul text-white font-semibold" : "hover:bg-fondo-suave"}`}>Sin ubicación</button>
-        <Arbol nodos={arbol.data ?? []} elegido={lugar} onElegir={elegir} /><ErrorConsulta error={arbol.error} /></nav>}
-      <section className="glass-panel p-4 space-y-3">
+  return <div className="space-y-6"><CabeceraPagina titulo="Ubicación y movimientos" descripcion="Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez." acciones={puede("ubicaciones.gestionar") && <Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link>} />
+    {puede("piezas.ver") && <div className={`grid grid-cols-1 gap-4 ${veUbicacion ? "lg:grid-cols-[18rem_minmax(0,1fr)]" : ""}`}>
+      {veUbicacion && <SelectorUbicaciones nodos={arbol.data ?? []} elegido={lugar} elegir={elegir} error={arbol.error} cargando={arbol.isPending} />}
+      <section className="location-results glass-panel p-4 space-y-3 min-w-0">
+        {veUbicacion && <div className="location-active-filter" role="status"><MapPin size={18} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{lugar === SIN_UBICACION ? "Sin ubicación" : lugar ? destinos(arbol.data ?? []).find(u => u.id === lugar)?.etiqueta ?? "Ubicación seleccionada" : "Todas las ubicaciones"}</span>{lugar && <button type="button" className="f0-action shrink-0" aria-label="Quitar filtro de ubicación" onClick={() => elegir("")}><X size={16} aria-hidden="true" /></button>}</div>}
         <form className="flex flex-wrap gap-3 items-end" onSubmit={(e) => { e.preventDefault(); setFiltro({ q, codigo }); setPagina(1); setMarcadas(new Set()); }}>
           <label>Denominación o descripción<input className="glass-input" value={q} onChange={(e) => setQ(e.target.value)} /></label><label>Código de pieza<input className="glass-input" value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label><button className="btn-primary">Buscar pieza</button></form>
         <ErrorConsulta error={piezas.error || pieza.error} /><Aviso mensaje={op.mensaje} />
@@ -91,16 +82,16 @@ export function UbicacionMovimientosPage() {
         </div>}
         {resultado && <p role="status">{resultado}</p>}
         {piezas.isPending && <p>Cargando piezas…</p>}
-        <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave"><tr>
+        <div className="overflow-x-auto"><table className="w-full min-w-[42rem] text-sm text-left"><thead className="text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave"><tr>
           <th className="px-3 py-2"><input type="checkbox" aria-label="Marcar todas las piezas de la página" checked={todasMarcadas} onChange={() => setMarcadas(todasMarcadas ? new Set() : new Set(filas.map((p) => p.id)))} /></th>
           <th className="px-3 py-2">Pieza / códigos</th>{veUbicacion && <th className="px-3 py-2">Ubicación</th>}{veEstado && <th className="px-3 py-2">Estado</th>}<th className="px-3 py-2"><span className="sr-only">Detalle</span></th></tr></thead>
           <tbody className="divide-y divide-linea">{filas.map((p) => <tr key={p.id} className={p.id === id ? "bg-fondo-suave" : undefined}>
             <td className="px-3 py-2"><input type="checkbox" aria-label={`Marcar ${nombreFicha(p)}`} checked={marcadas.has(p.id)} onChange={() => alternar(p.id)} /></td>
             <td className="px-3 py-2"><span className="font-semibold">{nombreFicha(p)}</span><p className="text-gris-2">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</p></td>
-            {veUbicacion && <td className="px-3 py-2">{p.etiquetas.ubicacion_actual_id || "Sin ubicación"}</td>}{veEstado && <td className="px-3 py-2">{p.etiquetas.estado_pieza_id || "Sin estado"}</td>}
+            {veUbicacion && <td className="px-3 py-2">{p.etiquetas.ubicacion_actual_id || "Sin ubicación"}</td>}{veEstado && <td className="px-3 py-2 whitespace-nowrap">{p.etiquetas.estado_pieza_id || "Sin estado"}</td>}
             <td className="px-3 py-2"><button type="button" className="text-azul underline font-semibold" aria-label={`Ver historial de ${nombreFicha(p)}`} onClick={() => setId(p.id)}>Historial</button></td></tr>)}</tbody></table>
           {piezas.data?.total === 0 && <p className="p-3">No hay piezas con estos filtros.</p>}</div>
-        <div className="flex gap-3 items-center"><button className="btn-glass" disabled={pagina === 1} onClick={() => setPagina(pagina - 1)}>Anterior</button><p>Página {pagina} · {contarPiezas(piezas.data?.total ?? 0)}</p><button className="btn-glass" disabled={!piezas.data || pagina * 20 >= piezas.data.total} onClick={() => setPagina(pagina + 1)}>Siguiente</button></div>
+        <div className="flex flex-wrap gap-3 items-center"><button className="btn-glass" disabled={pagina === 1} onClick={() => setPagina(pagina - 1)}>Anterior</button><p>Página {pagina} · {contarPiezas(piezas.data?.total ?? 0)}</p><button className="btn-glass" disabled={!piezas.data || pagina * 20 >= piezas.data.total} onClick={() => setPagina(pagina + 1)}>Siguiente</button></div>
       </section>
     </div>}
     {pieza.data && <><div className="flex gap-4 items-center">{qr?.id === id && <img src={qr.url} width="120" height="120" alt="Código QR de la ficha" />}<div><Link className="text-azul underline" to={`/coleccion/${id}`}>{nombreFicha(pieza.data)}</Link><button className="btn-glass print:hidden" onClick={() => window.print()}>Imprimir QR</button></div></div><EstadoUbicacion key={id} pieza={pieza.data} /></>}

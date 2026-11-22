@@ -88,19 +88,23 @@ export function ArmarSala() {
       {/* Indexar es solo del Administrador: permiso propio ia.indexar (museo-backend#163). */}
       {puede("ia.indexar") && <EstadoIndiceSalas />}
 
-      <form onSubmit={onSugerir} className="glass-panel p-5 flex flex-col sm:flex-row gap-3 sm:items-end">
-        <label className="flex-1">
-          <span className="form-label">Tema o estilo</span>
-          <input
+      <form onSubmit={onSugerir} className="sala-form glass-panel p-4 sm:p-5">
+        <label className="sala-tema min-w-0">
+          <span id="sala-tema-etiqueta" className="form-label">Tema o estilo</span>
+          <textarea
+            rows={3}
+            aria-labelledby="sala-tema-etiqueta"
+            aria-describedby="sala-tema-ayuda"
             value={pedido}
             onChange={(e) => setPedido(e.target.value)}
-            placeholder='Ej.: "Navidad andina", "máscaras de madera de Puno", "toros de Pucará"'
+            placeholder="Describe el tema o estilo de la sala"
             maxLength={500}
             className="glass-input"
             required
           />
+          <p id="sala-tema-ayuda" className="mt-2 text-sm text-gris-2">Por ejemplo: Navidad andina, máscaras de madera de Puno o toros de Pucará.</p>
         </label>
-        <label className="sm:w-36">
+        <label className="sala-cantidad min-w-0">
           <span className="form-label">Piezas ({CANTIDAD_MIN}–{CANTIDAD_MAX})</span>
           <input
             type="number"
@@ -166,8 +170,8 @@ export function ArmarSala() {
                   {exportar.isPending ? "Exportando..." : "Exportar selección a Excel"}
                 </button>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto" role="region" aria-label="Piezas propuestas para la sala" tabIndex={0}>
+                <table className="w-full min-w-[60rem] text-sm">
                   <thead className="text-left text-gris-2 text-xs uppercase tracking-wide bg-fondo-suave">
                     <tr>
                       <th className="px-4 py-3">

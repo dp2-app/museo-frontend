@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, UserPlus } from "lucide-react";
+import { KeyRound, UserCheck, UserMinus, UserPlus, UserX } from "lucide-react";
 import { useConsultaF0 as useQuery } from "../../hooks/useConsultaF0";
 import { usePermisos } from "../../hooks/usePermisos";
 import { api, erroresPorCampo } from "../../lib/api";
@@ -42,7 +42,7 @@ function FilaUsuario({ usuario, roles, puedeEditar, esYo }: { usuario: Usuario; 
         </th>
         <td>
           {puedeEditar ? (
-            <select className="glass-input !min-h-11" aria-label={`Rol de ${usuario.nombre}`} value={usuario.rol.id} disabled={editar.isPending}
+            <select className="glass-input user-role-select !min-h-11" aria-label={`Rol de ${usuario.nombre}`} value={usuario.rol.id} disabled={editar.isPending}
               onChange={(e) => { setAviso(""); editar.mutate({ rolId: e.target.value }); }}>
               {roles.map((r) => <option key={r.id} value={r.id} disabled={!r.activo && r.id !== usuario.rol.id}>{r.nombre}{r.activo ? "" : " (inactivo)"}</option>)}
             </select>
@@ -57,9 +57,9 @@ function FilaUsuario({ usuario, roles, puedeEditar, esYo }: { usuario: Usuario; 
             <div className="flex flex-wrap gap-1">
               {local && <button type="button" className="f0-action" onClick={() => { setModo(modo === "clave" ? "ver" : "clave"); setAviso(""); }}><KeyRound size={18} aria-hidden="true" />Contraseña</button>}
               <button type="button" className="f0-action" disabled={editar.isPending} onClick={() => { setAviso(""); editar.mutate({ activo: !usuario.activo }); }}>
-                {usuario.activo ? "Desactivar" : "Activar"}
+                {usuario.activo ? <UserX size={18} aria-hidden="true" /> : <UserCheck size={18} aria-hidden="true" />}{usuario.activo ? "Desactivar" : "Activar"}
               </button>
-              <button type="button" className="f0-action" onClick={() => { setModo(modo === "baja" ? "ver" : "baja"); setAviso(""); }}>Dar de baja</button>
+              <button type="button" className="f0-action" onClick={() => { setModo(modo === "baja" ? "ver" : "baja"); setAviso(""); }}><UserMinus size={18} aria-hidden="true" />Dar de baja</button>
             </div>
           )}
         </td>
@@ -108,7 +108,7 @@ function NuevoUsuario({ roles }: { roles: RolDetalle[] }) {
     <form className="f0-surface space-y-4" aria-label="Nuevo usuario" onSubmit={(e: FormEvent) => { e.preventDefault(); setAviso(""); crear.mutate(); }}>
       <h3 className="section-title flex items-center gap-2"><UserPlus size={20} aria-hidden="true" />Nuevo usuario</h3>
       <ErrorOperacion error={crear.error && Object.keys(errores).length === 0 ? crear.error : null} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="user-create-grid grid gap-5 sm:grid-cols-2">
         <div><Etiqueta htmlFor="u-nombre">Nombre *</Etiqueta>
           <input id="u-nombre" className="glass-input" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} aria-invalid={Boolean(errores.nombre)} />
           <ErrorCampo id="u-nombre-error" mensaje={errores.nombre} /></div>
@@ -144,7 +144,7 @@ export function Usuarios() {
   const listaRoles = roles.data ?? [];
 
   return (
-    <section className="space-y-5" aria-label="Usuarios">
+    <section className="users-admin space-y-5" aria-label="Usuarios">
       <div>
         <h2 className="section-title">Usuarios</h2>
         <p className="text-texto">{puedeEditar
@@ -154,7 +154,8 @@ export function Usuarios() {
       {puedeEditar && <NuevoUsuario roles={listaRoles} />}
       <div className="f0-catalogue">
         <div className="overflow-x-auto [contain:paint]" role="region" aria-label="Lista de usuarios" tabIndex={0}>
-          <table className="f0-table min-w-[44rem]">
+          <table className="f0-table users-table min-w-[56rem] table-fixed">
+            <colgroup><col className="w-[28%]" /><col className="w-[28%]" /><col className="w-[20%]" /><col className="w-[24%]" /></colgroup>
             <thead><tr>{["Usuario", "Rol", "Estado", puedeEditar ? "Acciones" : ""].map((t, i) => <th scope="col" key={i}>{t}</th>)}</tr></thead>
             <tbody>
               {usuarios.data.map((u) => <FilaUsuario key={u.id} usuario={u} roles={listaRoles} puedeEditar={puedeEditar} esYo={u.id === sesion?.usuario.id} />)}

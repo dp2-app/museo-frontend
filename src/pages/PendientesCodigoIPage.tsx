@@ -1,3 +1,5 @@
+import { IconoRetablo } from "../components/IconoRetablo";
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +14,6 @@ import type { Pagina } from "../types";
 import type { EstadoFicha } from "../types";
 import type { Codigo, PiezaResumenF1 } from "../types/f1";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
-import { IconoRetablo } from "../components/IconoRetablo";
 import { EstadoConsulta } from "../components/f0/Comun";
 import { InsigniaPendienteI } from "../components/f1/PendienteCodigoI";
 import { AgregarCodigo } from "../components/f1/CampoCodigo";
@@ -76,13 +77,7 @@ export function PendientesCodigoIPage() {
   return <div className="space-y-6">
     <div>
       <Link to="/coleccion" className="btn-danger-text inline-flex items-center gap-1 text-sm"><ChevronLeft size={20} aria-hidden="true" />Colección</Link>
-      <div className="mt-2 flex items-center gap-4">
-        <span className="hidden sm:flex h-14 w-14 items-center justify-center rounded-card bg-white border border-linea"><IconoRetablo size={24} className="text-azul" /></span>
-        <div>
-          <h1>Pendientes de código I</h1>
-          <p className="text-sm text-gris-2">Piezas registradas sin código de inventario cuyo régimen lo admite. Las piezas en comodato o préstamo no aparecen.</p>
-        </div>
-      </div>
+      <div className="mt-4"><CabeceraPagina titulo="Pendientes de código I" descripcion="Piezas registradas sin código de inventario cuyo régimen lo admite. Las piezas en comodato o préstamo no aparecen." /></div>
     </div>
 
     <form className="f0-toolbar f0-catalogue" role="search" onSubmit={buscar}>

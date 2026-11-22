@@ -1,3 +1,4 @@
+import { CabeceraPagina } from "../components/SistemaVisual";
 import { Fragment, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -156,7 +157,7 @@ export function CargaDetailPage() {
   if (!carga) return <div className="space-y-3"><Link to="/importacion">Volver a importación</Link><p role="alert">{extraerMensajeError(cargaQuery.error)}</p><button className="btn-glass" onClick={() => { void cargaQuery.refetch(); }}>Reintentar</button></div>;
   return <div className="space-y-5 f5-importacion">
     <header><Link to="/importacion" className="text-clay-700 underline">Volver a importación</Link>
-      <h1 className="mt-2 break-words">{carga.archivoNombre}</h1><p>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></p>
+      <div className="mt-4"><CabeceraPagina titulo={carga.archivoNombre} descripcion={<>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></>} /></div>
       <p>{contar(carga.totalFilas, "fila", "filas")} · {contar(carga.filasConError, "con error que impide aprobar", "con errores que impiden aprobar")} · {contar(carga.filasRechazadas, "rechazada", "rechazadas")}</p>
       <p data-bitacora-personas>Cargada{carga.usuarioNombre && <> por {carga.usuarioNombre}</>} el {fecha(carga.iniciadaEn)}
         {carga.aprobadaEn && <> · aprobada{carga.aprobadaPorNombre && <> por {carga.aprobadaPorNombre}</>} el {fecha(carga.aprobadaEn)}</>}

@@ -36,9 +36,9 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicad
   const visible = (clave: keyof FiltrosConsulta) => !CAMPO_DE_FILTRO[clave] || !camposOcultos.includes(CAMPO_DE_FILTRO[clave]!);
   const cambiar = (clave: keyof FiltrosConsulta, valor: string | boolean) => setF((previo) => ({ ...previo, [clave]: valor }));
   const texto = (clave: keyof FiltrosConsulta, etiqueta: string) => visible(clave) && (
-    <label className="form-label">{etiqueta}<input className="glass-input" value={String(f[clave] ?? "")} onChange={(e) => cambiar(clave, e.target.value)} /></label>);
+    <label className="form-label"><span>{etiqueta}</span><input className="glass-input" value={String(f[clave] ?? "")} onChange={(e) => cambiar(clave, e.target.value)} /></label>);
   const seleccion = (clave: keyof FiltrosConsulta, etiqueta: string, valores: { id: string; nombre: string }[]) => visible(clave) && (
-    <label className="form-label">{etiqueta}
+    <label className="form-label"><span>{etiqueta}</span>
       <select className="glass-input" value={String(f[clave] ?? "")} onChange={(e) => cambiar(clave, e.target.value)}>
         <option value="">Todos</option>{valores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
       </select></label>);
