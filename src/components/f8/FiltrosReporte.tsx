@@ -14,7 +14,7 @@ const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision
 
 /** Los mismos filtros de la búsqueda (F7) para la búsqueda y para todos los reportes. Un filtro sobre un campo oculto para el rol no se muestra. */
 /** `faltaCampo` lleva la clave de `camposFaltantes`; las fijas se nombran aquí y las demás por su etiqueta de la ficha. */
-const FALTA_CAMPO: Record<string, string> = { codigos_externos: "código del museo", fotografias: "fotografía" };
+const FALTA_CAMPO: Record<string, string> = { codigos_externos: "código del museo", fotografias: "fotografía", campos_ficha: "campos obligatorios de la ficha" };
 
 export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicados, inicial, onAplicar }: Props) {
   const [f, setF] = useState<FiltrosConsulta>(inicial ?? {});
