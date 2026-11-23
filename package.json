@@ -16,14 +16,15 @@
     "test:importacion": "node tests/importacion.e2e.cjs",
     "test:f2-f6": "node tests/f2-f6.e2e.cjs",
     "test:f2-f6:acceso": "node tests/f2-f6-acceso.e2e.cjs",
-    "test:unit": "node --experimental-strip-types --test tests/ficha.unit.test.mjs",
+    "test:unit": "node --experimental-strip-types --test tests/ficha.unit.test.mjs tests/fotoCamara.unit.test.mjs",
     "test:f2-f6:limites": "node tests/f2-f6-limites.e2e.cjs",
     "test:f2-f6:importados": "node tests/f2-f6-importados.e2e.cjs",
     "test:pantallas": "node tests/pantallas-diagnostico.e2e.cjs",
     "test:f5": "node tests/f5.e2e.cjs",
     "test:f7": "node tests/f7.e2e.cjs",
     "test:f1:asignar": "node tests/f1-asignar.e2e.cjs",
-    "test:visual": "node tests/visual.e2e.cjs"
+    "test:visual": "node tests/visual.e2e.cjs",
+    "test:foto-camara": "node tests/foto-camara.e2e.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
