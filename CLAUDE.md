@@ -309,3 +309,11 @@ La segunda pasada visual solicitada por el usuario sigue §27: navegación later
 ### Acceso visual · 22/11/2026
 
 `LoginPage` usa los activos de marca existentes, panel editorial petróleo/arena, tarjeta de acceso sobre marfil y acción cobre. No depende de imágenes externas. Incluye control accesible para mostrar/ocultar contraseña, estados de espera y espacio reservado para errores. Se conservan `useAuth`, la autenticación real y el retorno a la ruta previa tras vencer la sesión. No añadir enlaces de recuperación de contraseña sin un flujo implementado. Comprobado con Playwright en cinco tamaños, errores/espera simulados y acceso real contra la copia local aislada.
+
+## Fotografía desde el celular (23/11/2026)
+
+En la ficha, el panel «Fotografías» muestra **«Fotografía rápida»** (`components/TomarFotoPieza.tsx`) con el permiso `fotos.gestionar`: «Tomar foto» abre la cámara trasera (`<input type="file" accept="image/*" capture="environment">`; en el computador abre el selector de archivos), se ve la vista previa y «Guardar fotografía» sube la imagen y la registra con `POST /piezas/{id}/fotografias` en un solo paso. «Elegir de la galería» y «Repetir» completan el flujo.
+- `lib/fotoCamara.ts` reduce la foto a 2400 px de lado mayor, respeta la orientación EXIF y la pasa a JPEG: una foto de 8–12 MB sale en ~0,5 MB y cumple siempre «JPG o PNG hasta 15 MB». HEIC que el navegador no pueda leer da un aviso de cambiar la cámara a «Más compatible».
+- Usa la subida directa a Cloudinary (`lib/cloudinary.ts`); sin `VITE_CLOUDINARY_CLOUD_NAME`/`VITE_CLOUDINARY_UPLOAD_PRESET` el panel dice que falta configurarla y queda solo el formulario por URL. No hay cambios en el backend ni en la API.
+- Camino rápido para completar fichas: el chip «Fotografía» de «Qué le falta» (`?campo=fotografias`) lleva a esa sección; al guardar, la ficha se refresca y ese faltante desaparece.
+- Pruebas: `npm run test:unit` (reducción de tamaño) y `npm run test:foto-camara` (Pixel 7 emulado contra el backend local; **Cloudinary se intercepta**, así que la subida real a Cloudinary no está certificada por esa prueba).

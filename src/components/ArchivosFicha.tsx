@@ -1,4 +1,5 @@
 import { FotoPieza } from "./SistemaVisual";
+import { TomarFotoPieza } from "./TomarFotoPieza";
 import { useState, type FormEvent } from "react";
 import { api } from "../lib/api";
 import { cloudinaryConfigurado, subirImagenACloudinary } from "../lib/cloudinary";
@@ -35,6 +36,7 @@ export function ArchivosFicha({ piezaId, documentos = false, inicial }: { piezaI
   }
   return <Panel titulo={documentos ? "Documentos asociados" : "Fotografías"}><ErrorConsulta error={archivos.error || tipos.error || personas.error} /><Aviso mensaje={op.mensaje} />
     {!gestionar && <button className="btn-primary" disabled title="Tu rol solo puede consultar los archivos">{documentos ? "Asociar documento" : "Añadir fotografía"}</button>}
+    {!documentos && gestionar && (cloudinaryConfigurado() ? <TomarFotoPieza ruta={ruta} /> : <p className="text-sm">Para tomar fotos desde el celular, quien administra el sistema debe configurar la subida directa de imágenes.</p>)}
     {archivos.isPending && <p>Cargando archivos…</p>}{archivos.data?.length === 0 && <p>{documentos ? "No hay documentos registrados." : "No hay fotografías registradas."}</p>}
     <div className="grid gap-4 sm:grid-cols-2">{archivos.data?.map((a, i) => <article key={a.id} className="rounded-card border border-linea p-3 space-y-2 min-w-0" draggable={!documentos && gestionar && !op.pendiente} onDragStart={() => setArrastrada(a.id)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (!documentos && gestionar && arrastrada) mover(archivos.data!.findIndex((x) => x.id === arrastrada), i); setArrastrada(""); }}>
       {!documentos && <FotoPieza url={a.url} nombre={`Fotografía ${i + 1}${a.esPrincipal ? ", principal" : ""}`} ampliable />}
