@@ -289,6 +289,7 @@ export interface PiezaSala {
   ubicacion: string | null;
   estadoFicha: string;
   alertas: AlertaSala[];
+  fotoPrincipal?: { id: string; url: string } | null;
 }
 
 export interface SalaSugerida {

@@ -1,7 +1,7 @@
 import { CabeceraPagina } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Database, FileDown, Info, Printer, Search } from "lucide-react";
+import { ChevronDown, Database, FileDown, Info, Printer, Search, SlidersHorizontal } from "lucide-react";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { FiltrosReporte } from "../components/f8/FiltrosReporte";
 import { CuerpoReporte, Encabezado } from "../components/f8/VistaReporte";
@@ -41,7 +41,7 @@ const AYUDA: Record<Pestana, string> = {
 /** Subtítulo de la página según la pestaña: dice a qué ir para otra cosa (propuesta de mejoras F8). */
 const SUBTITULO: Record<Pestana, string> = {
   busqueda: "Busca con filtros combinados, genera reportes y expórtalos sin los campos restringidos para tu rol.",
-  "estado-catalogo": "El mismo estado que ves en Inicio, con todo el detalle: historia, desglose por campo y por colección, filtros y exportación.",
+  "estado-catalogo": "Avance, cobertura y oportunidades de mejora: del panorama del catálogo a las piezas que necesitan atención.",
   inventario: "El Inventario es el padrón de piezas: una fila por pieza. Para porcentajes y avance, ve a «Estado del catálogo».",
   "por-estado": "Cuántas piezas hay por estado de la pieza y por estado de conservación, con los filtros de arriba.",
   "por-ubicacion": "Cuántas piezas hay en cada ubicación, con los filtros de arriba.",
@@ -59,7 +59,7 @@ export function ConsultasReportesPage() {
   const catalogo = useCatalogoFicha();
   const etiquetas = Object.fromEntries((catalogo.data ?? []).map((c) => [c.clave, c.etiqueta]));
   const [filtros, setFiltros] = useState<FiltrosConsulta>({});
-  const [pestana, setPestana] = useState<Pestana>("busqueda");
+  const [pestana, setPestana] = useState<Pestana>("estado-catalogo");
   const [pagina, setPagina] = useState(1);
   const [paginaReporte, setPaginaReporte] = useState(1);
   // Reportes paginados por el servidor: para imprimir se pide el conjunto completo (hasta MAX_FILAS_IMPRESION) y se dibuja solo al imprimir.
@@ -69,12 +69,13 @@ export function ConsultasReportesPage() {
   const [descargando, setDescargando] = useState(false);
   const [versionFormulario, setVersionFormulario] = useState(0);
   const [ayudaAbierta, setAyudaAbierta] = useState(false);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const params = parametros(filtros);
   const verUbicacion = !camposOcultos.includes("ubicacion_actual_id");
   const verEstado = !camposOcultos.includes("estado_pieza_id");
 
   const pestanas: [Pestana, string][] = [
-    ["busqueda", "Búsqueda"], ["estado-catalogo", "Estado del catálogo"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
+    ["estado-catalogo", "Estado del catálogo"], ["busqueda", "Búsqueda"], ["inventario", "Inventario"], ["por-estado", "Por estado"],
     ...(camposOcultos.includes("ubicacion_actual_id") ? [] : [["por-ubicacion", "Por ubicación"] as [Pestana, string]]),
     ["informacion-incompleta", "Información incompleta"],
   ];
@@ -108,6 +109,7 @@ export function ConsultasReportesPage() {
     olvidarImpresion();
     setMensaje("");
     setPestana("busqueda");
+    setFiltrosAbiertos(true);
     setVersionFormulario((v) => v + 1);
   }
   function olvidarImpresion() { setImpresion(null); setPreparandoImpresion(false); }
@@ -143,26 +145,40 @@ export function ConsultasReportesPage() {
   }, [tituloReporte]);
 
   return (
-    <div className="space-y-6">
+    <div className="reports-page space-y-6">
       <CabeceraPagina titulo="Consultas y reportes" icono={Search} descripcion={SUBTITULO[pestana]} className="print:hidden" />
 
-      <FiltrosReporte key={versionFormulario} inicial={filtros} opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
-                      onAplicar={(f) => { setFiltros(f); setPagina(1); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }} />
-
-      <div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea print:hidden">
+      <div className="report-tabbar print:hidden"><div role="tablist" aria-label="Consultas y reportes" className="flex flex-wrap gap-2 border-b border-linea">
         {pestanas.map(([clave, etiqueta]) => (
-          <button key={clave} role="tab" aria-selected={pestana === clave} onClick={() => { setPestana(clave); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }}
+          <button key={clave} id={`reporte-tab-${clave}`} role="tab" aria-controls="reporte-panel" tabIndex={pestana === clave ? 0 : -1} aria-selected={pestana === clave} onClick={() => { setPestana(clave); setFiltrosAbiertos(clave === "busqueda"); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }}
+                  onKeyDown={(e) => {
+                    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
+                    e.preventDefault();
+                    const actual = pestanas.findIndex(([c]) => c === clave);
+                    const indice = e.key === "Home" ? 0 : e.key === "End" ? pestanas.length - 1 : (actual + (e.key === "ArrowRight" ? 1 : -1) + pestanas.length) % pestanas.length;
+                    const siguiente = pestanas[indice][0];
+                    setPestana(siguiente); setFiltrosAbiertos(siguiente === "busqueda"); setPaginaReporte(1); olvidarImpresion(); setMensaje("");
+                    document.getElementById(`reporte-tab-${siguiente}`)?.focus();
+                  }}
                   className={`px-4 py-2 -mb-px text-sm font-semibold border-b-2 transition ${
                     pestana === clave ? "border-rojo text-azul" : "border-transparent text-gris-2 hover:text-azul"}`}>
             {etiqueta}
           </button>
         ))}
-        <button type="button" className="ml-auto self-center p-1.5 text-azul" aria-expanded={ayudaAbierta} aria-controls="ayuda-pestana"
+        </div>
+        <button type="button" className="btn-glass self-start !px-3" aria-expanded={ayudaAbierta} aria-controls="ayuda-pestana"
                 aria-label={`Qué es la pestaña ${pestanas.find(([c]) => c === pestana)?.[1] ?? ""}`} title="Qué muestra esta pestaña" onClick={() => setAyudaAbierta(!ayudaAbierta)}>
           <Info size={18} aria-hidden="true" />
         </button>
       </div>
+      <p className="report-tabs-hint sm:hidden print:hidden">Desliza las pestañas para ver más reportes.</p>
       {ayudaAbierta && <p id="ayuda-pestana" role="note" className="text-sm bg-fondo-suave rounded-card px-4 py-3 print:hidden">{AYUDA[pestana]}</p>}
+
+      <details className="report-filters-details print:hidden" open={filtrosAbiertos} onToggle={(e) => setFiltrosAbiertos(e.currentTarget.open)}>
+        <summary><SlidersHorizontal size={18} aria-hidden="true" /><span>Filtrar el catálogo{Object.keys(params).length > 0 ? ` · ${Object.keys(params).length} ${Object.keys(params).length === 1 ? "filtro aplicado" : "filtros aplicados"}` : ""}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+        <FiltrosReporte key={versionFormulario} inicial={filtros} opciones={opciones} camposOcultos={camposOcultos} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
+          onAplicar={(f) => { setFiltros(f); setPagina(1); setPaginaReporte(1); olvidarImpresion(); setMensaje(""); }} />
+      </details>
 
       <div className="flex flex-wrap gap-2 items-center print:hidden">
         {puede("reportes.exportar") && (
@@ -177,18 +193,18 @@ export function ConsultasReportesPage() {
         {pestana !== "busqueda" && (
           <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={reportePendiente || !reporte.data || demasiadasParaImprimir || preparandoImpresion} onClick={imprimir}
                   title={demasiadasParaImprimir ? "Demasiadas piezas para imprimir" : undefined}>
-            <Printer size={16} aria-hidden="true" /> Imprimir o guardar como PDF
+            <Printer size={16} aria-hidden="true" /><span className="sr-only sm:not-sr-only">Imprimir o guardar como PDF</span>
           </button>
         )}
         {puede("reportes.exportar_total") && (
           <button type="button" className="btn-glass !py-1.5 !px-3 !text-sm" disabled={descargando}
                   title="Todas las piezas con todos los campos que tu rol ve; no aplica los filtros"
                   onClick={() => exportar("/exportaciones/catalogo-completo.xlsx", `catalogo_completo_${hoy}.xlsx`, false)}>
-            <Database size={16} aria-hidden="true" /> Exportar catálogo completo
+            <Database size={16} aria-hidden="true" /><span className="sr-only sm:not-sr-only">Exportar catálogo completo</span>
           </button>
         )}
         {pestana !== "busqueda" && reportePendiente && <span className="text-sm text-gris-2">Generando el reporte… Podrás imprimirlo cuando termine.</span>}
-        {consultando && <span className="text-sm text-gris-2">Exportar Excel se habilita cuando termine de generarse.</span>}
+        {consultando && puede("reportes.exportar") && <span className="text-sm text-gris-2">Exportar Excel se habilita cuando termine de generarse.</span>}
         {demasiadasParaImprimir && (
           <p role="status" className="text-sm">
             Este reporte tiene {filasImpresion.toLocaleString("es-PE")} piezas y el navegador no puede imprimirlo completo (máximo {MAX_FILAS_IMPRESION.toLocaleString("es-PE")}).
@@ -206,7 +222,7 @@ export function ConsultasReportesPage() {
 
       {/* Tabla de maquetación solo para imprimir: su encabezado y pie vacíos se repiten en cada hoja y hacen de margen (ver index.css). */}
       <table role="presentation" className="print-hoja"><thead aria-hidden="true"><tr><td><div className="print-espacio" /></td></tr></thead><tbody><tr><td>
-      <div role="tabpanel" className="glass-panel p-4 space-y-4 print:p-0">
+      <div id="reporte-panel" role="tabpanel" aria-labelledby={`reporte-tab-${pestana}`} className={`glass-panel p-4 space-y-4 print:p-0 ${pestana === "estado-catalogo" ? "report-overview-panel" : ""}`}>
         {pestana === "busqueda" ? (
           <>
             <ErrorReporte error={busqueda.error} onReintentar={() => busqueda.refetch()} />
@@ -247,7 +263,7 @@ export function ConsultasReportesPage() {
             {reportePendiente && <p role="status">Generando el reporte…</p>}
             {reporte.data && !reporte.isFetching && (
               <div className={impresion?.clave === pestana ? "space-y-4 print:hidden" : "space-y-4"}>
-                <Encabezado reporte={reporte.data} total={totalDe(pestana, reporte.data)} nombres={nombresDeOpciones(opciones)} />
+                <Encabezado reporte={reporte.data} total={totalDe(pestana, reporte.data)} nombres={nombresDeOpciones(opciones)} compacto={pestana === "estado-catalogo"} />
                 <CuerpoReporte clave={pestana} datos={reporte.data} etiquetas={etiquetas} onVerPiezas={verPiezas} />
                 {paginado && hayVariasPaginas && (
                   <div className="flex flex-wrap gap-3 items-center print:hidden">

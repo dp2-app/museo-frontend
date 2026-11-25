@@ -1,7 +1,7 @@
 import { CabeceraPagina } from "../components/SistemaVisual";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { datosApi, extraerMensajeError } from "../lib/api";
 import { usePermisos } from "../hooks/usePermisos";
 import { contar } from "../lib/texto";
@@ -21,10 +21,12 @@ export function CuracionImportacionPage() {
   const [aviso, setAviso] = useState("");
   const [estado, setEstado] = useState<"" | "pendiente" | "validado">("pendiente");
   const [pagina, setPagina] = useState(1);
+  const [direccion] = useSearchParams();
+  const cargaId = direccion.get("cargaId") || undefined;
   const cola = useQuery({
-    queryKey: ["curacion-importacion", estado, pagina],
+    queryKey: ["curacion-importacion", estado, pagina, cargaId],
     queryFn: async () => (await datosApi.get<PaginaCuracion>("/importacion/curacion",
-      { params: { estado: estado || undefined, pagina, tamano: TAMANO } })).data,
+      { params: { estado: estado || undefined, pagina, tamano: TAMANO, cargaId } })).data,
   });
   const validar = useMutation({
     mutationFn: async (id: string) =>
@@ -57,6 +59,7 @@ export function CuracionImportacionPage() {
         <p className="text-sm" aria-live="polite">{cola.isSuccess ? contar(total, "registro", "registros") : ""}</p>
       </div>
 
+      {cargaId && <p className="text-sm">Mostrando los pendientes de la carga seleccionada. <Link className="underline" to="/importacion/curacion" onClick={() => setPagina(1)}>Ver todas las cargas</Link></p>}
       {aviso && <p role="status">{aviso}</p>}
       {error && <p role="alert">{error}</p>}
       {cola.isLoading && <p>Cargando la cola…</p>}

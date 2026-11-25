@@ -20,7 +20,6 @@ async function api(ruta, method = 'GET', body, status = 200) {
   const texto = await r.text(); assert.equal(r.status, status, `${method} ${ruta}: ${texto}`); return texto ? JSON.parse(texto) : null;
 }
 const ok = (s) => { report.comprobaciones.push(s); console.log('OK ' + s); };
-async function guardado() { await page.getByRole('status').filter({ hasText: 'Operación guardada.' }).last().waitFor(); }
 async function ficha() { return api('/piezas/' + id); }
 async function shot(s) { await page.screenshot({ path: path.join(out, s + '.png'), animations: 'disabled' }); }
 async function esperar(condicion) { for (let i = 0; i < 50; i++) { if (await condicion()) return; await new Promise(r => setTimeout(r, 100)); } throw Error('No se observó el cambio esperado'); }
@@ -46,12 +45,15 @@ async function esperar(condicion) { for (let i = 0; i < 50; i++) { if (await con
     await form.locator('#ficha-subcoleccion_id').selectOption(sub.id);
     await form.locator('#ficha-materiales').selectOption([material.id]);
     await form.getByLabel('Marca de taller F2 ' + marca, { exact: true }).fill('Taller local');
-    await page.getByText('Códigos, tenencia y ubicación inicial (opcionales)', { exact: true }).click();
+    await page.getByRole('button', { name: 'Continuar a identificación', exact: true }).click();
     await page.getByRole('button', { name: 'Añadir código inicial' }).click();
     await page.getByLabel('Tipo de código', { exact: true }).selectOption(tipos.find(t => t.clave === 'I').id);
     await page.getByLabel('Valor del código', { exact: true }).fill('I-' + marca);
     await page.getByLabel('Ubicación inicial', { exact: true }).selectOption(sede.id);
-    await form.getByRole('button', { name: 'Guardar ficha', exact: true }).click();
+    await page.getByRole('button', { name: 'Continuar a fotografías', exact: true }).click();
+    await page.getByRole('button', { name: 'Revisar y confirmar', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar registro', exact: true }).click();
+    await page.getByRole('button', { name: 'Ver ficha', exact: true }).click();
     await page.waitForURL(/\/coleccion\/[a-f0-9-]+$/); id = page.url().split('/').pop();
     let p = await ficha(); assert.equal(p.campos.coleccion_id, coleccion.id); assert.equal(p.campos.subcoleccion_id, sub.id); assert.equal(p.listas.materiales[0].id, material.id); assert.equal(p.campos[campo.clave], 'Taller local'); assert.equal(p.estadoFicha, 'borrador'); assert.equal((await api(`/piezas/${id}/movimientos`)).length, 1);
     ok('Alta real desde formulario F0 con colección, subcolección, material, campo adicional, código I y ubicación inicial');
@@ -105,11 +107,13 @@ async function esperar(condicion) { for (let i = 0; i < 50; i++) { if (await con
     ok('Revisión, rechazo con motivo, reenvío y aprobación real');
 
     await page.goto(web + '/ubicacion-y-movimientos');
-    await page.getByText('Gestionar sedes y ubicaciones', { exact: true }).click();
+    await page.getByRole('button', { name: 'Crear ubicación', exact: true }).click();
     await page.getByLabel('Nivel', { exact: true }).selectOption('ubicacion'); await page.getByLabel('Sede', { exact: true }).selectOption(sede.id);
     await page.getByLabel('Nombre de ubicación', { exact: true }).fill('Depósito · Rack F6 ' + marca);
-    await page.getByRole('button', { name: 'Crear ubicación', exact: true }).click();
-    await guardado();
+    await page.getByLabel('Código de ubicación', { exact: true }).fill('QA-RACK-' + marca);
+    await page.getByLabel('Dirección', { exact: true }).fill('Dirección de pruebas, Lima');
+    await page.getByRole('dialog').getByRole('button', { name: 'Crear ubicación', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
     const ubicacion = (await api('/ubicaciones'))[0].hijos.find(u => u.nombre.endsWith(String(marca))); assert.ok(ubicacion);
     await page.getByLabel('Código de pieza', { exact: true }).fill('I-' + marca); await page.getByRole('button', { name: 'Buscar pieza', exact: true }).click();
     await page.getByLabel('Pieza', { exact: true }).selectOption(id);

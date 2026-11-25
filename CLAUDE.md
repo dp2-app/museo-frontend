@@ -310,6 +310,10 @@ La segunda pasada visual solicitada por el usuario sigue §27: navegación later
 
 `LoginPage` usa los activos de marca existentes, panel editorial petróleo/arena, tarjeta de acceso sobre marfil y acción cobre. No depende de imágenes externas. Incluye control accesible para mostrar/ocultar contraseña, estados de espera y espacio reservado para errores. Se conservan `useAuth`, la autenticación real y el retorno a la ruta previa tras vencer la sesión. No añadir enlaces de recuperación de contraseña sin un flujo implementado. Comprobado con Playwright en cinco tamaños, errores/espera simulados y acceso real contra la copia local aislada.
 
+## Inicio, reportes y salas (24/11/2026)
+
+Inicio prioriza colecciones y pendientes; los motivos de incompletitud empiezan plegados. Reportes abre en Estado del catálogo con cobertura, faltantes y avance por colección (`components/f8/PanoramaCatalogo.tsx`); Búsqueda, filtros, exportaciones e impresión se conservan. Salas usa un formulario de tema/cantidad y `CatalogoSala` (cuatro columnas en escritorio o lista, selección compartida y fotografías ampliables). La API debe incluir `PiezaSala.fotoPrincipal` (museo-backend, ampliación aditiva). No pedir fichas individuales por tarjeta ni inventar fotos/porcentajes. Recorrido, heurísticas, pruebas y limitaciones en `docs/ux-2026-11-24.md`.
+
 ## Fotografía desde el celular (23/11/2026)
 
 En la ficha, el panel «Fotografías» muestra **«Fotografía rápida»** (`components/TomarFotoPieza.tsx`) con el permiso `fotos.gestionar`: «Tomar foto» abre la cámara trasera (`<input type="file" accept="image/*" capture="environment">`; en el computador abre el selector de archivos), se ve la vista previa y «Guardar fotografía» sube la imagen y la registra con `POST /piezas/{id}/fotografias` en un solo paso. «Elegir de la galería» y «Repetir» completan el flujo.
@@ -317,3 +321,9 @@ En la ficha, el panel «Fotografías» muestra **«Fotografía rápida»** (`com
 - Usa la subida directa a Cloudinary (`lib/cloudinary.ts`); sin `VITE_CLOUDINARY_CLOUD_NAME`/`VITE_CLOUDINARY_UPLOAD_PRESET` el panel dice que falta configurarla y queda solo el formulario por URL. No hay cambios en el backend ni en la API.
 - Camino rápido para completar fichas: el chip «Fotografía» de «Qué le falta» (`?campo=fotografias`) lleva a esa sección; al guardar, la ficha se refresca y ese faltante desaparece.
 - Pruebas: `npm run test:unit` (reducción de tamaño) y `npm run test:foto-camara` (Pixel 7 emulado contra el backend local; **Cloudinary se intercepta**, así que la subida real a Cloudinary no está certificada por esa prueba).
+
+## Asistentes de registro e importación y popup de ubicaciones (24/11/2026)
+
+`RegistroPiezaModal` reutiliza F0/F1 en cuatro etapas: ficha, identificación, fotos y confirmación; crea en borrador al confirmar. `lib/altaPieza.ts` conserva resultados confirmados para reintentar fotos sin repetirlos. La selección de archivos y cámara requiere Cloudinary; también se admiten enlaces HTTPS de imágenes. `UbicacionModal` comparte creación y edición desde la cabecera y el catálogo: nombre, código, dirección y sede para ubicaciones interiores son obligatorios, también en la API. Se conserva sede › ubicación. `DialogoMuseo` gestiona foco, Escape y bloqueo durante escrituras. La importación conserva su propio asistente y RN-08.
+
+Detalle, heurísticas y evidencia: `docs/asistentes-2026-11-24.md`. Backend completo: 634 pruebas aprobadas (197 unitarias y 437 de integración) en base de QA local; frontend: 35 unitarias. E2E reales y verificación HTTP de las altas, fotos, principal, códigos y movimientos iniciales. Estas verificaciones locales no certifican Groq ni Cloudinary externos sin sus configuraciones; la publicación se verifica por separado.

@@ -1,5 +1,6 @@
 import { CabeceraPagina } from "../components/SistemaVisual";
-import { Fragment, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { CheckCircle2, CircleX, FileSpreadsheet, LoaderCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, datosApi, extraerMensajeError } from "../lib/api";
@@ -32,12 +33,22 @@ function nombreDeDescarga(cabecera: unknown, archivo?: string | null): string {
   return `errores_${base}.xlsx`;
 }
 
-export function CargaDetailPage() {
-  const { cargaId } = useParams<{ cargaId: string }>();
+interface AsistenteCarga {
+  etapa: 3 | 4;
+  onEtapa: (etapa: number) => void;
+  onCambiarCarga: (id: string) => void;
+  onOcupado: (ocupado: boolean) => void;
+  alCerrar: () => void;
+}
+
+export function CargaDetailPage({ idCarga, asistente }: { idCarga?: string; asistente?: AsistenteCarga } = {}) {
+  const ruta = useParams<{ cargaId: string }>();
+  const cargaId = idCarga ?? ruta.cargaId;
   const cache = useQueryClient();
   const navigate = useNavigate();
   const permisos = usePermisos();
   const inputCorregido = useRef<HTMLInputElement>(null);
+  const tituloResultado = useRef<HTMLHeadingElement>(null);
   const [pagina, setPagina] = useState(1);
   const [clasificacion, setClasificacion] = useState("");
   const [estado, setEstado] = useState("");
@@ -53,6 +64,7 @@ export function CargaDetailPage() {
   const [confirmacion, setConfirmacion] = useState(false);
   const [duplicadoFila, setDuplicadoFila] = useState<string | null>(null);
   const [aprobando, setAprobando] = useState(false);
+  const confirmando = asistente ? asistente.etapa === 4 : aprobando;
   const tamano = 50;
   const puedeRevisar = permisos.puede("importacion.cargar");
   const cargaQuery = useQuery({ queryKey: ["carga", cargaId], retry: false,
@@ -68,7 +80,7 @@ export function CargaDetailPage() {
     })).data });
   const pendientes = useQuery({ queryKey: ["carga-pendientes", cargaId], enabled: !!carga && abierta,
     queryFn: async () => (await datosApi.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`, { params: { estado: "pendiente", tamano: 1 } })).data.total });
-  const aprobadas = useQuery({ queryKey: ["carga-aprobadas", cargaId], enabled: aprobando && !!carga && abierta,
+  const aprobadas = useQuery({ queryKey: ["carga-aprobadas", cargaId], enabled: confirmando && !!carga,
     queryFn: async () => {
       const total = async (clasificacion: string) => (await datosApi.get<FilaImportacionPagina>(`/importacion/cargas/${cargaId}/filas`,
         { params: { estado: "aprobado", clasificacion, tamano: 1 } })).data.total;
@@ -98,7 +110,7 @@ export function CargaDetailPage() {
     onError: (e) => { fallo(e); setSeleccion(null); invalidar(); },
   });
   const aplicar = useMutation({ mutationFn: () => datosApi.post(`/importacion/cargas/${cargaId}/aprobar`),
-    onSuccess: () => { setError(""); setAprobando(false); setAviso("Carga aplicada al catálogo. Las fichas conservan su estado de borrador para la revisión habitual."); invalidar(); }, onError: fallo });
+    onSuccess: () => { setError(""); setAprobando(false); setAviso("Carga aplicada al catálogo. Las fichas conservan su estado de borrador para la revisión habitual."); void cache.invalidateQueries(); }, onError: fallo });
   const cerrar = useMutation({
     mutationFn: async () => {
       if (cierre!.accion === "fila") await datosApi.patch(`/importacion/cargas/${cargaId}/filas/${cierre!.filaId}`, { estado: "rechazado", motivoRechazo: motivo });
@@ -121,10 +133,22 @@ export function CargaDetailPage() {
     onSuccess: (nueva) => {
       setSeleccion(null); setEdicion(null); setCierre(null); setPagina(1); setError(""); setAviso("");
       setClasificacion(""); setEstado(""); setSoloErrores(false);
-      void cache.invalidateQueries({ queryKey: ["cargas"] }); navigate(`/importacion/${nueva.id}`);
+      void cache.invalidateQueries({ queryKey: ["cargas"] });
+      if (asistente) asistente.onCambiarCarga(nueva.id); else navigate(`/importacion/${nueva.id}`);
     }, onError: fallo,
   });
   const ocupado = revisarFila.isPending || revisarVarias.isPending || aplicar.isPending || cerrar.isPending || recargar.isPending || preparar.isPending;
+  const onOcupado = asistente?.onOcupado;
+  const onEtapa = asistente?.onEtapa;
+  const estadoCarga = carga?.estado;
+  const etapaAsistente = asistente?.etapa;
+  useEffect(() => { onOcupado?.(ocupado); }, [ocupado, onOcupado]);
+  useEffect(() => {
+    if (estadoCarga && !["en_revision", "pendiente_aprobacion"].includes(estadoCarga)) onEtapa?.(4);
+  }, [estadoCarga, onEtapa]);
+  useEffect(() => {
+    if (etapaAsistente === 4 && estadoCarga && !["en_revision", "pendiente_aprobacion"].includes(estadoCarga)) tituloResultado.current?.focus();
+  }, [estadoCarga, etapaAsistente]);
   const filas = filasQuery.data;
   const paginas = Math.max(1, Math.ceil((filas?.total ?? 0) / tamano));
   function cerrarPaneles() { setEdicion(null); setCierre(null); setDuplicadoFila(null); setAprobando(false); }
@@ -155,10 +179,15 @@ export function CargaDetailPage() {
 
   if (cargaQuery.isLoading) return <p role="status">Cargando inventario…</p>;
   if (!carga) return <div className="space-y-3"><Link to="/importacion">Volver a importación</Link><p role="alert">{extraerMensajeError(cargaQuery.error)}</p><button className="btn-glass" onClick={() => { void cargaQuery.refetch(); }}>Reintentar</button></div>;
-  return <div className="space-y-5 f5-importacion">
-    <header><Link to="/importacion" className="text-clay-700 underline">Volver a importación</Link>
+  return <div className={asistente ? "importacion-detalle f5-importacion" : "space-y-5 f5-importacion"}>
+    <div className={asistente ? "importacion-scroll space-y-5" : "space-y-5"}>
+    {asistente && <div className="importacion-intro"><span>Paso {asistente.etapa} de 4</span><h3>{asistente.etapa === 3 ? "Revisa qué llegará a tu colección" : abierta ? "Todo listo para tu decisión" : carga.estado === "aprobada" ? "Importación completada" : "Esta carga está cerrada"}</h3><p>{asistente.etapa === 3 ? "Comprueba los cambios y resuelve los pendientes. Revisar filas todavía no modifica el catálogo." : abierta ? "Comprueba el resumen final. El catálogo se actualizará al confirmar la aprobación." : carga.estado === "aprobada" ? "Las piezas ya forman parte del catálogo. Sus fichas quedan como borrador para la revisión habitual." : "Puedes consultar sus decisiones y los motivos registrados."}</p></div>}
+    {(!asistente || asistente.etapa === 3) && <header>
+      {!asistente && <Link to="/importacion" className="text-clay-700 underline">Volver a importación</Link>}
+      {asistente ? <div className="importacion-archivo-elegido"><FileSpreadsheet size={24} aria-hidden="true" /><div><strong>{carga.archivoNombre}</strong><span>{carga.hojaNombre} · {carga.totalFilas.toLocaleString("es-PE")} filas · {ESTADOS_CARGA[carga.estado]}</span></div></div> : <>
       <div className="mt-4"><CabeceraPagina titulo={carga.archivoNombre} descripcion={<>Hoja: <strong>{carga.hojaNombre}</strong> · <strong>{ESTADOS_CARGA[carga.estado]}</strong></>} /></div>
-      <p>{contar(carga.totalFilas, "fila", "filas")} · {contar(carga.filasConError, "con error que impide aprobar", "con errores que impiden aprobar")} · {contar(carga.filasRechazadas, "rechazada", "rechazadas")}</p>
+      <p>{contar(carga.totalFilas, "fila", "filas")} · {contar(carga.filasConError, "con error que impide aprobar", "con errores que impiden aprobar")} · {contar(carga.filasRechazadas, "rechazada", "rechazadas")}</p></>}
+      <details className="importacion-trazabilidad"><summary>Ver registro y reglas de esta carga</summary>
       <p data-bitacora-personas>Cargada{carga.usuarioNombre && <> por {carga.usuarioNombre}</>} el {fecha(carga.iniciadaEn)}
         {carga.aprobadaEn && <> · aprobada{carga.aprobadaPorNombre && <> por {carga.aprobadaPorNombre}</>} el {fecha(carga.aprobadaEn)}</>}
         {carga.rechazadaEn && <> · {carga.estado === "cancelada" ? "cancelada" : "rechazada"}{carga.rechazadaPorNombre && <> por {carga.rechazadaPorNombre}</>} el {fecha(carga.rechazadaEn)}</>}</p>
@@ -167,11 +196,13 @@ export function CargaDetailPage() {
         ? <p data-reglas-aplicadas>Reglas con que se concilió esta carga: {carga.reglasAplicadas.activas?.length ? carga.reglasAplicadas.activas.map(etiquetaRegla).join(", ") : "ninguna regla activa"}
           {carga.reglasAplicadas.similitudMinima != null && <> · similitud mínima {carga.reglasAplicadas.similitudMinima.toFixed(2)}</>}</p>
         : <p data-reglas-aplicadas>Esta carga es anterior al registro de reglas de duplicado: no se guardó con qué reglas se concilió.</p>)}
-    </header>
+      </details>
+    </header>}
     {error && <p role="alert" className="rounded-xl border border-rojo p-3">{error}</p>}
-    {aviso && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
-    {filas && <p>{contar(filas.resumen.nuevo, "nueva", "nuevas")} · {contar(filas.resumen.actualizacion, "actualización", "actualizaciones")} · {contar(filas.resumen.duplicado, "posible duplicado", "posibles duplicados")} · {contar(filas.resumen.conflicto, "conflicto", "conflictos")}</p>}
-    {abierta && sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
+    {aviso && (!asistente || asistente.etapa === 3 || abierta) && <p role="status" className="rounded-xl border border-ink-200 p-3">{aviso}</p>}
+    {filas && (!asistente || asistente.etapa === 3) && <div className="importacion-resumen" aria-label="Clasificación de las filas">{[[filas.resumen.nuevo, "Nuevas"], [filas.resumen.actualizacion, "Actualizaciones"], [filas.resumen.duplicado, "Posibles duplicados"], [filas.resumen.conflicto, "Conflictos"]].map(([n, titulo]) => <div key={titulo}><strong>{n}</strong><span>{titulo}</span></div>)}</div>}
+    {(!asistente || asistente.etapa === 3) && <>
+    {abierta && sinCodigos && <details className="importacion-aviso-codigos"><summary>Este lote no contiene códigos del museo</summary><p>{avisoSinCodigos}</p></details>}
 
     <div className="flex flex-wrap gap-3">
       {carga.filasConError > 0 && <button className="btn-glass" onClick={() => reporte.mutate()} disabled={reporte.isPending}>Descargar reporte de errores</button>}
@@ -198,22 +229,23 @@ export function CargaDetailPage() {
         <button type="button" className="btn-glass" disabled={ocupado} onClick={() => setSeleccion(null)}>Cancelar revisión conjunta</button></div>
     </form>}
 
-    {abierta && <section aria-label="Decisión de la carga" className="glass-panel p-4 space-y-3">
+    {abierta && <details className="importacion-otras-decisiones" open={asistente ? undefined : true}><summary>Opciones de rechazo y cancelación</summary><section aria-label="Decisión de la carga" className="importacion-decision glass-panel p-4 space-y-3">
       <p role="status">{pendientes.isLoading ? "Contando filas pendientes…" : `${pendientes.data === undefined ? "—" : contar(pendientes.data, "fila pendiente de revisión", "filas pendientes de revisión")} en la carga.`}</p>
       {pendientes.isError && <p role="alert">{extraerMensajeError(pendientes.error)}</p>}
       <p className="text-sm">Las piezas se registran solo al aprobar la carga completa. Las filas rechazadas se conservan como antecedente.</p>
       <div className="flex flex-wrap gap-3">
-        {(carga.puedeAprobar ?? permisos.puede("importacion.aprobar")) && <button className="btn-primary" disabled={ocupado || pendientes.data !== 0 || pendientes.isFetching} onClick={() => { cerrarPaneles(); setAprobando(true); }}>{aplicar.isPending ? "Aplicando la carga…" : "Aprobar carga completa"}</button>}
+        {!asistente && (carga.puedeAprobar ?? permisos.puede("importacion.aprobar")) && <button className="btn-primary" disabled={ocupado || pendientes.data !== 0 || pendientes.isFetching} onClick={() => { cerrarPaneles(); setAprobando(true); }}>{aplicar.isPending ? "Aplicando la carga…" : "Aprobar carga completa"}</button>}
         {permisos.puede("importacion.rechazar") && <button className="btn-glass" disabled={ocupado} onClick={() => abrirCierre("rechazar")}>Rechazar carga</button>}
         {puedeRevisar && (carga.usuarioId === permisos.sesion?.usuario.id || permisos.puede("importacion.rechazar")) && <button className="btn-glass" disabled={ocupado} onClick={() => abrirCierre("cancelar")}>Cancelar carga</button>}
       </div>
       <p className="text-sm">«Rechazar carga» la descarta por decisión de quien revisa (permiso de rechazo). «Cancelar carga» la retira quien la subió. Ninguna de las dos modifica el catálogo.</p>
-    </section>}
-    {aprobando && abierta && <form aria-label="Confirmar aprobación de la carga" className="glass-panel p-4 space-y-3" onSubmit={(e) => { e.preventDefault(); aplicar.mutate(); }}>
+    </section></details>}
+    </>}
+    {confirmando && abierta && <form id="importacion-confirmar" aria-label="Confirmar aprobación de la carga" className="importacion-confirmacion glass-panel p-4 space-y-3" onSubmit={(e) => { e.preventDefault(); if (!ocupado && (carga.puedeAprobar ?? permisos.puede("importacion.aprobar")) && aprobadas.data && pendientes.data === 0 && !pendientes.isFetching) aplicar.mutate(); }}>
       <h2 className="section-title">Confirmar la aprobación de la carga</h2>
       {aprobadas.isLoading && <p role="status">Calculando el resumen…</p>}
       {aprobadas.isError && <p role="alert">{extraerMensajeError(aprobadas.error)}</p>}
-      {aprobadas.data && <ul className="list-disc pl-5 space-y-1">
+      {aprobadas.data && <ul className="importacion-resumen-final">
         <li>Piezas nuevas que se registrarán: <strong>{aprobadas.data.nuevas}</strong></li>
         <li>Actualizaciones de piezas existentes: <strong>{aprobadas.data.actualizaciones}</strong></li>
         <li>Posibles duplicados que se registrarán como piezas distintas: <strong>{aprobadas.data.duplicados}</strong></li>
@@ -221,15 +253,24 @@ export function CargaDetailPage() {
       </ul>}
       {sinCodigos && <p role="status" className="rounded-xl border border-rojo p-3">{avisoSinCodigos}</p>}
       <p>Las filas con advertencias o marcadas para curación entran a la cola de curación. Esta acción modifica el catálogo y no se puede deshacer desde esta pantalla.</p>
-      <div className="flex flex-wrap gap-3"><button className="btn-primary" disabled={ocupado || !aprobadas.data}>{aplicar.isPending ? "Aplicando la carga…" : "Confirmar aprobación"}</button>
+      {!asistente && <div className="flex flex-wrap gap-3"><button className="btn-primary" disabled={ocupado || !aprobadas.data || pendientes.data !== 0}>{aplicar.isPending ? "Aplicando la carga…" : "Confirmar aprobación"}</button>
         <button type="button" className="btn-glass" onClick={() => setAprobando(false)} disabled={ocupado}>Volver a la revisión</button></div>
+      }
+      {asistente && pendientes.data !== undefined && pendientes.data > 0 && <p role="alert">Hay filas pendientes. Vuelve a la revisión para resolverlas.</p>}
     </form>}
+    {asistente?.etapa === 4 && !abierta && <section className="importacion-resultado" aria-label="Resultado de la importación">
+      {carga.estado === "aprobada" ? <CheckCircle2 size={50} strokeWidth={1.4} aria-hidden="true" /> : <CircleX size={50} strokeWidth={1.4} className="!text-rojo" aria-hidden="true" />}<h3 ref={tituloResultado} tabIndex={-1}>{ESTADOS_CARGA[carga.estado]}</h3><p><strong>{carga.archivoNombre}</strong> · {carga.hojaNombre}</p>
+      {carga.estado === "aprobada" && aprobadas.data && <p>{contar(aprobadas.data.nuevas + aprobadas.data.duplicados, "pieza nueva registrada", "piezas nuevas registradas")} · {contar(aprobadas.data.actualizaciones, "pieza actualizada", "piezas actualizadas")} · {contar(carga.filasRechazadas, "fila omitida", "filas omitidas")}</p>}
+      {carga.motivoRechazo && <p>Motivo: {carga.motivoRechazo}</p>}
+      {carga.estado === "aprobada" && permisos.puede("piezas.ver") && <Link to={`/importacion/curacion?cargaId=${carga.id}`} className="underline">Consultar los pendientes de curación de esta carga</Link>}
+      <button type="button" className="btn-glass" onClick={() => asistente.onEtapa(3)}>Consultar filas y decisiones</button>
+    </section>}
     {cierre && cierre.accion !== "fila" && <form aria-label="Motivo de la decisión" className="glass-panel p-4 space-y-3" onSubmit={(e) => { e.preventDefault(); cerrar.mutate(); }}>
       <label className="block font-semibold" htmlFor="motivo-importacion">Motivo de la decisión</label><textarea id="motivo-importacion" required value={motivo} onChange={(e) => setMotivo(e.target.value)} className="glass-input w-full" />
       <div className="flex gap-3"><button className="btn-primary" disabled={ocupado || !motivo.trim()}>{cierre.accion === "cancelar" ? "Confirmar cancelación" : "Confirmar rechazo"}</button><button type="button" className="btn-glass" onClick={() => setCierre(null)} disabled={ocupado}>Volver a la revisión</button></div>
     </form>}
 
-    <section aria-label="Filas del inventario" className="space-y-3">
+    {(!asistente || asistente.etapa === 3) && <section aria-label="Filas del inventario" className="space-y-3">
       <div className="flex flex-wrap gap-3 items-end">
         <label>Clasificación<select aria-label="Filtrar clasificación" className="glass-input block" value={clasificacion} onChange={(e) => { setClasificacion(e.target.value); setPagina(1); }}><option value="">Todas</option>{Object.entries(CLASIFICACIONES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
         <label>Estado de revisión<select aria-label="Filtrar estado de revisión" className="glass-input block" value={estado} onChange={(e) => { setEstado(e.target.value); setPagina(1); }}><option value="">Todos</option><option value="pendiente">Pendientes</option><option value="aprobado">Revisadas</option><option value="rechazado">Rechazadas</option></select></label>
@@ -269,7 +310,18 @@ export function CargaDetailPage() {
         <span>Página {pagina} de {paginas} · {filas?.total ?? 0} filas</span>
         <button className="btn-glass" disabled={pagina >= paginas || filasQuery.isFetching || ocupado} onClick={() => setPagina((p) => p + 1)}>Página siguiente</button>
       </nav>
-    </section>
+    </section>}
+    </div>
+    {asistente && <footer className="importacion-pie">
+      <div><p role="status">{ocupado ? <><LoaderCircle size={18} className="animate-spin" aria-hidden="true" />{aplicar.isPending ? "Aplicando la carga al catálogo…" : "Guardando la revisión…"}</> : !abierta ? "El resultado y las decisiones quedan en el historial." : asistente.etapa === 3 ? pendientes.data === undefined ? "Consultando filas pendientes…" : `${contar(pendientes.data, "fila pendiente", "filas pendientes")} · La revisión se guarda automáticamente.` : "Tu aprobación es el último paso."}</p></div>
+      <div>{asistente.etapa === 3 ? <>
+        <button type="button" className="btn-glass" disabled={ocupado} onClick={asistente.alCerrar}>{abierta ? "Continuar más tarde" : "Cerrar"}</button>
+        <button type="button" className="btn-primary" disabled={ocupado || (abierta && (pendientes.data !== 0 || pendientes.isFetching))} onClick={() => { cerrarPaneles(); asistente.onEtapa(4); }}>Continuar a confirmación</button>
+      </> : abierta ? <>
+        <button type="button" className="btn-glass" disabled={ocupado} onClick={() => asistente.onEtapa(3)}>Volver a revisión</button>
+        {(carga.puedeAprobar ?? permisos.puede("importacion.aprobar")) ? <button type="submit" form="importacion-confirmar" className="btn-primary" disabled={ocupado || !aprobadas.data || aprobadas.isFetching || pendientes.data !== 0 || pendientes.isFetching}>{aplicar.isPending ? "Importando piezas…" : "Confirmar e importar"}</button> : <><p className="text-sm">Tu rol no puede aprobar. El lote queda listo para una persona con permiso.</p><button type="button" className="btn-primary" onClick={asistente.alCerrar}>Guardar y cerrar</button></>}
+      </> : <button type="button" className="btn-primary" onClick={asistente.alCerrar}>Finalizar</button>}</div>
+    </footer>}
   </div>;
 }
 
@@ -299,7 +351,7 @@ function CampoCorreccion({ destino, etiqueta, campos, valor, cambiar, coleccionN
   const campo: CampoFicha = { ...base, etiqueta: def?.etiqueta ?? etiqueta, obligatorio: false, soloLectura: false, tipo: noEncaja ? "texto" : base.tipo,
     ayuda: `Columna del Excel: ${etiqueta}.${noEncaja ? " El valor original no tiene el formato del campo; se conserva como texto y el servidor lo revisa al guardar." : ""}` };
   const multi = campo.tipo === "lista" && campo.multivalor;
-  return <Control porNombre campo={campo} coleccionId={coleccionId} valor={multi ? texto.split(SEPARADOR_MULTIVALOR).filter(Boolean) : texto}
+  return <Control porNombre prefijoId="importacion-fila" campo={campo} coleccionId={coleccionId} valor={multi ? texto.split(SEPARADOR_MULTIVALOR).filter(Boolean) : texto}
     cambiar={(v) => cambiar(Array.isArray(v) ? v.join("\n") : v == null ? "" : String(v))} />;
 }
 

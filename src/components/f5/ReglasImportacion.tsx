@@ -10,15 +10,15 @@ const UMBRAL_MAX = 1;
 
 /** RF-58 y P33: reglas de duplicado, umbral de similitud y permiso aprobador.
  * Todo se valida en el servidor; aquí solo se evita enviar un valor fuera de rango. Rige desde la siguiente carga. */
-export function ReglasImportacion() {
+export function ReglasImportacion({ prefijoId = "" }: { prefijoId?: string } = {}) {
   const reglas = useQuery({ queryKey: ["reglas-importacion"],
     queryFn: async () => (await datosApi.get<Reglas>("/importacion/reglas")).data });
   if (reglas.isPending) return <p className="text-sm text-texto">Cargando reglas de importación…</p>;
   if (reglas.isError) return <p role="alert" className="text-sm">No se pudieron cargar las reglas: {extraerMensajeError(reglas.error)}</p>;
-  return <FormularioReglas reglas={reglas.data} />;
+  return <FormularioReglas reglas={reglas.data} prefijoId={prefijoId} />;
 }
 
-function FormularioReglas({ reglas }: { reglas: Reglas }) {
+function FormularioReglas({ reglas, prefijoId }: { reglas: Reglas; prefijoId: string }) {
   const cache = useQueryClient();
   const { puede } = usePermisos();
   const puedeEditar = puede("importacion.configurar");
@@ -73,20 +73,20 @@ function FormularioReglas({ reglas }: { reglas: Reglas }) {
       </fieldset>
 
       <div>
-        <label htmlFor="reglas-umbral" className="form-label text-texto">Similitud mínima de la denominación ({UMBRAL_MIN.toFixed(2)} a {UMBRAL_MAX.toFixed(2)})</label>
-        <input id="reglas-umbral" type="number" inputMode="decimal" step="0.05" min={UMBRAL_MIN} max={UMBRAL_MAX}
+        <label htmlFor={`${prefijoId}reglas-umbral`} className="form-label text-texto">Similitud mínima de la denominación ({UMBRAL_MIN.toFixed(2)} a {UMBRAL_MAX.toFixed(2)})</label>
+        <input id={`${prefijoId}reglas-umbral`} type="number" inputMode="decimal" step="0.05" min={UMBRAL_MIN} max={UMBRAL_MAX}
           className="glass-input max-w-[8rem]" value={umbral} disabled={!puedeEditar || guardar.isPending}
           aria-invalid={!umbralValido} onChange={(e) => setUmbral(e.target.value)} />
       </div>
 
       <div>
-        <label htmlFor="reglas-aprobador" className="form-label text-texto">Permiso que autoriza aprobar una carga</label>
+        <label htmlFor={`${prefijoId}reglas-aprobador`} className="form-label text-texto">Permiso que autoriza aprobar una carga</label>
         {puedeEditar && puedeListarPermisos
-          ? <select id="reglas-aprobador" className="glass-input" value={aprobador} disabled={guardar.isPending || permisos.isPending}
+          ? <select id={`${prefijoId}reglas-aprobador`} className="glass-input" value={aprobador} disabled={guardar.isPending || permisos.isPending}
               onChange={(e) => setAprobador(e.target.value)}>
               {opcionesAprobador.map((clave) => <option key={clave} value={clave}>{etiquetas.get(clave) ?? clave}</option>)}
             </select>
-          : <p id="reglas-aprobador"><code>{reglas.permisoAprobador}</code></p>}
+          : <p id={`${prefijoId}reglas-aprobador`}><code>{reglas.permisoAprobador}</code></p>}
         <p className="mt-1 text-sm text-texto">Quien tenga este permiso puede aprobar, también una carga que subió. Aprobar sigue siendo una acción explícita.</p>
       </div>
 

@@ -22,7 +22,7 @@ const filaIncompleta = (c: { tipoCodigoId: string; valor: string }) => !c.tipoCo
 
 /** Solo compone el alta atómica de F2. Las reglas de código y tenencia las resuelve F1; aquí solo se evita enviar
  * una fila de código a medias (#94) o un régimen sin la contraparte que exige (#95). Una fila vacía se ignora. */
-export function AltaComplementos({ onChange }: { onChange: (v: Complementos, problemas: string[]) => void }) {
+export function AltaComplementos({ onChange, plegable = true }: { onChange: (v: Complementos, problemas: string[]) => void; plegable?: boolean }) {
   const { puede, sesion } = usePermisos(); const [datos, setDatos] = useState<Complementos>({ codigos: [] });
   const tipos = useRecurso<Tipo[]>("tipos-codigo", "/tipos-codigo", puede("codigos.gestionar"));
   const regimenes = useRecurso<Regimen[]>("regimenes", "/regimenes", puede("tenencias.gestionar"));
@@ -40,11 +40,11 @@ export function AltaComplementos({ onChange }: { onChange: (v: Complementos, pro
     onChange({ ...v, codigos: v.codigos.filter((c) => c.tipoCodigoId || c.valor.trim()) }, problemas);
   }
   function cambiarTenencia(v: Partial<Tenencia>) { if (tenencia) cambiar({ ...datos, tenencia: { ...tenencia, ...v } }); }
-  return <details className="space-y-3"><summary className="cursor-pointer font-semibold">Códigos, tenencia y ubicación inicial (opcionales)</summary>
+  return <details className="space-y-3" open={plegable ? undefined : true}><summary className={plegable ? "cursor-pointer font-semibold" : "!hidden"}>Códigos, tenencia y ubicación inicial (opcionales)</summary>
     <ErrorConsulta error={tipos.error || regimenes.error || propietarios.error || ubicaciones.error} />
     {puede("codigos.gestionar") && <div className="space-y-2">{datos.codigos.map((c, i) => <div className="flex flex-wrap gap-2" key={i}>
       <label>Tipo de código *<select aria-label="Tipo de código" aria-required="true" aria-invalid={filaIncompleta(c) && !c.tipoCodigoId} className="glass-input" value={c.tipoCodigoId} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, tipoCodigoId: e.target.value } : x) })}><option value="">Seleccionar…</option>{tipos.data?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></label>
-      <label>Valor del código *<input aria-required="true" aria-invalid={filaIncompleta(c) && !c.valor.trim()} className="glass-input" value={c.valor} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, valor: e.target.value } : x) })} /></label>
+      <label>Valor del código *<input aria-label="Valor del código" aria-required="true" aria-invalid={filaIncompleta(c) && !c.valor.trim()} className="glass-input" value={c.valor} onChange={(e) => cambiar({ ...datos, codigos: datos.codigos.map((x, j) => i === j ? { ...x, valor: e.target.value } : x) })} /></label>
       <button type="button" className="btn-glass" onClick={() => cambiar({ ...datos, codigos: datos.codigos.filter((_, j) => i !== j) })}>Quitar código</button>
       {filaIncompleta(c) && <p role="alert" className="w-full text-rojo">{MENSAJE_CODIGO}</p>}</div>)}<button type="button" className="btn-glass" onClick={() => cambiar({ ...datos, codigos: [...datos.codigos, { tipoCodigoId: "", valor: "" }] })}>Añadir código inicial</button></div>}
     {puede("tenencias.gestionar") && <div className="grid gap-3 sm:grid-cols-2"><label>Régimen de tenencia<select aria-label="Régimen de tenencia" className="glass-input" value={tenencia?.regimenId ?? ""} onChange={(e) => cambiar({ ...datos, tenencia: e.target.value ? { regimenId: e.target.value } : undefined })}><option value="">Propiedad predeterminada</option>{regimenes.data?.filter((r) => r.ingresaInventarioPermanente).map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>

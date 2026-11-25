@@ -18,6 +18,14 @@ export function Anillo({ porcentaje, etiqueta, tamano = 64 }: { porcentaje: numb
   );
 }
 
+/** El porcentaje lo decide el backend; el centro también se puede leer sin distinguir colores. */
+export function GraficoCompletitud({ porcentaje, total }: { porcentaje: number; total: number }) {
+  return <div className="completion-chart">
+    <Anillo porcentaje={total ? porcentaje : 0} etiqueta="Fichas completas" tamano={184} />
+    <div className="completion-chart-value" aria-hidden="true"><strong>{total ? `${numero(porcentaje)} %` : "—"}</strong><span>{total ? "completo" : "sin datos"}</span></div>
+  </div>;
+}
+
 /** Barra de progreso con el porcentaje escrito. */
 export function BarraProgreso({ porcentaje, etiqueta }: { porcentaje: number; etiqueta: string }) {
   const p = acotar(porcentaje);
