@@ -4,7 +4,7 @@ export interface UbicacionPlana {
   id: string;
   nombre: string;
   nivelTipo: UbicacionFisica["nivelTipo"];
-  etiqueta: string; // con sangría, para <select>
+  etiqueta: string;
 }
 
 export function aplanarUbicaciones(nodos: UbicacionFisica[], nivel = 0): UbicacionPlana[] {
@@ -14,8 +14,7 @@ export function aplanarUbicaciones(nodos: UbicacionFisica[], nivel = 0): Ubicaci
   ]);
 }
 
-/** Breadcrumb sede › espacio › mueble › nivel › contenedor (spec §7) hasta el
- * nodo indicado, recorriendo el árbol jerárquico devuelto por GET /ubicaciones. */
+/** Ruta legible de una sede o ubicación, conservando los identificadores del catálogo. */
 export function rutaUbicacion(id: string | null, arbol: UbicacionFisica[]): string[] {
   if (!id) return [];
   function buscar(nodos: UbicacionFisica[], camino: string[]): string[] | null {
@@ -28,4 +27,26 @@ export function rutaUbicacion(id: string | null, arbol: UbicacionFisica[]): stri
     return null;
   }
   return buscar(arbol, []) ?? [];
+}
+
+export interface DatosUbicacion {
+  nivelTipo: "sede" | "ubicacion";
+  parentId: string | null;
+  nombre: string;
+  codigo: string;
+  direccion: string;
+}
+
+/** La sede raíz no tiene padre. Todo dato que se solicita en el editor es obligatorio. */
+export function validarUbicacion(datos: DatosUbicacion): Partial<Record<keyof DatosUbicacion, string>> {
+  return {
+    ...(!datos.nombre.trim() && { nombre: "Escribe el nombre de la sede o ubicación." }),
+    ...(!datos.codigo.trim() && { codigo: "Escribe el código de la ubicación." }),
+    ...(!datos.direccion.trim() && { direccion: "Completa la dirección de la ubicación." }),
+    ...(datos.nivelTipo === "ubicacion" && !datos.parentId && { parentId: "Selecciona la sede a la que pertenece." }),
+  };
+}
+
+export function normalizarUbicacion(datos: DatosUbicacion): DatosUbicacion {
+  return { ...datos, parentId: datos.nivelTipo === "sede" ? null : datos.parentId, nombre: datos.nombre.trim(), codigo: datos.codigo.trim(), direccion: datos.direccion.trim() };
 }

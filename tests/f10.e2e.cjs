@@ -123,12 +123,12 @@ const consultasDe = async (t) => (await api(`/ia/sugerencias?tipo=${TIPO_RIA06}&
 
     // ---------- 2. RIA-05 · el Gestor arma una sala; las condiciones del pedido son filtros
     await gestor.goto(WEB + '/asistente-ia');
-    await gestor.getByRole('heading', { name: 'Armar una sala' }).waitFor();
+    await gestor.getByRole('heading', { name: '¿Qué historia quieres contar?' }).waitFor();
     assert.equal(await gestor.getByText(/Índice de búsqueda|Indexar ahora/).count(), 0, 'Sin ia.indexar no se ve el panel del índice');
     ok('RIA-05: el Gestor no ve el panel del índice (ia.indexar es solo del Administrador)');
-    await gestor.getByPlaceholder(/Navidad andina/).fill(PEDIDO_SALA);
+    await gestor.getByLabel('Tema o estilo', { exact: true }).fill(PEDIDO_SALA);
     await gestor.getByRole('button', { name: 'Proponer piezas' }).click();
-    const propuesta = gestor.getByRole('status').filter({ hasText: 'Propuesta de IA' });
+    const propuesta = gestor.locator('.sala-proposal');
     await propuesta.waitFor({ timeout: IA_TIMEOUT });
     const condiciones = gestor.getByLabel('Condiciones del pedido');
     await condiciones.waitFor();
@@ -153,17 +153,19 @@ const consultasDe = async (t) => (await api(`/ia/sugerencias?tipo=${TIPO_RIA06}&
     }
     // Quitar la condición vuelve a pedir la propuesta sin ella.
     await condiciones.getByRole('button', { name: /^Quitar la condición/ }).first().click();
-    await gestor.getByRole('status').filter({ hasText: 'Propuesta de IA' }).waitFor({ timeout: IA_TIMEOUT });
+    await propuesta.waitFor({ timeout: IA_TIMEOUT });
     await elegir.first().waitFor({ timeout: IA_TIMEOUT });
     const nPropuestas = await elegir.count();
     assert.ok(nPropuestas >= 1, 'Sin la condición, la IA propone piezas');
     assert.match(await gestor.getByLabel('Condiciones del pedido').innerText(), /fotograf/i, 'La condición quitada sigue a la vista, tachada');
     // El curador decide: deja marcadas solo 3 de las propuestas.
-    const todas = gestor.getByRole('checkbox', { name: 'Elegir todas las piezas' });
-    if (await todas.isChecked()) await todas.uncheck();
+    await gestor.getByRole('button', { name: 'Quitar selección', exact: true }).click();
     const nElegidas = Math.min(3, nPropuestas);
     for (let i = 0; i < nElegidas; i++) await elegir.nth(i).check();
-    await shotEn(gestor, '04-ria05-propuesta-y-seleccion', gestor.getByRole('status').filter({ hasText: 'Propuesta de IA' }));
+    await gestor.getByRole('button', { name: 'Lista', exact: true }).click();
+    for (let i = 0; i < nElegidas; i++) assert.ok(await elegir.nth(i).isChecked(), 'La vista conserva la selección');
+    await gestor.getByRole('button', { name: 'Catálogo', exact: true }).click();
+    await shotEn(gestor, '04-ria05-propuesta-y-seleccion', propuesta);
     const [descarga] = await Promise.all([
       gestor.waitForEvent('download', { timeout: 30000 }),
       gestor.getByRole('button', { name: /Exportar selección a Excel/ }).click(),
@@ -178,7 +180,8 @@ const consultasDe = async (t) => (await api(`/ia/sugerencias?tipo=${TIPO_RIA06}&
     const ctxAdmin = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const admin = await entrar(ctxAdmin, EMAIL_ADMIN);
     await admin.goto(WEB + '/asistente-ia');
-    await admin.getByRole('heading', { name: 'Armar una sala' }).waitFor();
+    await admin.getByRole('heading', { name: '¿Qué historia quieres contar?' }).waitFor();
+    await admin.locator('.sala-index-details > summary').click();
     await admin.getByText(/Indexar ahora/).first().waitFor();
     await shot(admin, '05-ria05-indice-administrador');
     ok('RIA-05: el Administrador (ia.indexar) ve el estado del índice y «Indexar ahora»');

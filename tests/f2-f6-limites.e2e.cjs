@@ -77,17 +77,19 @@ async function guardarFoto(pieza, fecha) {
       const pieza = await nueva('Código existente'); const tipo = (await api('/tipos-codigo')).find(t => t.clave === 'I'); const valor = 'I-' + marca;
       await api(`/piezas/${pieza.id}/codigos`, 'POST', { tipoCodigoId: tipo.id, valor }, 201); const total = (await api('/piezas?tamano=1')).total;
       await page.goto(web + '/coleccion'); await page.getByRole('button', { name: 'Registrar pieza', exact: true }).click();
-      await page.locator('#ficha-denominacion').fill('No debe crearse ' + marca); await page.getByText('Códigos, tenencia y ubicación inicial (opcionales)', { exact: true }).click();
+      await page.locator('#ficha-denominacion').fill('No debe crearse ' + marca); await page.getByRole('button', { name: 'Continuar a identificación', exact: true }).click();
       await page.getByRole('button', { name: 'Añadir código inicial', exact: true }).click(); await page.getByLabel('Tipo de código', { exact: true }).selectOption(tipo.id); await page.getByLabel('Valor del código', { exact: true }).fill(valor);
+      await page.getByRole('button', { name: 'Continuar a fotografías', exact: true }).click();
+      await page.getByRole('button', { name: 'Revisar y confirmar', exact: true }).click();
       const respuesta = page.waitForResponse(r => r.url() === apiBase + '/piezas' && r.request().method() === 'POST');
-      await page.getByRole('button', { name: 'Guardar ficha', exact: true }).click(); assert.equal((await respuesta).status(), 409);
+      await page.getByRole('button', { name: 'Confirmar registro', exact: true }).click(); assert.equal((await respuesta).status(), 409);
       assert.equal((await api('/piezas?tamano=1')).total, total); assert.equal(await page.locator('#ficha-denominacion').inputValue(), 'No debe crearse ' + marca);
       await page.getByRole('alert').waitFor();
     });
 
     await caso('Una sede inactiva y sus ambientes no aparecen como destinos de traslado', async () => {
-      const sede = await api('/ubicaciones', 'POST', { nivelTipo: 'sede', nombre: 'Sede inactiva ' + marca }, 201);
-      const hijo = await api('/ubicaciones', 'POST', { nivelTipo: 'ubicacion', parentId: sede.id, nombre: 'Rack inactivo ' + marca }, 201);
+      const sede = await api('/ubicaciones', 'POST', { nivelTipo: 'sede', nombre: 'Sede inactiva ' + marca, codigo: 'QA-SED', direccion: 'Dirección de pruebas, Lima' }, 201);
+      const hijo = await api('/ubicaciones', 'POST', { nivelTipo: 'ubicacion', parentId: sede.id, nombre: 'Rack inactivo ' + marca, codigo: 'QA-RACK', direccion: 'Dirección de pruebas, Lima' }, 201);
       await api('/ubicaciones/' + sede.id, 'PATCH', { activo: false });
       const pieza = await nueva('Destinos activos'); await page.goto(web + '/coleccion/' + pieza.id);
       const select = page.getByLabel('Nueva ubicación', { exact: true }); await select.waitFor();

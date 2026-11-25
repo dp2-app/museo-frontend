@@ -27,27 +27,29 @@ async function shot(nombre) { await page.screenshot({ path: path.join(out, nombr
 async function textoVisible(texto) { await page.getByText(texto, { exact: true }).waitFor(); }
 async function cargar(archivo, hoja, filas) {
   await page.goto(web + '/importacion');
+  await page.getByRole('button', { name: 'Importar Excel', exact: true }).click();
   await page.getByLabel('Archivo Excel', { exact: true }).setInputFiles(archivo);
-  const selector = page.getByLabel('Hoja del archivo', { exact: true });
+  await page.getByRole('button', { name: 'Continuar a columnas', exact: true }).click();
+  const selector = page.locator('#importacion-hoja');
   await selector.waitFor();
   await page.waitForFunction(() => !document.querySelector('#importacion-hoja').disabled);
   if (await selector.inputValue() !== hoja) await selector.selectOption(hoja);
-  await page.getByRole('status').filter({ hasText: `Hoja ${hoja}: ${filas} filas` }).waitFor({ timeout: 120000 });
-  await page.getByLabel('Formato de columnas', { exact: true }).selectOption({ label: formato });
+  await page.getByRole('status').filter({ hasText: `Hoja ${hoja}: ${filas.toLocaleString('es-PE')} filas` }).waitFor({ timeout: 120000 });
+  await page.locator('#importacion-formato').selectOption({ label: formato });
   await shot('seleccion-' + hoja + '-' + filas);
   const respuesta = page.waitForResponse(r => r.url() === datos + '/importacion/cargas' && r.request().method() === 'POST', { timeout: 300000 });
-  await page.getByRole('button', { name: 'Cargar hoja para revisión', exact: true }).click();
+  await page.getByRole('button', { name: 'Validar y continuar', exact: true }).click();
   const r = await respuesta;
   assert.equal(r.status(), 201, await r.text());
   const carga = await r.json();
   assert.equal(carga.hojaNombre, hoja);
   assert.equal(carga.plantillaMapeoId, plantilla.id);
   assert.equal(carga.totalFilas, filas);
-  await page.waitForURL(web + '/importacion/' + carga.id);
   await page.getByRole('button', { name: 'Revisar varias filas pendientes', exact: true }).waitFor();
   return carga;
 }
 async function confirmarCierre(accion, motivo) {
+  await page.getByText('Opciones de rechazo y cancelación', { exact: true }).click();
   await page.getByRole('button', { name: accion + ' carga', exact: true }).click();
   const form = page.getByRole('form', { name: 'Motivo de la decisión', exact: true });
   const boton = form.getByRole('button', { name: accion === 'Cancelar' ? 'Confirmar cancelación' : 'Confirmar rechazo', exact: true });
@@ -78,9 +80,11 @@ async function confirmarCierre(accion, motivo) {
     await page.getByRole('heading', { name: 'Importación', exact: true }).waitFor();
     ok('Autenticación y rutas actuales de la API de datos');
 
+    await page.getByRole('button', { name: 'Importar Excel', exact: true }).click();
     await page.getByLabel('Archivo Excel', { exact: true }).setInputFiles({ name: 'viejo.xls', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from('no es xlsx') });
     await page.getByRole('alert').filter({ hasText: 'Guarda el archivo como Excel .xlsx' }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Cargar hoja para revisión', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Continuar a columnas', exact: true }).isDisabled(), true);
+    await page.getByRole('button', { name: 'Cerrar importación', exact: true }).click();
     await page.getByRole('button', { name: 'Configurar un formato de columnas', exact: true }).click();
     await page.getByLabel('Dato de destino 1', { exact: true }).getByRole('option', { name: 'Detalle de medidas', exact: true }).waitFor({ state: 'attached' });
     assert.equal(await page.getByLabel('Dato de destino 1', { exact: true }).locator('option[value="ubicacion_actual_id"]').count(), 0);
@@ -89,7 +93,7 @@ async function confirmarCierre(accion, motivo) {
 
     const erronea = await cargar(process.env.IMPORTACION_ERROR_FILE, 'AJB', 1);
     assert.equal(erronea.filasConError, 1);
-    assert.equal(await page.getByRole('button', { name: 'Aprobar carga completa', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Continuar a confirmación', exact: true }).isDisabled(), true);
     await page.getByLabel('Solo filas con errores', { exact: true }).check();
     await page.locator('tr[data-fila="2"]').getByText(/no corresponde a ning[uú]n valor de la lista/i).first().waitFor();
     const descarga = page.waitForEvent('download');
@@ -114,13 +118,13 @@ async function confirmarCierre(accion, motivo) {
     await page.getByLabel('Archivo corregido', { exact: true }).setInputFiles(process.env.IMPORTACION_CORRECTED_FILE);
     const corregida = await (await recarga).json();
     assert.equal(corregida.hojaNombre, 'AJB'); assert.equal(corregida.plantillaMapeoId, plantilla.id); assert.equal(corregida.filasConError, 0);
-    await page.waitForURL(web + '/importacion/' + corregida.id);
+    await page.getByRole('button', { name: 'Revisar varias filas pendientes', exact: true }).waitFor();
     await page.getByLabel('Solo filas con errores', { exact: true }).uncheck();
     await page.getByRole('button', { name: 'Marcar revisada', exact: true }).click();
     await textoVisible('Revisión de fila guardada.');
     await confirmarCierre('Cancelar', 'Prueba local de archivo corregido; sin aplicar piezas');
     await page.getByText('Cancelada', { exact: true }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Aprobar carga completa', exact: true }).count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Confirmar e importar', exact: true }).count(), 0);
     await page.goto(web + '/importacion/' + erronea.id);
     await confirmarCierre('Rechazar', 'Se reemplazó por la versión corregida');
     assert.equal((await api('/piezas?tamano=1', negocio)).total, 0);
@@ -130,7 +134,7 @@ async function confirmarCierre(accion, motivo) {
       const carga = await cargar(process.env.IMPORTACION_EXCEL_FILE, hoja, total);
       assert.equal(carga.filasConError, 0); assert.equal(carga.filasConflicto, 0);
       const antes = (await api('/piezas?tamano=1', negocio)).total;
-      assert.equal(await page.getByRole('button', { name: 'Aprobar carga completa', exact: true }).isDisabled(), true);
+      assert.equal(await page.getByRole('button', { name: 'Continuar a confirmación', exact: true }).isDisabled(), true);
       await page.locator('tr[data-fila="2"]').waitFor();
       await page.getByRole('button', { name: 'Página siguiente', exact: true }).click();
       await page.locator('tr[data-fila="52"]').waitFor();
@@ -154,17 +158,18 @@ async function confirmarCierre(accion, motivo) {
       await textoVisible(`${total} filas revisadas. La carga aún no se ha aplicado al catálogo.`);
       assert.equal((await api('/piezas?tamano=1', negocio)).total, antes);
       assert.equal((await api(`/importacion/cargas/${carga.id}/filas?estado=pendiente&tamano=1`)).total, 0);
-      const aprobar = page.getByRole('button', { name: 'Aprobar carga completa', exact: true });
-      await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Aprobar carga completa' && !b.disabled));
+      const aprobar = page.getByRole('button', { name: 'Continuar a confirmación', exact: true });
+      await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Continuar a confirmación' && !b.disabled));
       const respuestaAprobacion = page.waitForResponse(r => r.url() === datos + `/importacion/cargas/${carga.id}/aprobar` && r.request().method() === 'POST', { timeout: 600000 });
       await aprobar.click();
-      await page.getByRole('form', { name: 'Confirmar aprobación de la carga', exact: true }).getByRole('button', { name: 'Confirmar aprobación', exact: true }).click();
+      await page.getByRole('button', { name: 'Confirmar e importar', exact: true }).click();
       console.log('Aplicando ' + hoja + ': ' + total + ' filas mediante aprobación real');
       const resultado = await respuestaAprobacion;
       assert.equal(resultado.status(), 200, await resultado.text());
       assert.equal((await resultado.json()).estado, 'aprobada');
-      await textoVisible('Carga aplicada al catálogo. Las fichas conservan su estado de borrador para la revisión habitual.');
+      await page.getByRole('heading', { name: 'Importación completada', exact: true }).waitFor();
       assert.equal((await api('/piezas?tamano=1', negocio)).total, antes + total);
+      await page.getByRole('button', { name: 'Consultar filas y decisiones', exact: true }).click();
       await page.getByRole('link', { name: 'Ver pieza registrada', exact: true }).first().waitFor();
       await page.setViewportSize({ width: 390, height: 844 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Sin desborde horizontal de la página');

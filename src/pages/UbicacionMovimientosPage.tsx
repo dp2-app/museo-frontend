@@ -12,6 +12,7 @@ import { EstadoUbicacion } from "../components/EstadoUbicacion";
 import { MapPin, X } from "lucide-react";
 import { SelectorUbicaciones } from "../components/SelectorUbicaciones";
 import { GestionUbicaciones } from "../components/GestionUbicaciones";
+import { UbicacionModal } from "../components/UbicacionModal";
 
 /** Pantalla propia de sedes y ubicaciones (antes un plegable dentro de Ubicación y movimientos). */
 export function SedesPage() {
@@ -21,6 +22,7 @@ export function SedesPage() {
 const SIN_UBICACION = "__sin__";
 
 export function UbicacionMovimientosPage() {
+  const [creandoUbicacion, setCreandoUbicacion] = useState(false);
   const { puede, sesion } = usePermisos();
   const veUbicacion = Boolean(sesion) && !sesion?.camposOcultos.includes("ubicacion_actual_id");
   const veEstado = Boolean(sesion) && !sesion?.camposOcultos.includes("estado_pieza_id");
@@ -60,7 +62,8 @@ export function UbicacionMovimientosPage() {
     if (!fallos.length) { setDestino(""); setMotivoMov(""); setEstado(""); setMotivoEst(""); }
   }
 
-  return <div className="space-y-6"><CabeceraPagina titulo="Ubicación y movimientos" descripcion="Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez." acciones={puede("ubicaciones.gestionar") && <Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link>} />
+  return <div className="space-y-6"><CabeceraPagina titulo="Ubicación y movimientos" descripcion="Mira dónde está cada pieza y muévela o cambia su estado, de a una o varias a la vez." acciones={puede("ubicaciones.gestionar") && <><button className="btn-primary" aria-haspopup="dialog" onClick={() => setCreandoUbicacion(true)}><MapPin size={18} aria-hidden="true" />Crear ubicación</button><Link className="btn-glass" to="/ubicacion-y-movimientos/sedes">Gestionar sedes y ubicaciones</Link></>} />
+    {creandoUbicacion && <UbicacionModal alCerrar={() => setCreandoUbicacion(false)} alGuardar={() => setResultado("Ubicación creada. Ya puedes asignarla a las piezas.")} />}
     {puede("piezas.ver") && <div className={`grid grid-cols-1 gap-4 ${veUbicacion ? "lg:grid-cols-[18rem_minmax(0,1fr)]" : ""}`}>
       {veUbicacion && <SelectorUbicaciones nodos={arbol.data ?? []} elegido={lugar} elegir={elegir} error={arbol.error} cargando={arbol.isPending} />}
       <section className="location-results glass-panel p-4 space-y-3 min-w-0">

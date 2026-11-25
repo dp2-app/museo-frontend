@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { Anillo, BarraProgreso } from "./Graficos";
+import { PanoramaCatalogo } from "./PanoramaCatalogo";
 import type { FiltrosConsulta, Indicador, IndicadorColeccion, PuntoHistoria, ReporteIndicadores } from "../../lib/reportes";
 
 const numero = (n: number, decimales = 1) => n.toLocaleString("es-PE", { maximumFractionDigits: decimales });
@@ -83,20 +85,35 @@ function PorColeccion({ filas, indicadores, onVer }: { filas: IndicadorColeccion
 
 /** Indicadores de gestión (P37): se muestra lo que arma el backend; los enlaces aplican el filtro que él mismo devuelve. */
 export function Indicadores({ reporte, onVerPiezas }: { reporte: ReporteIndicadores; onVerPiezas: (filtro: FiltrosConsulta) => void }) {
+  const contenido = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const cerradas = new Set<HTMLDetailsElement>();
+    // Imprimir incluye el detalle aunque la persona prefiera tenerlo plegado en pantalla.
+    const antes = () => contenido.current?.querySelectorAll<HTMLDetailsElement>("details.insight-details").forEach((d) => {
+      if (!d.open) { cerradas.add(d); d.open = true; }
+    });
+    const despues = () => { cerradas.forEach((d) => { d.open = false; }); cerradas.clear(); };
+    window.addEventListener("beforeprint", antes);
+    window.addEventListener("afterprint", despues);
+    return () => { window.removeEventListener("beforeprint", antes); window.removeEventListener("afterprint", despues); despues(); };
+  }, []);
   return (
-    <div className="space-y-6">
-      <h3>Indicadores con historia</h3>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div ref={contenido} className="space-y-6">
+      <PanoramaCatalogo reporte={reporte} onVerPiezas={onVerPiezas} />
+      <details className="insight-details">
+      <summary>Indicadores e historia del catálogo</summary>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4">
         {reporte.indicadores.map((i) => <Tarjeta key={i.clave} i={i} onVer={onVerPiezas} />)}
       </div>
+      </details>
       {!reporte.historia.disponible && reporte.historia.motivo && <p role="note" className="text-sm text-gris-2">{reporte.historia.motivo}</p>}
       {reporte.faltantes && reporte.faltantes.length > 0 && (
-        <section className="space-y-2" aria-label="Qué falta, campo por campo">
-          <h3>Qué falta, campo por campo</h3>
+        <details className="insight-details" aria-label="Qué falta, campo por campo">
+          <summary>Ver todos los faltantes, campo por campo</summary>
           <p className="text-sm text-gris-2">En Inicio ves los motivos agrupados; aquí, cada campo por separado.</p>
           <ul className="divide-y divide-linea glass-panel">
             {reporte.faltantes.map((f) => (
-              <li key={f.campo} className="px-4 py-2 grid grid-cols-[minmax(0,10rem)_1fr_auto_auto] items-center gap-3 text-sm">
+              <li key={f.campo} className="insight-missing-row px-4 py-2 text-sm">
                 <span className="truncate" title={f.etiqueta}>{f.etiqueta}</span>
                 <div role="progressbar" aria-label={`Piezas a las que les falta ${f.etiqueta}`} aria-valuemin={0} aria-valuemax={reporte.totalPiezas} aria-valuenow={f.total}
                      className="h-2.5 rounded-pill bg-fondo-suave overflow-hidden">
@@ -107,16 +124,17 @@ export function Indicadores({ reporte, onVerPiezas }: { reporte: ReporteIndicado
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       )}
-      <section className="space-y-2">
+      <details className="insight-details">
+        <summary>Tabla detallada por colección</summary>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3>Por colección</h3>
           <p className="text-sm text-gris-2">Ordenado por piezas · {reporte.porColeccion.length} {reporte.porColeccion.length === 1 ? "colección" : "colecciones"}</p>
         </div>
         <PorColeccion filas={reporte.porColeccion} indicadores={reporte.indicadores} onVer={onVerPiezas} />
         <p className="text-xs text-gris-2">Las cifras salen del mismo servicio que Inicio: nunca pueden dar números distintos.</p>
-      </section>
+      </details>
     </div>
   );
 }

@@ -1,22 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Building2, MapPin, Pencil, Plus, Power } from "lucide-react";
 import { api } from "../lib/api";
 import { ubicacionesPlanas, type Ubicacion } from "../lib/ficha";
 import { Aviso, ErrorConsulta, Panel } from "./FichaComun";
 import { useOperacion, useRecurso } from "../lib/recursosFicha";
+import { UbicacionModal } from "./UbicacionModal";
 
 export function GestionUbicaciones() {
   const lista = useRecurso<Ubicacion[]>("ubicaciones", "/ubicaciones", true, { incluirInactivas: true });
-  const [id, setId] = useState(""); const [nivel, setNivel] = useState("sede"); const [padre, setPadre] = useState("");
-  const [nombre, setNombre] = useState(""); const [codigo, setCodigo] = useState(""); const [direccion, setDireccion] = useState("");
-  const [abierto, setAbierto] = useState(false);
+  const [editando, setEditando] = useState<Ubicacion | null>();
   const [tipoFiltro, setTipoFiltro] = useState("");
   const [sedeFiltro, setSedeFiltro] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [textoFiltro, setTextoFiltro] = useState("");
-  const crearBoton = useRef<HTMLButtonElement>(null);
-  const editor = useRef<HTMLFormElement>(null);
-  useEffect(() => { if (abierto) { editor.current?.scrollIntoView({ block: "nearest", behavior: "instant" }); editor.current?.querySelector("input")?.focus({ preventScroll: true }); } }, [abierto, id]);
   const op = useOperacion();
   const nodos = ubicacionesPlanas(lista.data ?? []);
   const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").trim();
@@ -25,11 +21,10 @@ export function GestionUbicaciones() {
     (!sedeFiltro || (n.nivelTipo === "sede" ? n.id : n.parentId) === sedeFiltro) &&
     (!estadoFiltro || n.activo === (estadoFiltro === "activa")) &&
     (!textoFiltro.trim() || normalizar(`${n.etiqueta} ${n.codigo ?? ""} ${n.direccion ?? ""}`).includes(normalizar(textoFiltro))));
-  function seleccionar(n?: Ubicacion) { setAbierto(true); setId(n?.id ?? ""); setNivel(n?.nivelTipo ?? "sede"); setPadre(n?.parentId ?? ""); setNombre(n?.nombre ?? ""); setCodigo(n?.codigo ?? ""); setDireccion(n?.direccion ?? ""); }
-  function cerrarEditor() { seleccionar(); setAbierto(false); crearBoton.current?.focus(); }
+  function seleccionar(n?: Ubicacion) { op.setMensaje(""); setEditando(n ?? null); }
   return <Panel titulo="Catálogo de sedes y ubicaciones"><p>Dos niveles: sede › ubicación. Incluye racks, cajas y estantes en el nombre de la ubicación.</p><ErrorConsulta error={lista.error} /><Aviso mensaje={op.mensaje} />
     <section aria-label="Filtros del catálogo" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="section-title">Filtrar catálogo</h3><button ref={crearBoton} type="button" className="btn-primary" onClick={() => seleccionar()} aria-expanded={abierto} aria-controls="editor-ubicacion"><Plus size={18} aria-hidden="true" />Crear ubicación</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="section-title">Filtrar catálogo</h3><button type="button" className="btn-primary" onClick={() => seleccionar()} aria-haspopup="dialog"><Plus size={18} aria-hidden="true" />Crear ubicación</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <label className="min-w-0"><span className="form-label">Tipo</span><select className="glass-input" aria-label="Filtrar por tipo" value={tipoFiltro} onChange={e => setTipoFiltro(e.target.value)}><option value="">Todos los tipos</option><option value="sede">Sede</option><option value="ubicacion">Ubicación</option></select></label>
         <label className="min-w-0"><span className="form-label">Sede</span><select className="glass-input" aria-label="Filtrar por sede" value={sedeFiltro} onChange={e => setSedeFiltro(e.target.value)}><option value="">Todas las sedes</option>{(lista.data ?? []).map(n => <option key={n.id} value={n.id}>{n.nombre}{!n.activo && " (inactiva)"}</option>)}</select></label>
@@ -38,18 +33,7 @@ export function GestionUbicaciones() {
       </div>
       <button type="button" className="btn-glass" disabled={!tipoFiltro && !sedeFiltro && !estadoFiltro && !textoFiltro} onClick={() => { setTipoFiltro(""); setSedeFiltro(""); setEstadoFiltro(""); setTextoFiltro(""); }}>Limpiar filtros</button>
     </section>
-    {abierto && <form id="editor-ubicacion" ref={editor} aria-label={id ? "Editar ubicación" : "Nueva sede o ubicación"} className="grid gap-4 sm:grid-cols-2 rounded-card bg-fondo-suave p-4" onSubmit={(e) => { e.preventDefault(); op.ejecutar(async () => {
-      const datos = { nombre: nombre.trim(), codigo: codigo.trim() || null, direccion: direccion.trim() || null };
-      if (id) await api.patch(`/ubicaciones/${id}`, datos); else await api.post("/ubicaciones", { ...datos, nivelTipo: nivel, parentId: nivel === "ubicacion" ? padre : null }); cerrarEditor();
-    }); }}>
-      <h3 className="section-title sm:col-span-2">{id ? "Editar sede o ubicación" : "Nueva sede o ubicación"}</h3>
-      <label className="min-w-0">Nivel<select aria-label="Nivel" className="glass-input" disabled={!!id} value={nivel} onChange={(e) => setNivel(e.target.value)}><option value="sede">Sede</option><option value="ubicacion">Ubicación dentro de una sede</option></select></label>
-      {nivel === "ubicacion" && <label>Sede<select aria-label="Sede" className="glass-input" required disabled={!!id} value={padre} onChange={(e) => setPadre(e.target.value)}><option value="">Seleccionar…</option>{lista.data?.filter((n) => n.activo).map((n) => <option key={n.id} value={n.id}>{n.nombre}</option>)}</select></label>}
-      <label>Nombre de ubicación<input required className="glass-input" value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
-      <label>Código de ubicación<input className="glass-input" value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label>
-      <label>Dirección<input className="glass-input" value={direccion} onChange={(e) => setDireccion(e.target.value)} /></label>
-      <div className="flex flex-wrap gap-2 items-end"><button className="btn-primary" disabled={op.pendiente || !nombre.trim()}>{id ? "Guardar ubicación" : "Crear ubicación"}</button><button type="button" className="btn-glass" onClick={cerrarEditor}>Cancelar</button></div>
-    </form>}
+    {editando !== undefined && <UbicacionModal ubicacion={editando ?? undefined} alCerrar={() => setEditando(undefined)} alGuardar={() => op.setMensaje("Ubicación guardada.")} />}
     <p className="text-sm text-gris-2" role="status">{visibles.length} de {nodos.length} sedes y ubicaciones</p>
     <div className="location-catalog-scroll rounded-card border border-linea" role="region" aria-label="Catálogo de sedes y ubicaciones" tabIndex={0}>
       <table className="f0-table location-catalog-table"><caption className="sr-only">Sedes y ubicaciones, códigos, dirección, estado y acciones</caption>

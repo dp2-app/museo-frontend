@@ -17,7 +17,7 @@ function opcionesUbicacion(datos: Opcion[], prefijo = ""): Opcion[] {
  * `porNombre`: el valor es el texto del Excel (etiqueta de la lista o nombre del registro), que es lo que el backend de importación
  * resuelve (F4/F5); sin él el valor es el id, como en la ficha. Lo usa «Corregir fila» de la carga masiva.
  */
-export function Control({ campo, valor, cambiar, error, coleccionId, etiquetasActuales = {}, porNombre = false }: { campo: CampoFicha; valor: unknown; cambiar: (v: unknown) => void; error?: string; coleccionId?: unknown; etiquetasActuales?: Record<string, string>; porNombre?: boolean }) {
+export function Control({ campo, valor, cambiar, error, coleccionId, etiquetasActuales = {}, porNombre = false, prefijoId = "ficha" }: { campo: CampoFicha; valor: unknown; cambiar: (v: unknown) => void; error?: string; coleccionId?: unknown; etiquetasActuales?: Record<string, string>; porNombre?: boolean; prefijoId?: string }) {
   const { puede } = usePermisos();
   const lista = useQuery({ queryKey: ["f0", "opciones", campo.lista?.clave], enabled: campo.tipo === "lista" && Boolean(campo.lista), queryFn: async () => (await api.get<ValorLista[]>(`/listas/${campo.lista!.clave}/valores`)).data });
   const rutas: Record<string, string> = { coleccion_id: "/colecciones", subcoleccion_id: `/colecciones/${String(coleccionId)}/subcolecciones`, propietario_id: "/propietarios", registrador_id: "/personas", ubicacion_actual_id: "/ubicaciones", ...(porNombre ? { regimen: "/regimenes", ubicacion: "/ubicaciones" } : {}) };
@@ -33,7 +33,7 @@ export function Control({ campo, valor, cambiar, error, coleccionId, etiquetasAc
   for (const id of Array.isArray(valor) ? valor.map(String) : valor ? [String(valor)] : []) {
     if (esSelector && !opciones.some((o) => clavePorOpcion(o) === id)) opciones.push(porNombre ? { id, valorTexto: id, nombre: `${id} (valor original, no está en la lista)` } : { id, nombre: `${etiquetasActuales[id] ?? "Valor actual"} (conservado)` });
   }
-  const id = `ficha-${campo.clave}`;
+  const id = `${prefijoId}-${campo.clave}`;
   const estadoError = lista.error ?? referencias.error;
   const esperando = lista.isFetching || referencias.isFetching;
   const valorString = typeof valor === "string" || typeof valor === "number" ? String(valor) : "";
@@ -57,10 +57,14 @@ export interface FormularioFichaProps {
   /** Claves que el backend dice que faltan (`camposFaltantes`): se señalan en el formulario; `enfocar` lleva la vista a una de ellas. */
   faltantes?: string[];
   enfocar?: string | null;
+  formId?: string;
+  ocultarAccion?: boolean;
+  mensajeExito?: string;
+  textoIntro?: string;
 }
 
 /** F2 integra onGuardar; sin callback es vista previa y no escribe ninguna pieza. */
-export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange, edicion = false, etiquetasActuales, faltantes = [], enfocar = null }: FormularioFichaProps) {
+export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuardar, onChange, edicion = false, etiquetasActuales, faltantes = [], enfocar = null, formId, ocultarAccion = false, mensajeExito = "Ficha guardada.", textoIntro }: FormularioFichaProps) {
   const catalogo = useCatalogoFicha();
   const [datos, setDatos] = useState<DatosFichaV3>(inicial ?? { campos: {}, listas: {} });
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -107,23 +111,23 @@ export function FormularioFicha({ inicial, errores: erroresExternos = {}, onGuar
       return v == null || (typeof v === "string" && !v.trim()) || (Array.isArray(v) && !v.length);
     })());
     setErrores(Object.fromEntries(faltan.map((c) => [c.clave, `${c.etiqueta}: completa este campo obligatorio.`])));
-    if (faltan.length) { setAviso("Revisa los campos obligatorios señalados."); return; }
+    if (faltan.length) { setAviso("Revisa los campos obligatorios señalados."); requestAnimationFrame(() => irA(faltan[0].clave)); return; }
     if (!onGuardar) { setAviso("Los obligatorios están completos. Esta vista previa no guarda piezas; el servidor valida los datos al guardar una ficha real."); return; }
     setGuardando(true);
-    try { await onGuardar(datosEditables(campos, datos)); setAviso("Ficha guardada."); }
+    try { await onGuardar(datosEditables(campos, datos)); setAviso(mensajeExito); }
     catch (e) { setError(e); setErrores(erroresPorCampo(e)); }
     finally { setGuardando(false); }
   }
   if (catalogo.isPending || catalogo.isError) return <EstadoConsulta cargando={catalogo.isPending} error={catalogo.error} reintentar={() => { void catalogo.refetch(); }} />;
-  return <form className="f0-surface space-y-6" onSubmit={(e) => { void enviar(e); }} noValidate aria-label="Formulario de ficha">
-    <p>Los campos y las listas provienen de la configuración vigente. El asterisco indica un campo obligatorio.</p>
+  return <form id={formId} className="f0-surface space-y-6" onSubmit={(e) => { void enviar(e); }} noValidate aria-label="Formulario de ficha">
+    <p>{textoIntro ?? "Los campos y las listas provienen de la configuración vigente. El asterisco indica un campo obligatorio."}</p>
     {faltantesDeCampo.length > 0 && <div role="status" className="sticky top-0 z-10 rounded-card border border-rojo bg-white p-3 space-y-2">
       <p className="font-semibold text-rojo-oscuro">{faltantesDeCampo.length === 1 ? "Falta 1 campo para completar la ficha" : `Faltan ${faltantesDeCampo.length} campos para completar la ficha`}</p>
       <div className="flex flex-wrap gap-2">{faltantesDeCampo.map((c) => <button key={c} type="button" className="chip" onClick={() => irA(c)}>{etiquetaDe(c)}</button>)}</div>
     </div>}
     <ErrorOperacion error={error} />
     {grupos.map((grupo) => <fieldset key={grupo} className="space-y-4 border-t border-linea pt-6"><legend className="mb-3 font-semibold text-azul">{grupo}</legend><div className="grid gap-4 md:grid-cols-2">{campos.filter((c) => c.grupo === grupo).map((c) => <Control key={c.id} campo={c} valor={c.almacenamiento === "lista" ? datos.listas[c.clave] : datos.campos[c.clave]} etiquetasActuales={etiquetasActuales} coleccionId={datos.campos.coleccion_id} cambiar={(v) => cambiar(c, v)} error={errores[c.clave] ?? erroresExternos[c.clave]} />)}</div></fieldset>)}
-    {aviso && <p role="status">{aviso}</p>}<button className="btn-primary" disabled={guardando || catalogo.isFetching}>{guardando ? "Guardando…" : onGuardar ? "Guardar ficha" : "Comprobar obligatorios"}</button>
+    {aviso && <p role="status">{aviso}</p>}{!ocultarAccion && <button className="btn-primary" disabled={guardando || catalogo.isFetching}>{guardando ? "Guardando…" : onGuardar ? "Guardar ficha" : "Comprobar obligatorios"}</button>}
   </form>;
 }
 

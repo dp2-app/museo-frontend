@@ -11,7 +11,7 @@ const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision
 const FALTANTE: Record<string, string> = { codigos_externos: "Código del museo", fotografias: "Fotografía" };
 
 /** RF-45 y RF-59: institución (nombre, logo y dirección), título, fecha, filtros aplicados y total, tal como los devuelve el backend. */
-export function Encabezado({ reporte, total, nombres }: { reporte: EncabezadoReporte; total: number; nombres: Record<string, string> }) {
+export function Encabezado({ reporte, total, nombres, compacto = false }: { reporte: EncabezadoReporte; total: number; nombres: Record<string, string>; compacto?: boolean }) {
   const filtros = Object.entries(reporte.filtros);
   const { nombre, logoUrl, direccion } = reporte.institucion;
   const [logoFallido, setLogoFallido] = useState<string | null>(null);
@@ -19,8 +19,8 @@ export function Encabezado({ reporte, total, nombres }: { reporte: EncabezadoRep
   const valor = (clave: string, v: string | boolean) =>
     v === true ? "Sí" : clave === "estadoFicha" ? ESTADO_FICHA[String(v)] ?? String(v) : nombres[String(v)] ?? String(v);
   return (
-    <header className="space-y-1">
-      <div className="flex items-center gap-3">
+    <header className={compacto ? "report-overview-header space-y-1" : "space-y-1"}>
+      <div className={`${compacto ? "hidden print:flex" : "flex"} items-center gap-3`}>
         {logo && <img src={logo} alt="Logo de la institución" className="max-h-14 max-w-[8rem] object-contain" referrerPolicy="no-referrer"
                       onError={() => setLogoFallido(logo)} />}
         <div>

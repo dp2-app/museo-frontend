@@ -31,7 +31,7 @@ function ok(s) { informe.comprobaciones.push(s); console.log('OK ' + s); }
     token = (await (await fetch(base + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: process.env.F0_EMAIL, password: process.env.F0_PASSWORD }) })).json()).accessToken;
     assert.equal((await api('/piezas?tamano=1')).total, 7759);
     const sede = (await api('/ubicaciones')).find(u => u.activo);
-    const nueva = await fetch(base + '/ubicaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ parentId: sede.id, nivelTipo: 'ubicacion', nombre: 'Validación importados · Rack ' + Date.now() }) });
+    const nueva = await fetch(base + '/ubicaciones', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ parentId: sede.id, nivelTipo: 'ubicacion', nombre: 'Validación importados · Rack ' + Date.now(), codigo: 'QA-IMP', direccion: 'Dirección de pruebas, Lima' }) });
     assert.equal(nueva.status, 201); const ubicacion = await nueva.json();
     const estados = await api('/listas/estado_pieza/valores');
     browser = await chromium.launch({ headless: true, channel: 'chrome' });

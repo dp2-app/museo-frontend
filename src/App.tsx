@@ -6,9 +6,8 @@ import { SECCIONES } from "./lib/secciones";
 import { AdministracionPage } from "./pages/AdministracionPage";
 import { AsistenteIAPage } from "./pages/AsistenteIAPage";
 import { CuracionImportacionPage } from "./pages/CuracionImportacionPage";
-import { CargaDetailPage } from "./pages/CargaDetailPage";
 import { ConsultasReportesPage } from "./pages/ConsultasReportesPage";
-import { ImportacionPage } from "./pages/ImportacionPage";
+import { CargaImportacionPage, ImportacionPage } from "./pages/ImportacionPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PanelPrincipalPage } from "./pages/PanelPrincipalPage";
 import { PendientesCodigoIPage } from "./pages/PendientesCodigoIPage";
@@ -116,7 +115,7 @@ export default function App() {
           path="/importacion/:cargaId"
           element={
             <RequirePermiso permisos={permisosDe("/importacion")}>
-              <CargaDetailPage />
+              <CargaImportacionPage />
             </RequirePermiso>
           }
         />

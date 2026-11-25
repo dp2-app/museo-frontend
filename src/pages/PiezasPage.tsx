@@ -1,24 +1,21 @@
 import { Cargando, EstadoVacio, FotoPieza } from "../components/SistemaVisual";
 import { ArrowUpRight, LayoutGrid, List, Upload } from "lucide-react";
 import { CabeceraPagina } from "../components/SistemaVisual";
+import { ImportacionModal } from "../components/f5/ImportacionModal";
+import { RegistroPiezaModal } from "../components/RegistroPiezaModal";
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { FormularioFicha } from "../components/f0/FormularioFicha";
+import { Link, useSearchParams } from "react-router-dom";
 import { PreguntarColeccion } from "../components/f10/PreguntarColeccion";
 import { Colecciones } from "../components/Colecciones";
 import { FiltrosReporte } from "../components/f8/FiltrosReporte";
 import { useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
 import { filtrosDeDireccion, parametros, type FiltrosConsulta } from "../lib/reportes";
-import { ErrorConsulta, Panel } from "../components/FichaComun";
+import { ErrorConsulta } from "../components/FichaComun";
 import { useRecurso } from "../lib/recursosFicha";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
-import { AltaComplementos, type Complementos } from "../components/IdentificacionFicha";
-import { errorLocal } from "../lib/f1";
 import { AccesosF1 } from "../components/f1/PendienteCodigoI";
 import { usePermisos } from "../hooks/usePermisos";
 import { useCatalogoFicha } from "../hooks/useCatalogoFicha";
-import { api } from "../lib/api";
 import { nombreFicha, piezas as contarPiezas, type Ficha } from "../lib/ficha";
 import type { Pagina } from "../types";
 
@@ -26,9 +23,10 @@ import type { Pagina } from "../types";
 const ETIQUETAS_FALTA: Record<string, string> = { codigos_externos: "código del museo", fotografias: "fotografía" };
 
 export function PiezasPage() {
-  const { puede, puedeAlguno, sesion } = usePermisos(); const navegar = useNavigate(); const cache = useQueryClient();
+  const { puede, puedeAlguno, sesion } = usePermisos();
   const [vista, setVista] = useState<"tarjetas" | "tabla">("tarjetas");
-  const [nueva, setNueva] = useState(false); const [complementos, setComplementos] = useState<Complementos>({ codigos: [] }); const [problemas, setProblemas] = useState<string[]>([]);
+  const [importando, setImportando] = useState(false);
+  const [nueva, setNueva] = useState(false);
   const [pagina, setPagina] = useState(1); const [direccion] = useSearchParams(); const [filtros, setFiltros] = useState<Record<string, unknown>>(() => filtrosDeDireccion(direccion));
   const piezas = useRecurso<Pagina<Ficha>>("piezas", "/piezas", true, { ...filtros, pagina, tamano: 20 });
   const opciones = useOpcionesFiltro(); const catalogo = useCatalogoFicha();
@@ -37,13 +35,14 @@ export function PiezasPage() {
   const completitud = (p: Ficha) => p.camposFaltantes.length === 0 && !p.incompleta ? <span>Completa</span>
     : p.camposFaltantes.length === 0 ? <span>Por completar</span>
     : <span className="flex flex-wrap gap-1">{p.camposFaltantes.map((c) => <Link key={c} className="chip !py-0 !px-2 !text-xs" to={`/coleccion/${p.id}?campo=${c}`} title={`Completar: ${etiquetaFalta(c)}`}>{etiquetaFalta(c)}</Link>)}</span>;
-  return <div className="collection-page space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<>{puedeAlguno("importacion.ver", "importacion.cargar") && <Link to="/importacion" className="btn-carga-masiva"><Upload size={18} aria-hidden="true" />Carga masiva</Link>}<button className="btn-primary" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(!nueva)}>{nueva ? "Cancelar registro" : "Registrar pieza"}</button></>} />
+  return <div className="collection-page space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<>{puedeAlguno("importacion.ver", "importacion.cargar") && <button type="button" className="btn-carga-masiva" onClick={() => setImportando(true)}><Upload size={18} aria-hidden="true" />Carga masiva</button>}<button className="btn-primary" aria-haspopup="dialog" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(true)}>Registrar pieza</button></>} />
+    {importando && <ImportacionModal alCerrar={() => setImportando(false)} />}
+    {nueva && <RegistroPiezaModal alCerrar={() => setNueva(false)} />}
     <div className="collection-utilities"><AccesosF1 />
       {puede("colecciones.gestionar") && <details><summary>Gestionar colecciones</summary><Colecciones /></details>}
       <details><summary>Buscar con IA</summary><div className="pt-3"><PreguntarColeccion /></div></details>
     </div>
 
-    {nueva && <Panel titulo="Nueva pieza"><AltaComplementos onChange={(v, p) => { setComplementos(v); setProblemas(p); }} /><FormularioFicha onGuardar={async (datos) => { if (problemas.length) throw errorLocal(problemas); const p = (await api.post<Ficha>("/piezas", { ...datos, ...complementos })).data; await cache.invalidateQueries(); navegar(`/coleccion/${p.id}`); }} /></Panel>}
     <FiltrosReporte key={JSON.stringify(direccion.toString())} inicial={filtros as FiltrosConsulta} opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
       onAplicar={(f) => { setPagina(1); setFiltros(parametros(f)); }} /><ErrorConsulta error={piezas.error} />{piezas.isPending && <Cargando>Cargando piezas…</Cargando>}
     <div className="collection-toolbar"><p className="text-sm text-gris-2">Resultados de la colección</p>

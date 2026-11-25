@@ -31,13 +31,14 @@ async function abrirPanelReglas() {
 }
 async function subir(archivo) {
   await page.goto(web + '/importacion');
+  await page.getByRole('button', { name: 'Importar Excel', exact: true }).click();
   await page.locator('#importacion-archivo').setInputFiles(archivo);
-  const boton = page.getByRole('button', { name: 'Cargar hoja para revisión', exact: true });
-  await page.waitForFunction(() => { const b = [...document.querySelectorAll('button')].find(x => x.textContent.includes('Cargar hoja para revisión')); return b && !b.disabled; });
-  await boton.click();
-  await page.waitForURL(/\/importacion\/[0-9a-f-]{36}$/, { timeout: 30000 });
+  await page.getByRole('button', { name: 'Continuar a columnas', exact: true }).click();
+  const respuesta = page.waitForResponse(r => r.url() === datos + '/importacion/cargas' && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Validar y continuar', exact: true }).click();
+  const carga = await (await respuesta).json();
   await page.waitForSelector('tr[data-fila]');
-  return page.url().split('/').pop();
+  return carga.id;
 }
 
 (async () => {
@@ -102,15 +103,15 @@ async function subir(archivo) {
       await page.waitForTimeout(500);
     }
   }
-  await page.waitForFunction(() => document.body.innerText.includes('0 filas pendientes de revisión'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.body.innerText.includes('0 filas pendientes ·'), null, { timeout: 15000 });
   // Aprobar no actúa con un solo clic: muestra primero el resumen de lo que se registrará
   assert.equal(await page.getByRole('button', { name: 'Descargar reporte de errores' }).count(), 0, 'Sin errores no se ofrece el reporte de errores');
-  await page.getByRole('button', { name: 'Aprobar carga completa' }).click();
+  await page.getByRole('button', { name: 'Continuar a confirmación', exact: true }).click();
   const confirmacion = page.getByRole('form', { name: 'Confirmar aprobación de la carga' });
   await confirmacion.getByText('Piezas nuevas que se registrarán:').waitFor();
   assert.equal((await api('/importacion/cargas/' + carga1)).estado, 'en_revision', 'Antes de confirmar no se toca el catálogo');
   await shot('02b-confirmar-aprobacion');
-  await confirmacion.getByRole('button', { name: 'Confirmar aprobación' }).click();
+  await page.getByRole('button', { name: 'Confirmar e importar', exact: true }).click();
   await page.getByText(/aprobada/i).first().waitFor({ timeout: 20000 });
   await shot('03-carga-aprobada');
   assert.equal((await api('/importacion/cargas/' + carga1)).estado, 'aprobada');
@@ -121,7 +122,7 @@ async function subir(archivo) {
 
   // RF-40: la cola de curación se ve en pantalla y el pendiente se valida con nota
   await page.goto(web + '/importacion');
-  await page.getByRole('link', { name: 'Ver la cola de curación' }).click();
+  await page.getByRole('link', { name: 'Ver pendientes de curación' }).click();
   await page.getByRole('heading', { name: 'Cola de curación' }).waitFor();
   const filaCola = page.locator('tbody tr', { hasText: 'Quien revisó el lote la marcó para curación' });
   await filaCola.waitFor();
@@ -150,6 +151,7 @@ async function subir(archivo) {
   ok('RF-39, RF-58: cada carga guarda las reglas de su momento (0,75 y 0,90)');
 
   // RF-36: cancelar un lote exige motivo y lo deja cancelado
+  await page.getByText('Opciones de rechazo y cancelación', { exact: true }).click();
   await page.getByRole('button', { name: 'Cancelar carga', exact: true }).click();
   await page.getByRole('textbox', { name: 'Motivo de la decisión' }).fill('Prueba automática: cancelación');
   await page.getByRole('button', { name: 'Confirmar cancelación' }).click();
