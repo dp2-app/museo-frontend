@@ -2,6 +2,7 @@ import { FotoPieza } from "../components/SistemaVisual";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { LayoutTemplate } from "lucide-react";
 import { FormularioFicha, CamposFaltantes } from "../components/f0/FormularioFicha";
 import { ChipEstadoFicha } from "../components/ChipEstadoFicha";
 import { ArchivosFicha } from "../components/ArchivosFicha";
@@ -56,7 +57,7 @@ export function PiezaDetailPage() {
       <div className="piece-feature-summary"><div><ChipEstadoFicha estado={p.estadoFicha} /><h1 className="font-accent italic mt-4">{nombreFicha(p)}</h1></div>
         <p className="text-gris-2 break-words">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código registrado"}</p>
         {p.etiquetas.coleccion_id && <p className="text-sm text-azul">{p.etiquetas.coleccion_id}</p>}
-        {!original && <div><button className="btn-primary" disabled={!puede("piezas.editar")} onClick={() => setOriginal(p)}>Editar ficha</button></div>}
+        {!original && <div className="flex flex-wrap gap-2"><button className="btn-primary" disabled={!puede("piezas.editar")} onClick={() => setOriginal(p)}>Editar ficha</button>{puede("ia.usar") && <Link className="btn-glass inline-flex items-center gap-2" to={`/asistente-ia?tema=${encodeURIComponent(nombreFicha(p))}`} title="La IA propone piezas relacionadas con esta para una sala"><LayoutTemplate size={18} aria-hidden="true" />Armar sala con piezas como esta</Link>}</div>}
       </div>
     </section>
     <Aviso mensaje={op.mensaje} />{p.motivoRechazo && <p className="text-rojo">Motivo de rechazo: {p.motivoRechazo}</p>}<CamposFaltantes incompleta={p.incompleta} camposFaltantes={p.camposFaltantes} />

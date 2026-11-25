@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { Check, ChevronDown, Download, Loader2, Sparkles, TriangleAlert, X } from "lucide-react";
 import { api, extraerErroresApi, extraerMensajeError } from "../../lib/api";
 import { usePermisos } from "../../hooks/usePermisos";
@@ -15,7 +16,9 @@ type Pedido = { pedido: string; cantidad: number; ignorarCondiciones: string[] }
 /** El mensaje, el ranking y las condiciones los decide la API; la persona decide su selección. */
 export function ArmarSala() {
   const { puede } = usePermisos();
-  const [pedido, setPedido] = useState("");
+  // `?tema=` llega desde Colección o desde una ficha: se precarga, pero la persona decide cuándo pedir la propuesta.
+  const [direccion] = useSearchParams();
+  const [pedido, setPedido] = useState(() => direccion.get("tema")?.slice(0, 300) ?? "");
   const [cantidad, setCantidad] = useState("20");
   const [sala, setSala] = useState<SalaSugerida | null>(null);
   const [elegidas, setElegidas] = useState<Set<string>>(new Set());

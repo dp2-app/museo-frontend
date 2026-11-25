@@ -9,7 +9,7 @@ interface Props {
 }
 
 const AVANZADOS: (keyof FiltrosConsulta)[] = ["estadoPiezaId", "estadoConservacionId", "materialId", "tipoBienId", "clasificacionId", "autor",
-  "procedencia", "epoca", "estadoFicha", "soloIncompletas", "sinFotografia", "sinUbicacion", "sinCodigoPrincipal"];
+  "procedencia", "epoca", "estadoFicha", "soloIncompletas", "sinFotografia", "conFotografia", "sinUbicacion", "sinCodigoPrincipal"];
 const ESTADO_FICHA: Record<string, string> = { borrador: "Borrador", en_revision: "En revisión", aprobada: "Aprobada", rechazada: "Rechazada" };
 
 /** Los mismos filtros de la búsqueda (F7) para la búsqueda y para todos los reportes. Un filtro sobre un campo oculto para el rol no se muestra. */
@@ -81,9 +81,14 @@ export function FiltrosReporte({ opciones, camposOcultos, veNoAprobadas, aplicad
         {veNoAprobadas && seleccion("estadoFicha", "Estado de ficha", [
           { id: "borrador", nombre: "Borrador" }, { id: "en_revision", nombre: "En revisión" },
           { id: "aprobada", nombre: "Aprobada" }, { id: "rechazada", nombre: "Rechazada" }])}
+        {/* Un solo selector: «con» y «sin» fotografía nunca viajan juntos (`parametros()` descarta el `false`). */}
+        <label className="form-label"><span>Fotografía</span>
+          <select className="glass-input" value={f.conFotografia ? "con" : f.sinFotografia ? "sin" : ""}
+                  onChange={(e) => setF((previo) => ({ ...previo, conFotografia: e.target.value === "con", sinFotografia: e.target.value === "sin" }))}>
+            <option value="">Todas</option><option value="con">Con fotografía</option><option value="sin">Sin fotografía</option>
+          </select></label>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm self-end pb-2 sm:col-span-2">
           {casilla("soloIncompletas", "Solo incompletas")}
-          {casilla("sinFotografia", "Sin fotografía")}
           {casilla("sinUbicacion", "Sin ubicación")}
           {casilla("sinCodigoPrincipal", "Pendientes de código I")}
         </div>

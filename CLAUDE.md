@@ -327,3 +327,13 @@ En la ficha, el panel «Fotografías» muestra **«Fotografía rápida»** (`com
 `RegistroPiezaModal` reutiliza F0/F1 en cuatro etapas: ficha, identificación, fotos y confirmación; crea en borrador al confirmar. `lib/altaPieza.ts` conserva resultados confirmados para reintentar fotos sin repetirlos. La selección de archivos y cámara requiere Cloudinary; también se admiten enlaces HTTPS de imágenes. `UbicacionModal` comparte creación y edición desde la cabecera y el catálogo: nombre, código, dirección y sede para ubicaciones interiores son obligatorios, también en la API. Se conserva sede › ubicación. `DialogoMuseo` gestiona foco, Escape y bloqueo durante escrituras. La importación conserva su propio asistente y RN-08.
 
 Detalle, heurísticas y evidencia: `docs/asistentes-2026-11-24.md`. Backend completo: 634 pruebas aprobadas (197 unitarias y 437 de integración) en base de QA local; frontend: 35 unitarias. E2E reales y verificación HTTP de las altas, fotos, principal, códigos y movimientos iniciales. Estas verificaciones locales no certifican Groq ni Cloudinary externos sin sus configuraciones; la publicación se verifica por separado.
+
+## IA integrada en Colección y filtro de fotografía (24/11/2026)
+
+- **Buscar con IA (RIA-06) está en la barra de búsqueda de Colección** (`components/f10/BarraBusquedaIA.tsx`, que reemplaza a `PreguntarColeccion.tsx`):
+  - «Buscar» aplica `q` sin IA.
+  - «Preguntar a la IA» aplica los `filtros` de `POST /ia/consultas` a la misma grilla y a `FiltrosReporte`. `PiezasPage` remonta el formulario con un contador `version` en su `key`.
+  - No hay tabla aparte. Los chips «Entendí» siguen pudiéndose quitar o elegir, sin volver a llamar a la IA y con `filtros-aplicados` (D4).
+- **Armar sala se abre desde el trabajo diario:** Colección, Inicio, la ficha («Armar sala con piezas como esta») y la barra. Todos usan `/asistente-ia?tema=`: `ArmarSala` precarga el tema y no lo envía solo.
+- **Fotografía:** en `FiltrosReporte` es un selector Todas / Con / Sin (`conFotografia` / `sinFotografia`, nunca juntos). Sirve para Colección y Reportes.
+- Verificación: lint, build, `test:unit` y Playwright con API simulada. `tests/f10.e2e.cjs` se ajustó a la barra; necesita backend local con Groq.
