@@ -64,24 +64,24 @@ const consultasDe = async (t) => (await api(`/ia/sugerencias?tipo=${TIPO_RIA06}&
     const consultaT = await token(EMAIL_CONSULTA);
     const gestorId = (await api('/auth/sesion', { token: gestorT, esperado: 200 })).json.usuario.id;
 
-    // ---------- 1. RIA-06 · el Gestor pregunta en Colección con «Buscar con IA»
+    // ---------- 1. RIA-06 · el Gestor pregunta en la barra de búsqueda de Colección
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
     const gestor = await entrar(ctx, EMAIL_GESTOR);
     assert.ok((await menu(gestor)).includes('Armar sala'), 'El Gestor (ia.usar) ve Armar sala');
     await gestor.goto(WEB + '/piezas');
-    const buscarIA = gestor.locator('details', { hasText: 'Buscar con IA' });
-    await buscarIA.locator('summary').click();
+    const buscarIA = gestor.locator('section', { has: gestor.getByRole('button', { name: 'Preguntar a la IA' }) });
     const antes = (await consultasDe(gestorT)).length;
-    await buscarIA.getByPlaceholder(/cerámicas de Ayacucho/).fill(PREGUNTA);
-    await buscarIA.getByRole('button', { name: 'Preguntar' }).click();
+    await buscarIA.getByPlaceholder(/pregúntale a la colección/).fill(PREGUNTA);
+    await buscarIA.getByRole('button', { name: 'Preguntar a la IA' }).click();
     const respuesta = buscarIA.getByRole('status').filter({ hasText: 'Interpretación de IA' });
     await respuesta.waitFor({ timeout: IA_TIMEOUT });
     const chips = respuesta.getByRole('button', { name: /^Quitar el filtro/ });
     const nChips = await chips.count();
     assert.ok(nChips >= 1, 'La IA interpretó al menos un filtro');
     const totalTexto = async () => {
-      const t = await buscarIA.locator('p', { hasText: /^(\d+|…) piezas$/ }).first().innerText();
-      return Number(t.replace(/\D/g, ''));
+      // La IA llena los filtros de Colección: el total es el de la paginación de la grilla («Página 1 · N piezas»).
+      const t = await gestor.locator('p', { hasText: /^Página \d+ · / }).first().innerText();
+      return Number(t.split('·')[1].replace(/\D/g, ''));
     };
     await gestor.waitForLoadState('networkidle');
     const totalIA = await totalTexto();
@@ -193,7 +193,7 @@ const consultasDe = async (t) => (await api(`/ia/sugerencias?tipo=${TIPO_RIA06}&
     const consulta = await entrar(ctxConsulta, EMAIL_CONSULTA);
     assert.ok(!(await menu(consulta)).includes('Armar sala'), 'Consulta interna (sin ia.usar) no ve Armar sala');
     await consulta.goto(WEB + '/piezas');
-    await consulta.locator('details', { hasText: 'Buscar con IA' }).waitFor();
+    await consulta.getByRole('button', { name: 'Preguntar a la IA' }).waitFor();
     await ctxConsulta.close();
     assert.equal((await api('/ia/salas/sugerir', { metodo: 'POST', cuerpo: { pedido: PEDIDO_SALA, cantidad: 10 }, token: consultaT })).status, 403);
     const preguntarConsulta = () => api('/ia/consultas', { metodo: 'POST', cuerpo: { pregunta: PREGUNTA }, token: consultaT });

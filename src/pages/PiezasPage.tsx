@@ -1,11 +1,11 @@
 import { Cargando, EstadoVacio, FotoPieza } from "../components/SistemaVisual";
-import { ArrowUpRight, LayoutGrid, List, Upload } from "lucide-react";
+import { ArrowUpRight, LayoutGrid, LayoutTemplate, List, Upload } from "lucide-react";
 import { CabeceraPagina } from "../components/SistemaVisual";
 import { ImportacionModal } from "../components/f5/ImportacionModal";
 import { RegistroPiezaModal } from "../components/RegistroPiezaModal";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { PreguntarColeccion } from "../components/f10/PreguntarColeccion";
+import { BarraBusquedaIA } from "../components/f10/BarraBusquedaIA";
 import { Colecciones } from "../components/Colecciones";
 import { FiltrosReporte } from "../components/f8/FiltrosReporte";
 import { useOpcionesFiltro } from "../hooks/useOpcionesFiltro";
@@ -28,6 +28,9 @@ export function PiezasPage() {
   const [importando, setImportando] = useState(false);
   const [nueva, setNueva] = useState(false);
   const [pagina, setPagina] = useState(1); const [direccion] = useSearchParams(); const [filtros, setFiltros] = useState<Record<string, unknown>>(() => filtrosDeDireccion(direccion));
+  // La barra de búsqueda (y la IA) reemplazan los filtros: `version` remonta el formulario para que los muestre.
+  const [version, setVersion] = useState(0);
+  const aplicar = (f: FiltrosConsulta | Record<string, unknown>) => { setPagina(1); setFiltros(parametros(f as FiltrosConsulta)); setVersion((v) => v + 1); };
   const piezas = useRecurso<Pagina<Ficha>>("piezas", "/piezas", true, { ...filtros, pagina, tamano: 20 });
   const opciones = useOpcionesFiltro(); const catalogo = useCatalogoFicha();
   const etiquetaFalta = (clave: string) => ETIQUETAS_FALTA[clave] ?? catalogo.data?.find((c) => c.clave === clave)?.etiqueta ?? clave;
@@ -35,16 +38,16 @@ export function PiezasPage() {
   const completitud = (p: Ficha) => p.camposFaltantes.length === 0 && !p.incompleta ? <span>Completa</span>
     : p.camposFaltantes.length === 0 ? <span>Por completar</span>
     : <span className="flex flex-wrap gap-1">{p.camposFaltantes.map((c) => <Link key={c} className="chip !py-0 !px-2 !text-xs" to={`/coleccion/${p.id}?campo=${c}`} title={`Completar: ${etiquetaFalta(c)}`}>{etiquetaFalta(c)}</Link>)}</span>;
-  return <div className="collection-page space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<>{puedeAlguno("importacion.ver", "importacion.cargar") && <button type="button" className="btn-carga-masiva" onClick={() => setImportando(true)}><Upload size={18} aria-hidden="true" />Carga masiva</button>}<button className="btn-primary" aria-haspopup="dialog" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(true)}>Registrar pieza</button></>} />
+  return <div className="collection-page space-y-6"><CabeceraPagina titulo="Colección" descripcion="Registra piezas y completa las fichas del inventario." acciones={<>{puede("ia.usar") && <Link className="btn-glass" to="/asistente-ia"><LayoutTemplate size={18} aria-hidden="true" />Armar sala con IA</Link>}{puedeAlguno("importacion.ver", "importacion.cargar") && <button type="button" className="btn-carga-masiva" onClick={() => setImportando(true)}><Upload size={18} aria-hidden="true" />Carga masiva</button>}<button className="btn-primary" aria-haspopup="dialog" disabled={!puede("piezas.crear")} title={!puede("piezas.crear") ? "Tu rol no puede registrar piezas" : undefined} onClick={() => setNueva(true)}>Registrar pieza</button></>} />
     {importando && <ImportacionModal alCerrar={() => setImportando(false)} />}
     {nueva && <RegistroPiezaModal alCerrar={() => setNueva(false)} />}
     <div className="collection-utilities"><AccesosF1 />
       {puede("colecciones.gestionar") && <details><summary>Gestionar colecciones</summary><Colecciones /></details>}
-      <details><summary>Buscar con IA</summary><div className="pt-3"><PreguntarColeccion /></div></details>
     </div>
 
-    <FiltrosReporte key={JSON.stringify(direccion.toString())} inicial={filtros as FiltrosConsulta} opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
-      onAplicar={(f) => { setPagina(1); setFiltros(parametros(f)); }} /><ErrorConsulta error={piezas.error} />{piezas.isPending && <Cargando>Cargando piezas…</Cargando>}
+    <BarraBusquedaIA key={`barra-${direccion.toString()}`} filtros={filtros} onAplicar={aplicar} />
+    <FiltrosReporte key={`${direccion.toString()}-${version}`} inicial={filtros as FiltrosConsulta} opciones={opciones} camposOcultos={sesion?.camposOcultos ?? []} veNoAprobadas={puede("piezas.ver_no_aprobadas")} aplicados={filtros}
+      onAplicar={aplicar} /><ErrorConsulta error={piezas.error} />{piezas.isPending && <Cargando>Cargando piezas…</Cargando>}
     <div className="collection-toolbar"><p className="text-sm text-gris-2">Resultados de la colección</p>
       <div className="view-switch" role="group" aria-label="Vista de la colección"><button type="button" aria-pressed={vista === "tarjetas"} onClick={() => setVista("tarjetas")}><LayoutGrid size={18} aria-hidden="true" />Tarjetas</button><button type="button" aria-pressed={vista === "tabla"} onClick={() => setVista("tabla")}><List size={18} aria-hidden="true" />Tabla</button></div>
     </div>

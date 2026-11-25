@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ChartNoAxesCombined, ChevronDown, CircleCheck, Info, LayoutDashboard, TriangleAlert } from "lucide-react";
+import { ChartNoAxesCombined, ChevronDown, CircleCheck, Info, LayoutDashboard, LayoutTemplate, TriangleAlert } from "lucide-react";
 import { CabeceraPagina, Cargando, FotoPieza } from "../components/SistemaVisual";
 import { ErrorConsulta } from "../components/FichaComun";
 import { GraficoCompletitud } from "../components/f8/Graficos";
@@ -32,7 +32,7 @@ export function PanelPrincipalPage() {
 
   return <div className="home-page space-y-6">
     <CabeceraPagina titulo="Inicio" icono={LayoutDashboard} descripcion="Una mirada al patrimonio que cuidamos y al trabajo que sigue."
-      acciones={puede("reportes.ver") && <Link className="btn-glass" to="/consultas-y-reportes"><ChartNoAxesCombined size={18} aria-hidden="true" />Ver reportes</Link>} />
+      acciones={<>{puede("ia.usar") && <Link className="btn-glass" to="/asistente-ia"><LayoutTemplate size={18} aria-hidden="true" />Armar sala con IA</Link>}{puede("reportes.ver") && <Link className="btn-glass" to="/consultas-y-reportes"><ChartNoAxesCombined size={18} aria-hidden="true" />Ver reportes</Link>}</>} />
     {error ? <div className="space-y-3"><ErrorConsulta error={error} /><button className="btn-glass" onClick={() => void refetch()}>Reintentar</button></div> : isLoading || !data ? <Cargando /> : <>
       <div className="home-summary-grid">
         <article className="home-stat home-stat-primary"><p>Total de piezas</p><strong>{numero(data.totalPiezas)}</strong><span>El catálogo visible para tu cuenta</span></article>
