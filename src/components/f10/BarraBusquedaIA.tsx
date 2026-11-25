@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Bot, LayoutTemplate, Loader2, Search, Sparkles, X } from "lucide-react";
@@ -55,6 +55,8 @@ export function BarraBusquedaIA({ filtros, onAplicar }: Props) {
   const [consulta, setConsulta] = useState<ConsultaIA | null>(null);
   const [interpretacion, setInterpretacion] = useState<InterpretacionFiltro[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pista, setPista] = useState(false);
+  const campo = useRef<HTMLInputElement>(null);
 
   const preguntar = useMutation({
     mutationFn: async (pregunta: string) => (await api.post<ConsultaIA>("/ia/consultas", { pregunta })).data,
@@ -71,7 +73,9 @@ export function BarraBusquedaIA({ filtros, onAplicar }: Props) {
   });
 
   function preguntarIA(pregunta: string) {
-    if (!pregunta.trim()) return;
+    // Con la barra vacía el botón no queda gris: lleva al campo y sugiere usar un ejemplo.
+    if (!pregunta.trim()) { setPista(true); campo.current?.focus(); return; }
+    setPista(false);
     setTexto(pregunta);
     preguntar.mutate(pregunta.trim());
   }
@@ -109,14 +113,14 @@ export function BarraBusquedaIA({ filtros, onAplicar }: Props) {
       <form onSubmit={buscar} className="flex flex-col lg:flex-row gap-3">
         <label className="flex-1 min-w-0">
           <span className="sr-only">Busca una pieza o pregúntale a la colección</span>
-          <input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={300} className="glass-input w-full"
+          <input ref={campo} value={texto} onChange={(e) => { setTexto(e.target.value); setPista(false); }} maxLength={300} className="glass-input w-full"
             placeholder="Busca o pregúntale a la colección: «retablos de Ayacucho en mal estado»" />
         </label>
         <div className="flex flex-wrap gap-2 shrink-0">
           <button type="submit" className="btn-glass inline-flex items-center gap-2" disabled={preguntar.isPending}>
             <Search size={16} aria-hidden="true" />Buscar
           </button>
-          <button type="button" className="btn-primary inline-flex items-center gap-2" disabled={preguntar.isPending || !tema}
+          <button type="button" className="btn-primary inline-flex items-center gap-2" disabled={preguntar.isPending}
             onClick={() => preguntarIA(texto)} title="La IA traduce tu pregunta a filtros de la colección">
             {preguntar.isPending ? <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" /> : <Sparkles size={16} aria-hidden="true" />}
             {preguntar.isPending ? "Preguntando…" : "Preguntar a la IA"}
@@ -137,6 +141,7 @@ export function BarraBusquedaIA({ filtros, onAplicar }: Props) {
         )}
       </div>
 
+      {pista && <p className="text-sm text-gris-2" role="status">Escribe tu pregunta como se la harías a una persona, o elige un ejemplo.</p>}
       {error && <p className="text-sm text-rojo" role="alert">{error}</p>}
       {preguntar.isPending && <EsperaIA mensajes={MENSAJES_ESPERA} />}
 
