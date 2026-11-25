@@ -21,7 +21,7 @@ function TarjetaPendiente({ etiqueta, valor, filtro }: { etiqueta: string; valor
 /** Cifras de F8: la presentación no vuelve a definir completitud ni visibilidad. */
 export function PanelPrincipalPage() {
   const { puede } = usePermisos();
-  const seleccion = useRecurso<Pagina<Ficha>>("panel-seleccion", "/piezas", puede("piezas.ver"), { pagina: 1, tamano: 3 });
+  const seleccion = useRecurso<Pagina<Ficha>>("panel-seleccion", "/piezas", puede("piezas.ver"), { pagina: 1, tamano: 3, conFotografia: true });
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["reportes", "panel-principal"],
     queryFn: async () => (await api.get<ReportePanelPrincipal>("/reportes/panel-principal")).data,

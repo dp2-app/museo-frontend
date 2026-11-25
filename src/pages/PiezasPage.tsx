@@ -1,5 +1,5 @@
 import { Cargando, EstadoVacio, FotoPieza } from "../components/SistemaVisual";
-import { ArrowUpRight, LayoutGrid, LayoutTemplate, List, Upload } from "lucide-react";
+import { ArrowUpRight, Camera, LayoutGrid, LayoutTemplate, List, Upload } from "lucide-react";
 import { CabeceraPagina } from "../components/SistemaVisual";
 import { ImportacionModal } from "../components/f5/ImportacionModal";
 import { RegistroPiezaModal } from "../components/RegistroPiezaModal";
@@ -42,6 +42,10 @@ export function PiezasPage() {
     {importando && <ImportacionModal alCerrar={() => setImportando(false)} />}
     {nueva && <RegistroPiezaModal alCerrar={() => setNueva(false)} />}
     <div className="collection-utilities"><AccesosF1 />
+      {/* La mayoría del inventario aún no tiene foto: este acceso deja ver primero las piezas fotografiadas. */}
+      <button type="button" className="btn-glass" aria-pressed={Boolean(filtros.conFotografia)}
+        onClick={() => aplicar(filtros.conFotografia ? { ...filtros, conFotografia: false } : { ...filtros, conFotografia: true, sinFotografia: false })}>
+        <Camera size={20} aria-hidden="true" />{filtros.conFotografia ? "Ver todas las piezas" : "Ver piezas con fotografía"}</button>
       {puede("colecciones.gestionar") && <details><summary>Gestionar colecciones</summary><Colecciones /></details>}
     </div>
 
@@ -57,7 +61,7 @@ export function PiezasPage() {
       <h2 className="piece-card-title"><Link to={`/coleccion/${p.id}`}>{nombreFicha(p)}</Link></h2>
       <p className="text-sm text-gris-2 break-words">{p.codigos.map((c) => c.valor).join(" · ") || "Sin código"}</p>
       {"coleccion_id" in p.campos && <p className="text-sm text-azul">{p.etiquetas.coleccion_id || "Sin colección"}</p>}
-      <div className="piece-card-footer"><p className="text-xs text-gris-2 mb-2">Información de la ficha</p>{completitud(p)}</div>
+      <div className="piece-card-footer"><p className="text-xs text-gris-2 mb-2">{p.camposFaltantes.length ? "Le falta" : "Información de la ficha"}</p>{completitud(p)}</div>
       <Link className="inline-flex items-center gap-2 text-sm font-semibold text-azul hover:underline" to={`/coleccion/${p.id}`} aria-label={`Abrir ficha de ${nombreFicha(p)}`}>Abrir ficha<ArrowUpRight size={16} aria-hidden="true" /></Link>
     </article>)}</div>}
     {vista === "tabla" && <div className="glass-panel overflow-x-auto"><table className="w-full text-sm text-left"><thead><tr><th className="p-4">Pieza / códigos</th><th className="p-4">Colección</th><th className="p-4">Estado de la ficha</th><th className="p-4">Qué le falta</th></tr></thead>

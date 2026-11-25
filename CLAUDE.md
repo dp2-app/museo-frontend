@@ -337,3 +337,8 @@ Detalle, heurísticas y evidencia: `docs/asistentes-2026-11-24.md`. Backend comp
 - **Armar sala se abre desde el trabajo diario:** Colección, Inicio, la ficha («Armar sala con piezas como esta») y la barra. Todos usan `/asistente-ia?tema=`: `ArmarSala` precarga el tema y no lo envía solo.
 - **Fotografía:** en `FiltrosReporte` es un selector Todas / Con / Sin (`conFotografia` / `sinFotografia`, nunca juntos). Sirve para Colección y Reportes.
 - Verificación: lint, build, `test:unit` y Playwright con API simulada. `tests/f10.e2e.cjs` se ajustó a la barra; necesita backend local con Groq.
+- **Ajustes de UX para la expo (25/11/2026):**
+  - La galería de Inicio pide `conFotografia: true`.
+  - Colección tiene el acceso «Ver piezas con fotografía» / «Ver todas las piezas», que alterna `conFotografia`.
+  - «Preguntar a la IA» ya no se deshabilita con la barra vacía: enfoca el campo y sugiere un ejemplo.
+  - Cuando faltan datos, la tarjeta dice «Le falta» en lugar de «Información de la ficha».
