@@ -49,7 +49,7 @@ export function LoginPage() {
       <aside className="login-story" aria-label="Museo Luis Repetto Málaga">
         <img src="/brand/matp_lockup_blanco.svg" alt="Museo de Artes y Tradiciones Populares Luis Repetto Málaga" className="login-brand" />
         <div className="login-editorial">
-          <div className="login-artwork" aria-hidden="true"><div className="login-artwork-arch"><img src="/brand/matp_emblema_retablo.svg" alt="" /></div><span className="login-artwork-line" /></div>
+          <figure className="login-artwork"><div className="login-artwork-arch"><img src="/img/login-museo.jpg" alt="Retablos ayacuchanos en una sala de exposición del museo" width={1280} height={960} decoding="async" /></div><span className="login-artwork-line" aria-hidden="true" /></figure>
           <p className="login-eyebrow">Patrimonio vivo</p>
           <p className="login-story-title">Cada pieza,<br /><em>una historia por cuidar.</em></p>
           <p className="login-story-description">Documentamos el presente para conservar la memoria del mañana.</p>

@@ -6,7 +6,7 @@
 @layer components {
   .importacion-dialog { @apply border-0 p-0 rounded-modal bg-white text-texto shadow-sombra; width: min(1120px, calc(100vw - 48px)); max-width: none; max-height: 92dvh; margin: auto !important; }
   .importacion-dialog::backdrop { @apply bg-azul/70; backdrop-filter: blur(5px); }
-  .importacion-shell { @apply flex flex-col overflow-hidden; height: min(850px, 90dvh); }
+  .importacion-shell { @apply relative flex flex-col overflow-hidden; height: min(850px, 90dvh); }
   .importacion-cabecera { @apply flex items-start gap-4 px-7 py-5 border-b border-linea shrink-0; }
   .importacion-emblema { @apply grid place-items-center rounded-card bg-fondo-suave text-azul shrink-0; width: 52px; height: 52px; }
   .importacion-cabecera > div { @apply flex-1 min-w-0; }
@@ -30,7 +30,7 @@
   .importacion-progreso .actual strong { @apply text-azul; }
   .importacion-progreso .completada .importacion-numero { @apply border-azul text-azul; }
   .importacion-espacio, .importacion-detalle { @apply flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden; }
-  .importacion-scroll { @apply flex-1 min-h-0 overflow-y-auto px-7 py-6; overscroll-behavior: contain; }
+  .importacion-scroll { @apply relative flex-1 min-h-0 overflow-y-auto px-7 py-6; overscroll-behavior: contain; }
   .importacion-intro { @apply mb-6; }
   .importacion-intro > span { @apply text-sm font-semibold text-rojo; }
   .importacion-intro h3 { @apply text-xl sm:text-2xl font-semibold text-azul mt-1 mb-2; }
@@ -918,9 +918,10 @@
 .login-redesign .login-story { position: relative; overflow: hidden; padding: clamp(2rem,4vw,4.5rem); background: radial-gradient(ellipse at 20% 60%, rgb(222 198 155 / .12), transparent 65%), theme('colors.azul'); }
 .login-redesign .login-brand { width: 18rem; max-width: 100%; position: relative; z-index: 1; }
 .login-editorial { position: relative; max-width: 32rem; padding: 1rem 0; }
-.login-artwork { position: relative; display: grid; place-items: center; width: min(100%,23rem); height: clamp(11rem,24vh,17rem); margin: 0 0 2rem; }
-.login-artwork-arch { display: grid; place-items: center; width: 13rem; height: 100%; border: 1px solid rgb(222 198 155 / .4); border-radius: 8rem 8rem .25rem .25rem; background: linear-gradient(150deg,rgb(255 255 255 / .07),transparent); }
-.login-artwork-arch img { width: 8rem; height: 8rem; filter: brightness(0) invert(1); opacity: .9; }
+.login-artwork { position: relative; height: clamp(12rem,32vh,21rem); aspect-ratio: 4 / 3; max-width: 100%; margin: 0 0 2rem; }
+.login-artwork-arch { width: 100%; height: 100%; overflow: hidden; border: 1px solid rgb(222 198 155 / .55); border-radius: 9rem 9rem .375rem .375rem; background: rgb(255 255 255 / .06); box-shadow: 0 24px 48px rgb(0 0 0 / .28); }
+/* Foto de sala: se recorta (cover) sin deformarse; el encuadre prioriza los retablos del centro. */
+.login-artwork-arch img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; }
 .login-artwork-line { position: absolute; bottom: -.5rem; width: 100%; border-bottom: 1px solid rgb(222 198 155 / .4); }
 .login-eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
 .login-editorial > .login-eyebrow { color: theme('colors.arena'); margin-bottom: 1rem; }
