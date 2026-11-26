@@ -916,13 +916,14 @@
 /* Acceso: identidad editorial del museo y formulario legible sin imágenes externas. */
 .login-shell.login-redesign { background: theme('colors.fondo-suave'); }
 .login-redesign .login-story { position: relative; overflow: hidden; padding: clamp(2rem,4vw,4.5rem); background: radial-gradient(ellipse at 20% 60%, rgb(222 198 155 / .12), transparent 65%), theme('colors.azul'); }
+/* Foto de sala a todo el panel: cover (se recorta, nunca se estira) y un velo petróleo arriba y abajo para que el logo y la institución se lean. */
+.login-story-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; z-index: 0; }
+.login-redesign .login-story::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgb(24 63 67 / .85) 0%, rgb(24 63 67 / .25) 26%, rgb(24 63 67 / .2) 52%, rgb(24 63 67 / .9) 100%); }
+.login-redesign .login-story > :not(.login-story-foto) { position: relative; z-index: 2; }
+.login-redesign .login-brand { filter: drop-shadow(0 2px 10px rgb(0 0 0 / .45)); }
+.login-redesign .login-institution { text-shadow: 0 1px 8px rgb(0 0 0 / .6); }
 .login-redesign .login-brand { width: 18rem; max-width: 100%; position: relative; z-index: 1; }
-.login-editorial { position: relative; max-width: 32rem; padding: 1rem 0; }
-.login-artwork { position: relative; height: clamp(12rem,32vh,21rem); aspect-ratio: 4 / 3; max-width: 100%; margin: 0 0 2rem; }
-.login-artwork-arch { width: 100%; height: 100%; overflow: hidden; border: 1px solid rgb(222 198 155 / .55); border-radius: 9rem 9rem .375rem .375rem; background: rgb(255 255 255 / .06); box-shadow: 0 24px 48px rgb(0 0 0 / .28); }
-/* Foto de sala: se recorta (cover) sin deformarse; el encuadre prioriza los retablos del centro. */
-.login-artwork-arch img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 55% 45%; }
-.login-artwork-line { position: absolute; bottom: -.5rem; width: 100%; border-bottom: 1px solid rgb(222 198 155 / .4); }
+.login-editorial { position: relative; max-width: 32rem; padding: clamp(1.25rem,2.2vw,2rem); border-radius: .75rem; border: 1px solid rgb(222 198 155 / .35); background: color-mix(in srgb, theme('colors.azul') 90%, transparent); backdrop-filter: blur(6px); box-shadow: 0 24px 48px rgb(0 0 0 / .3); }
 .login-eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
 .login-editorial > .login-eyebrow { color: theme('colors.arena'); margin-bottom: 1rem; }
 .login-redesign .login-story-title { font-size: clamp(2.25rem,3.5vw,3.5rem); line-height: 1.16; letter-spacing: -.035em; max-width: none; }
